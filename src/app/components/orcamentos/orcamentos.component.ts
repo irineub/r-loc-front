@@ -1303,142 +1303,162 @@ export class OrcamentosComponent implements OnInit {
     XLSX.writeFile(wb, `orcamento_${this.selectedOrcamento.id}.xlsx`);
   }
 
-  async exportToPDF() {
-    if (!this.selectedOrcamento) return;
-
-    const element = document.getElementById('orcamento-pdf-content');
-    if (!element) {
-      console.error('Elemento orcamento-pdf-content não encontrado');
+  exportToPDF() {
+    if (!this.selectedOrcamento) {
+      console.error('Nenhum orçamento selecionado');
       return;
     }
 
     try {
-      // Garantir que o modal esteja visível
-      if (!this.showViewModal) {
-        console.error('Modal não está visível');
-        return;
-      }
-
-      // Aguardar um pouco mais para garantir que o DOM esteja completamente renderizado
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Verificar se o elemento tem conteúdo
-      if (element.children.length === 0) {
-        console.error('Elemento não tem conteúdo');
-        return;
-      }
-
-      // Forçar reflow do DOM
-      element.offsetHeight;
-
-      // Configurações otimizadas para html2canvas
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: element.scrollWidth,
-        height: element.scrollHeight,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-        foreignObjectRendering: true,
-        removeContainer: true,
-        logging: true, // Habilitar logs para debug
-        onclone: (clonedDoc) => {
-          // Garantir que o elemento clonado esteja visível
-          const clonedElement = clonedDoc.getElementById('orcamento-pdf-content');
-          if (clonedElement) {
-            clonedElement.style.display = 'block';
-            clonedElement.style.visibility = 'visible';
-            clonedElement.style.position = 'static';
-            clonedElement.style.transform = 'none';
-          }
-        }
-      });
-
-      // Verificar se o canvas foi gerado corretamente
-      if (canvas.width === 0 || canvas.height === 0) {
-        console.error('Canvas gerado está vazio');
-        return;
-      }
-
-      const imgData = canvas.toDataURL('image/png', 1.0);
-      
-      // Verificar se a imagem foi gerada
-      if (!imgData || imgData === 'data:,') {
-        console.error('Imagem não foi gerada corretamente');
-        return;
-      }
-
+      // Criar PDF usando jsPDF diretamente
       const pdf = new jsPDF('p', 'mm', 'a4');
       
-      // Dimensões da página A4 em mm
+      // Configurações de página
       const pageWidth = 210;
       const pageHeight = 297;
-      const margin = 15;
-      
-      // Área disponível para o conteúdo
+      const margin = 20;
       const contentWidth = pageWidth - (2 * margin);
-      const contentHeight = pageHeight - (2 * margin);
       
-      // Calcular dimensões da imagem mantendo proporção
-      const imgWidth = contentWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Posição inicial
+      let yPosition = margin;
       
-      // Se a imagem for muito alta, dividir em páginas
-      if (imgHeight <= contentHeight) {
-        // Cabe em uma página
-        const yPosition = margin + (contentHeight - imgHeight) / 2;
-        pdf.addImage(imgData, 'PNG', margin, yPosition, imgWidth, imgHeight);
-      } else {
-        // Precisa de múltiplas páginas
-        let heightLeft = imgHeight;
-        let position = 0;
-        let pageNumber = 1;
-        
-        while (heightLeft > 0) {
-          // Calcular altura da parte que cabe na página atual
-          const currentHeight = Math.min(contentHeight, heightLeft);
-          const currentY = margin + (contentHeight - currentHeight) / 2;
-          
-          // Calcular posição Y da imagem para mostrar a parte correta
-          const sourceY = position;
-          const sourceHeight = currentHeight;
-          
-          // Criar um canvas temporário para a parte atual
-          const tempCanvas = document.createElement('canvas');
-          const tempCtx = tempCanvas.getContext('2d');
-          tempCanvas.width = canvas.width;
-          tempCanvas.height = currentHeight;
-          
-          if (tempCtx) {
-            tempCtx.drawImage(
-              canvas,
-              0, sourceY, canvas.width, sourceHeight,
-              0, 0, canvas.width, currentHeight
-            );
-          }
-          
-          const tempImgData = tempCanvas.toDataURL('image/png', 1.0);
-          
-          // Adicionar página se não for a primeira
-          if (pageNumber > 1) {
-            pdf.addPage();
-          }
-          
-          // Adicionar imagem à página
-          pdf.addImage(tempImgData, 'PNG', margin, currentY, imgWidth, currentHeight);
-          
-          heightLeft -= contentHeight;
-          position += contentHeight;
-          pageNumber++;
+      // Função para adicionar texto
+      const addText = (text: string, x: number, y: number, fontSize: number = 12, isBold: boolean = false) => {
+        pdf.setFontSize(fontSize);
+        if (isBold) {
+          pdf.setFont('helvetica', 'bold');
+        } else {
+          pdf.setFont('helvetica', 'normal');
         }
+        pdf.text(text, x, y);
+      };
+      
+      // Função para adicionar linha
+      const addLine = (x1: number, y1: number, x2: number, y2: number) => {
+        pdf.line(x1, y1, x2, y2);
+      };
+      
+      // Cabeçalho
+      addText('Sistema de Locação de Equipamentos', pageWidth / 2, yPosition, 18, true);
+      yPosition += 15;
+      
+      addText(`ORÇAMENTO #${this.selectedOrcamento.id}`, pageWidth / 2, yPosition, 16, true);
+      yPosition += 10;
+      
+      addText(`Data: ${new Date(this.selectedOrcamento.data_criacao).toLocaleDateString('pt-BR')}`, pageWidth / 2, yPosition, 10);
+      yPosition += 20;
+      
+      // Informações do orçamento
+      addText('INFORMAÇÕES DO ORÇAMENTO', margin, yPosition, 14, true);
+      yPosition += 10;
+      
+      addLine(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 10;
+      
+      // Cliente
+      addText('Cliente:', margin, yPosition, 12, true);
+      addText(this.selectedOrcamento.cliente?.nome_razao_social || 'Cliente não encontrado', margin + 30, yPosition);
+      yPosition += 8;
+      
+      // Datas
+      addText('Data Início:', margin, yPosition, 12, true);
+      addText(new Date(this.selectedOrcamento.data_inicio).toLocaleDateString('pt-BR'), margin + 30, yPosition);
+      yPosition += 8;
+      
+      addText('Data Fim:', margin, yPosition, 12, true);
+      addText(new Date(this.selectedOrcamento.data_fim).toLocaleDateString('pt-BR'), margin + 30, yPosition);
+      yPosition += 8;
+      
+      // Status
+      addText('Status:', margin, yPosition, 12, true);
+      addText(this.selectedOrcamento.status.toUpperCase(), margin + 30, yPosition);
+      yPosition += 8;
+      
+      // Observações (se houver)
+      if (this.selectedOrcamento.observacoes) {
+        addText('Observações:', margin, yPosition, 12, true);
+        addText(this.selectedOrcamento.observacoes, margin + 30, yPosition);
+        yPosition += 8;
       }
       
+      yPosition += 15;
+      
+      // Tabela de itens
+      addText('ITENS DO ORÇAMENTO', margin, yPosition, 14, true);
+      yPosition += 10;
+      
+      addLine(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 8;
+      
+      // Cabeçalho da tabela
+      const colWidths = [60, 20, 20, 25, 30, 30];
+      const colPositions = [margin];
+      for (let i = 1; i < colWidths.length; i++) {
+        colPositions[i] = colPositions[i-1] + colWidths[i-1];
+      }
+      
+      const headers = ['Equipamento', 'Qtd', 'Dias', 'Tipo', 'Preço Unit.', 'Subtotal'];
+      headers.forEach((header, index) => {
+        addText(header, colPositions[index], yPosition, 10, true);
+      });
+      yPosition += 8;
+      
+      addLine(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 8;
+      
+      // Itens da tabela
+      if (this.selectedOrcamento.itens && this.selectedOrcamento.itens.length > 0) {
+        this.selectedOrcamento.itens.forEach(item => {
+          // Verificar se precisa de nova página
+          if (yPosition > pageHeight - 60) {
+            pdf.addPage();
+            yPosition = margin;
+          }
+          
+          addText(this.getEquipamentoDescricao(item.equipamento_id), colPositions[0], yPosition, 9);
+          addText(item.quantidade.toString(), colPositions[1], yPosition, 9);
+          addText(item.dias.toString(), colPositions[2], yPosition, 9);
+          addText(item.tipo_cobranca === 'mensal' ? 'Mensal' : 'Diária', colPositions[3], yPosition, 9);
+          addText(`R$ ${item.preco_unitario.toFixed(2)}`, colPositions[4], yPosition, 9);
+          addText(`R$ ${item.subtotal.toFixed(2)}`, colPositions[5], yPosition, 9);
+          yPosition += 6;
+        });
+      }
+      
+      yPosition += 10;
+      
+      // Totais
+      addLine(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 10;
+      
+      const subtotal = this.getOrcamentoSubtotal(this.selectedOrcamento);
+      addText('Subtotal:', pageWidth - margin - 60, yPosition, 12, true);
+      addText(`R$ ${subtotal.toFixed(2)}`, pageWidth - margin - 10, yPosition);
+      yPosition += 8;
+      
+      if (this.selectedOrcamento.desconto) {
+        addText('Desconto:', pageWidth - margin - 60, yPosition, 12, true);
+        addText(`R$ ${this.selectedOrcamento.desconto.toFixed(2)}`, pageWidth - margin - 10, yPosition);
+        yPosition += 8;
+      }
+      
+      if (this.selectedOrcamento.frete) {
+        addText('Frete:', pageWidth - margin - 60, yPosition, 12, true);
+        addText(`R$ ${this.selectedOrcamento.frete.toFixed(2)}`, pageWidth - margin - 10, yPosition);
+        yPosition += 8;
+      }
+      
+      addLine(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 10;
+      
+      // Total final
+      addText('TOTAL FINAL:', pageWidth - margin - 60, yPosition, 14, true);
+      addText(`R$ ${this.selectedOrcamento.total_final.toFixed(2)}`, pageWidth - margin - 10, yPosition, 14, true);
+      
+      // Salvar o PDF
       pdf.save(`orcamento_${this.selectedOrcamento.id}.pdf`);
-      console.log('PDF gerado com sucesso');
+      console.log('PDF gerado com sucesso usando jsPDF diretamente');
+      
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       alert('Erro ao gerar PDF. Tente novamente.');
