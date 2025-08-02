@@ -1303,7 +1303,7 @@ export class OrcamentosComponent implements OnInit {
     XLSX.writeFile(wb, `orcamento_${this.selectedOrcamento.id}.xlsx`);
   }
 
-  exportToPDF() {
+  async exportToPDF() {
     if (!this.selectedOrcamento) {
       console.error('Nenhum orçamento selecionado');
       return;
@@ -1316,21 +1316,26 @@ export class OrcamentosComponent implements OnInit {
       // Configurações de página
       const pageWidth = 210;
       const pageHeight = 297;
-      const margin = 20;
+      const margin = 25;
       const contentWidth = pageWidth - (2 * margin);
       
       // Posição inicial
       let yPosition = margin;
       
       // Função para adicionar texto
-      const addText = (text: string, x: number, y: number, fontSize: number = 12, isBold: boolean = false) => {
+      const addText = (text: string, x: number, y: number, fontSize: number = 12, isBold: boolean = false, align: string = 'left') => {
         pdf.setFontSize(fontSize);
         if (isBold) {
           pdf.setFont('helvetica', 'bold');
         } else {
           pdf.setFont('helvetica', 'normal');
         }
-        pdf.text(text, x, y);
+        
+        if (align === 'center') {
+          pdf.text(text, x, y, { align: 'center' });
+        } else {
+          pdf.text(text, x, y);
+        }
       };
       
       // Função para adicionar linha
@@ -1338,122 +1343,154 @@ export class OrcamentosComponent implements OnInit {
         pdf.line(x1, y1, x2, y2);
       };
       
-      // Cabeçalho
-      addText('Sistema de Locação de Equipamentos', pageWidth / 2, yPosition, 18, true);
-      yPosition += 15;
+      // Função para adicionar logo
+      const addLogo = async () => {
+        try {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = '/logo-r-loc.jpg';
+          
+          return new Promise((resolve) => {
+            img.onload = () => {
+              const logoWidth = 30;
+              const logoHeight = 30;
+              const logoX = margin;
+              const logoY = yPosition;
+              
+              pdf.addImage(img, 'JPEG', logoX, logoY, logoWidth, logoHeight);
+              resolve(true);
+            };
+            img.onerror = () => {
+              console.warn('Logo não carregado, continuando sem logo');
+              resolve(false);
+            };
+          });
+        } catch (error) {
+          console.warn('Erro ao carregar logo:', error);
+          return false;
+        }
+      };
       
-      addText(`ORÇAMENTO #${this.selectedOrcamento.id}`, pageWidth / 2, yPosition, 16, true);
-      yPosition += 10;
+      // Adicionar logo
+      await addLogo();
       
-      addText(`Data: ${new Date(this.selectedOrcamento.data_criacao).toLocaleDateString('pt-BR')}`, pageWidth / 2, yPosition, 10);
+      // Cabeçalho (após o logo)
+      addText('Sistema de Locação de Equipamentos', pageWidth / 2, yPosition + 15, 16, true, 'center');
+      yPosition += 25;
+      
+      addText(`ORÇAMENTO #${this.selectedOrcamento.id}`, pageWidth / 2, yPosition, 14, true, 'center');
+      yPosition += 8;
+      
+      addText(`Data: ${new Date(this.selectedOrcamento.data_criacao).toLocaleDateString('pt-BR')}`, pageWidth / 2, yPosition, 10, false, 'center');
       yPosition += 20;
       
       // Informações do orçamento
-      addText('INFORMAÇÕES DO ORÇAMENTO', margin, yPosition, 14, true);
-      yPosition += 10;
+      addText('INFORMAÇÕES DO ORÇAMENTO', margin, yPosition, 12, true);
+      yPosition += 8;
       
       addLine(margin, yPosition, pageWidth - margin, yPosition);
-      yPosition += 10;
+      yPosition += 8;
       
       // Cliente
-      addText('Cliente:', margin, yPosition, 12, true);
-      addText(this.selectedOrcamento.cliente?.nome_razao_social || 'Cliente não encontrado', margin + 30, yPosition);
-      yPosition += 8;
+      addText('Cliente:', margin, yPosition, 10, true);
+      const clienteText = this.selectedOrcamento.cliente?.nome_razao_social || 'Cliente não encontrado';
+      addText(clienteText, margin + 25, yPosition, 10);
+      yPosition += 6;
       
       // Datas
-      addText('Data Início:', margin, yPosition, 12, true);
-      addText(new Date(this.selectedOrcamento.data_inicio).toLocaleDateString('pt-BR'), margin + 30, yPosition);
-      yPosition += 8;
+      addText('Data Início:', margin, yPosition, 10, true);
+      addText(new Date(this.selectedOrcamento.data_inicio).toLocaleDateString('pt-BR'), margin + 25, yPosition, 10);
+      yPosition += 6;
       
-      addText('Data Fim:', margin, yPosition, 12, true);
-      addText(new Date(this.selectedOrcamento.data_fim).toLocaleDateString('pt-BR'), margin + 30, yPosition);
-      yPosition += 8;
+      addText('Data Fim:', margin, yPosition, 10, true);
+      addText(new Date(this.selectedOrcamento.data_fim).toLocaleDateString('pt-BR'), margin + 25, yPosition, 10);
+      yPosition += 6;
       
       // Status
-      addText('Status:', margin, yPosition, 12, true);
-      addText(this.selectedOrcamento.status.toUpperCase(), margin + 30, yPosition);
-      yPosition += 8;
+      addText('Status:', margin, yPosition, 10, true);
+      addText(this.selectedOrcamento.status.toUpperCase(), margin + 25, yPosition, 10);
+      yPosition += 6;
       
       // Observações (se houver)
       if (this.selectedOrcamento.observacoes) {
-        addText('Observações:', margin, yPosition, 12, true);
-        addText(this.selectedOrcamento.observacoes, margin + 30, yPosition);
-        yPosition += 8;
+        addText('Observações:', margin, yPosition, 10, true);
+        addText(this.selectedOrcamento.observacoes, margin + 25, yPosition, 10);
+        yPosition += 6;
       }
       
-      yPosition += 15;
+      yPosition += 12;
       
       // Tabela de itens
-      addText('ITENS DO ORÇAMENTO', margin, yPosition, 14, true);
-      yPosition += 10;
-      
-      addLine(margin, yPosition, pageWidth - margin, yPosition);
+      addText('ITENS DO ORÇAMENTO', margin, yPosition, 12, true);
       yPosition += 8;
       
+      addLine(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 6;
+      
       // Cabeçalho da tabela
-      const colWidths = [60, 20, 20, 25, 30, 30];
+      const colWidths = [50, 15, 15, 20, 25, 25];
       const colPositions = [margin];
       for (let i = 1; i < colWidths.length; i++) {
         colPositions[i] = colPositions[i-1] + colWidths[i-1];
       }
       
-      const headers = ['Equipamento', 'Qtd', 'Dias', 'Tipo', 'Preço Unit.', 'Subtotal'];
+      const headers = ['Equipamento', 'Qtd', 'Dias', 'Tipo', 'Preço', 'Subtotal'];
       headers.forEach((header, index) => {
-        addText(header, colPositions[index], yPosition, 10, true);
+        addText(header, colPositions[index], yPosition, 8, true);
       });
-      yPosition += 8;
+      yPosition += 6;
       
       addLine(margin, yPosition, pageWidth - margin, yPosition);
-      yPosition += 8;
+      yPosition += 6;
       
       // Itens da tabela
       if (this.selectedOrcamento.itens && this.selectedOrcamento.itens.length > 0) {
         this.selectedOrcamento.itens.forEach(item => {
           // Verificar se precisa de nova página
-          if (yPosition > pageHeight - 60) {
+          if (yPosition > pageHeight - 80) {
             pdf.addPage();
             yPosition = margin;
           }
           
-          addText(this.getEquipamentoDescricao(item.equipamento_id), colPositions[0], yPosition, 9);
-          addText(item.quantidade.toString(), colPositions[1], yPosition, 9);
-          addText(item.dias.toString(), colPositions[2], yPosition, 9);
-          addText(item.tipo_cobranca === 'mensal' ? 'Mensal' : 'Diária', colPositions[3], yPosition, 9);
-          addText(`R$ ${item.preco_unitario.toFixed(2)}`, colPositions[4], yPosition, 9);
-          addText(`R$ ${item.subtotal.toFixed(2)}`, colPositions[5], yPosition, 9);
-          yPosition += 6;
+          addText(this.getEquipamentoDescricao(item.equipamento_id), colPositions[0], yPosition, 8);
+          addText(item.quantidade.toString(), colPositions[1], yPosition, 8);
+          addText(item.dias.toString(), colPositions[2], yPosition, 8);
+          addText(item.tipo_cobranca === 'mensal' ? 'Mensal' : 'Diária', colPositions[3], yPosition, 8);
+          addText(`R$ ${item.preco_unitario.toFixed(2)}`, colPositions[4], yPosition, 8);
+          addText(`R$ ${item.subtotal.toFixed(2)}`, colPositions[5], yPosition, 8);
+          yPosition += 5;
         });
       }
       
-      yPosition += 10;
+      yPosition += 8;
       
       // Totais
       addLine(margin, yPosition, pageWidth - margin, yPosition);
-      yPosition += 10;
-      
-      const subtotal = this.getOrcamentoSubtotal(this.selectedOrcamento);
-      addText('Subtotal:', pageWidth - margin - 60, yPosition, 12, true);
-      addText(`R$ ${subtotal.toFixed(2)}`, pageWidth - margin - 10, yPosition);
       yPosition += 8;
       
+      const subtotal = this.getOrcamentoSubtotal(this.selectedOrcamento);
+      addText('Subtotal:', pageWidth - margin - 50, yPosition, 10, true);
+      addText(`R$ ${subtotal.toFixed(2)}`, pageWidth - margin - 10, yPosition, 10);
+      yPosition += 6;
+      
       if (this.selectedOrcamento.desconto) {
-        addText('Desconto:', pageWidth - margin - 60, yPosition, 12, true);
-        addText(`R$ ${this.selectedOrcamento.desconto.toFixed(2)}`, pageWidth - margin - 10, yPosition);
-        yPosition += 8;
+        addText('Desconto:', pageWidth - margin - 50, yPosition, 10, true);
+        addText(`R$ ${this.selectedOrcamento.desconto.toFixed(2)}`, pageWidth - margin - 10, yPosition, 10);
+        yPosition += 6;
       }
       
       if (this.selectedOrcamento.frete) {
-        addText('Frete:', pageWidth - margin - 60, yPosition, 12, true);
-        addText(`R$ ${this.selectedOrcamento.frete.toFixed(2)}`, pageWidth - margin - 10, yPosition);
-        yPosition += 8;
+        addText('Frete:', pageWidth - margin - 50, yPosition, 10, true);
+        addText(`R$ ${this.selectedOrcamento.frete.toFixed(2)}`, pageWidth - margin - 10, yPosition, 10);
+        yPosition += 6;
       }
       
       addLine(margin, yPosition, pageWidth - margin, yPosition);
-      yPosition += 10;
+      yPosition += 8;
       
       // Total final
-      addText('TOTAL FINAL:', pageWidth - margin - 60, yPosition, 14, true);
-      addText(`R$ ${this.selectedOrcamento.total_final.toFixed(2)}`, pageWidth - margin - 10, yPosition, 14, true);
+      addText('TOTAL FINAL:', pageWidth - margin - 50, yPosition, 12, true);
+      addText(`R$ ${this.selectedOrcamento.total_final.toFixed(2)}`, pageWidth - margin - 10, yPosition, 12, true);
       
       // Salvar o PDF
       pdf.save(`orcamento_${this.selectedOrcamento.id}.pdf`);
