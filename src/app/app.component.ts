@@ -1,14 +1,32 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterModule],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  title = 'r-loc-front';
+  isAuthenticated = false;
+  currentUser = '';
+
+  constructor() {
+    this.checkAuthStatus();
+  }
+
+  checkAuthStatus() {
+    this.isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    this.currentUser = localStorage.getItem('currentUser') || '';
+  }
+
+  logout() {
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('currentUser');
+    this.isAuthenticated = false;
+    this.currentUser = '';
+    window.location.href = '/login';
+  }
 }

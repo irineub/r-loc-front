@@ -1,5 +1,5 @@
 <div class="app-container">
-  <header class="header">
+  <header class="header" *ngIf="isAuthenticated">
     <div class="header-content">
       <div class="logo-section">
         <img src="/logo-r-loc.jpg" alt="R-Loc Logo" class="logo">
@@ -21,11 +21,17 @@
         <a routerLink="/locacoes" routerLinkActive="active">
           📦 Locações
         </a>
+        <div class="user-section">
+          <span class="user-info">👤 {{ currentUser }}</span>
+          <button class="btn btn-secondary btn-sm logout-btn" (click)="logout()">
+            🚪 Sair
+          </button>
+        </div>
       </nav>
     </div>
   </header>
 
-  <main class="main-content">
+  <main class="main-content" [class.no-header]="!isAuthenticated">
     <router-outlet></router-outlet>
   </main>
 </div>

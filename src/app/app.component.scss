@@ -96,12 +96,47 @@ body {
   left: 100%;
 }
 
+/* User Section */
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.user-info {
+  font-weight: 500;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-1px);
+}
+
 /* Main content */
 .main-content {
   max-width: 1200px;
   margin: 2rem auto;
   padding: 0 2rem;
   min-height: calc(100vh - 100px);
+}
+
+.main-content.no-header {
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 0;
 }
 
 /* Cards */
@@ -640,6 +675,23 @@ body {
   .nav {
     flex-wrap: wrap;
     justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .nav a {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .user-section {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    padding-top: 1rem;
+    margin-top: 1rem;
+    width: 100%;
+    justify-content: center;
   }
   
   .form-row {
@@ -669,6 +721,36 @@ body {
   
   .action-buttons {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 1rem;
+  }
+  
+  .nav {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .nav a {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+  
+  .user-section {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .brand-name {
+    font-size: 1.5rem;
+  }
+  
+  .logo {
+    height: 40px;
   }
 }
 
