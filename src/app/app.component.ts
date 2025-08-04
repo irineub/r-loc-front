@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { AuthService } from './services/auth.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -9,24 +11,31 @@ import { RouterModule } from '@angular/router';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent {
+export class AppComponent implements OnInit, OnDestroy {
   isAuthenticated = false;
   currentUser = '';
+  private authSubscription?: Subscription;
+  private userSubscription?: Subscription;
 
-  constructor() {
-    this.checkAuthStatus();
+  constructor(private authService: AuthService) {}
+
+  ngOnInit() {
+    this.authSubscription = this.authService.isAuthenticated$.subscribe(
+      isAuth => this.isAuthenticated = isAuth
+    );
+    
+    this.userSubscription = this.authService.currentUser$.subscribe(
+      user => this.currentUser = user
+    );
   }
 
-  checkAuthStatus() {
-    this.isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-    this.currentUser = localStorage.getItem('currentUser') || '';
+  ngOnDestroy() {
+    this.authSubscription?.unsubscribe();
+    this.userSubscription?.unsubscribe();
   }
 
   logout() {
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('currentUser');
-    this.isAuthenticated = false;
-    this.currentUser = '';
+    this.authService.logout();
     window.location.href = '/login';
   }
 }
