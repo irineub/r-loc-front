@@ -56,7 +56,7 @@ export class ApiService {
 
   // Custom methods
   postCustom<T>(endpoint: string, data?: any): Observable<T> {
-    const url = `${this.baseUrl}${endpoint}/`;
+    const url = `${this.baseUrl}${endpoint}`;
     console.log('POST Custom request:', url, data);
     return this.http.post<T>(url, data).pipe(
       catchError(this.handleError)
