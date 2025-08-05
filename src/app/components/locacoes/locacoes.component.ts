@@ -12,7 +12,7 @@ import { Locacao, Orcamento } from '../../models/index';
     <div class="locacoes">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">Gestão de Locações</h2>
+          <h2 class="card-title">🏢 Gestão de Locações</h2>
           <button class="btn btn-primary" (click)="showOrcamentosAprovados = true" *ngIf="!showOrcamentosAprovados">
             <span>📦</span> Criar Locação
           </button>
@@ -20,7 +20,7 @@ import { Locacao, Orcamento } from '../../models/index';
 
         <!-- Orçamentos Aprovados for Creating Locação -->
         <div class="form-section" *ngIf="showOrcamentosAprovados">
-          <h3>Criar Locação a partir de Orçamento Aprovado</h3>
+          <h3>📋 Criar Locação a partir de Orçamento Aprovado</h3>
           <div class="table-section">
             <table class="table">
               <thead>
@@ -58,19 +58,21 @@ import { Locacao, Orcamento } from '../../models/index';
 
         <!-- Locações List -->
         <div class="table-section" *ngIf="!showOrcamentosAprovados">
-          <div class="filters">
-            <button class="btn btn-secondary" (click)="filterStatus = ''" [class.active]="filterStatus === ''">
-              Todas
-            </button>
-            <button class="btn btn-secondary" (click)="filterStatus = 'ativa'" [class.active]="filterStatus === 'ativa'">
-              Ativas
-            </button>
-            <button class="btn btn-secondary" (click)="filterStatus = 'finalizada'" [class.active]="filterStatus === 'finalizada'">
-              Finalizadas
-            </button>
-            <button class="btn btn-secondary" (click)="filterStatus = 'atrasada'" [class.active]="filterStatus === 'atrasada'">
-              Atrasadas
-            </button>
+          <div class="filters-container">
+            <div class="filters">
+              <button class="filter-btn" (click)="filterStatus = ''" [class.active]="filterStatus === ''">
+                📊 Todas
+              </button>
+              <button class="filter-btn" (click)="filterStatus = 'ativa'" [class.active]="filterStatus === 'ativa'">
+                ✅ Ativas
+              </button>
+              <button class="filter-btn" (click)="filterStatus = 'finalizada'" [class.active]="filterStatus === 'finalizada'">
+                🏁 Finalizadas
+              </button>
+              <button class="filter-btn" (click)="filterStatus = 'atrasada'" [class.active]="filterStatus === 'atrasada'">
+                ⚠️ Atrasadas
+              </button>
+            </div>
           </div>
 
           <table class="table">
@@ -204,351 +206,208 @@ import { Locacao, Orcamento } from '../../models/index';
   `,
   styles: [`
     .locacoes {
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 12px 48px rgba(220, 53, 69, 0.12);
+      overflow: hidden;
+      border: 2px solid rgba(220, 53, 69, 0.1);
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      padding: 2rem;
       display: flex;
-      flex-direction: column;
-      gap: 2rem;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
 
-    .form-section {
-      background: #f9fafb;
+    .card-title {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 0;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .filters-container {
       padding: 1.5rem;
-      border-radius: 8px;
-      margin-top: 1rem;
-    }
-
-    .form-section h3 {
-      margin-top: 0;
-      margin-bottom: 1.5rem;
-      color: #374151;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-bottom: 2px solid rgba(220, 53, 69, 0.1);
     }
 
     .filters {
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
+      gap: 0.75rem;
       flex-wrap: wrap;
+      justify-content: center;
     }
 
-    .filters .btn {
-      padding: 0.5rem 1rem;
-      font-size: 0.875rem;
+    .filter-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border: 2px solid rgba(220, 53, 69, 0.2);
+      border-radius: 12px;
+      background: white;
+      color: #495057;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
-    .filters .btn.active {
-      background: #667eea;
+    .filter-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(220, 53, 69, 0.15);
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+
+    .filter-btn.active {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
       color: white;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1.5rem;
-    }
-
-    .btn-sm {
-      padding: 0.5rem 0.75rem;
-      font-size: 0.875rem;
+      border-color: #dc3545;
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
     }
 
     .table-section {
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(220, 38, 38, 0.1);
-      border: 1px solid rgba(220, 38, 38, 0.1);
-      overflow: hidden;
-      margin-top: 1.5rem;
-      position: relative;
-      padding: 0;
-    }
-
-    .table-section::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(135deg, #dc2626, #ef4444);
-      z-index: 1;
+      padding: 2rem;
     }
 
     .table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      margin: 0;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(220, 53, 69, 0.08);
+      border: 2px solid rgba(220, 53, 69, 0.1);
     }
 
-    .table thead {
-      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .table thead th {
+    .table th {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
       padding: 1.25rem 1rem;
-      font-weight: 700;
-      font-size: 0.875rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: #374151;
-      border-bottom: 2px solid #e5e7eb;
       text-align: left;
-      position: relative;
-      white-space: nowrap;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .table thead th:first-child {
-      border-top-left-radius: 20px;
-    }
-
-    .table thead th:last-child {
-      border-top-right-radius: 20px;
-    }
-
-    .table thead th::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(135deg, #dc2626, #ef4444);
-      opacity: 0.3;
-    }
-
-    .table tbody tr {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      border-bottom: 1px solid #f3f4f6;
+    .table td {
+      padding: 1.25rem 1rem;
+      border-bottom: 1px solid rgba(220, 53, 69, 0.08);
+      vertical-align: middle;
     }
 
     .table tbody tr:hover {
-      background: linear-gradient(135deg, #fef2f2, #fecaca);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(220, 38, 38, 0.15);
-      border-radius: 12px;
-      margin: 4px 8px;
-    }
-
-    .table tbody tr:nth-child(even) {
-      background: linear-gradient(135deg, #fafafa, #f5f5f5);
-    }
-
-    .table tbody tr:last-child {
-      border-bottom: none;
-    }
-
-    .table tbody td {
-      padding: 1.25rem 1rem;
-      font-size: 0.875rem;
-      color: #374151;
-      border-bottom: 1px solid #f3f4f6;
-      vertical-align: middle;
-      position: relative;
-      word-wrap: break-word;
-      max-width: 200px;
-    }
-
-    .table tbody td:first-child {
-      font-weight: 600;
-      color: #dc2626;
-      min-width: 60px;
-    }
-
-    .badge {
-      font-weight: 700;
-      padding: 0.5rem 1rem;
-      border-radius: 25px;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border: 2px solid transparent;
-      transition: all 0.3s ease;
-      display: inline-block;
-    }
-
-    .badge-ativa {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-      border-color: #059669;
-    }
-
-    .badge-finalizada {
-      background: linear-gradient(135deg, #6b7280, #4b5563);
-      color: white;
-      border-color: #4b5563;
-    }
-
-    .badge-cancelada {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: white;
-      border-color: #dc2626;
-    }
-
-    .badge-atrasada {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: white;
-      border-color: #d97706;
+      background: linear-gradient(135deg, rgba(220, 53, 69, 0.03) 0%, rgba(220, 53, 69, 0.01) 100%);
     }
 
     .action-buttons {
       display: flex;
       gap: 0.5rem;
       flex-wrap: wrap;
-      align-items: center;
+      justify-content: flex-start;
     }
 
     .action-btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      white-space: nowrap;
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border: 2px solid transparent;
-      min-width: 80px;
-      justify-content: center;
+      padding: 0.625rem 1rem;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.85rem;
+      text-decoration: none;
+      white-space: nowrap;
+      min-width: fit-content;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .action-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
     }
 
     .action-btn.approve {
-      background: linear-gradient(135deg, #10b981, #059669);
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
       color: white;
-      border-color: #059669;
+      border: 2px solid transparent;
     }
 
     .action-btn.approve:hover {
-      background: linear-gradient(135deg, #059669, #047857);
+      border-color: rgba(255, 255, 255, 0.3);
     }
 
     .action-btn.reject {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
       color: white;
-      border-color: #dc2626;
+      border: 2px solid transparent;
     }
 
     .action-btn.reject:hover {
-      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      border-color: rgba(255, 255, 255, 0.3);
     }
 
     .action-btn.view {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: white;
-      border-color: #d97706;
+      background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+      color: #212529;
+      border: 2px solid transparent;
     }
 
     .action-btn.view:hover {
-      background: linear-gradient(135deg, #d97706, #b45309);
+      border-color: rgba(0, 0, 0, 0.1);
     }
 
-    .btn-success {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-      border: 2px solid #059669;
+    .badge {
       padding: 0.5rem 1rem;
-      border-radius: 12px;
+      border-radius: 20px;
       font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-block;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
-    .btn-success:hover {
-      background: linear-gradient(135deg, #059669, #047857);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    .badge-ativa {
+      background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+      color: #0c5460;
     }
 
-    @media (max-width: 768px) {
-      .filters {
-        flex-direction: column;
-      }
-      
-      .form-actions {
-        flex-direction: column;
-      }
-      
-      .table {
-        font-size: 0.875rem;
-      }
-
-      .table thead {
-        display: none;
-      }
-      
-      .table tbody tr {
-        display: block;
-        margin-bottom: 1rem;
-        padding: 1rem;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e5e7eb;
-      }
-      
-      .table tbody td {
-        display: block;
-        padding: 0.5rem 0;
-        border: none;
-        text-align: left;
-      }
-      
-      .table tbody td:before {
-        content: attr(data-label) ": ";
-        font-weight: 700;
-        color: #dc2626;
-        margin-right: 0.5rem;
-      }
-      
-      .table tbody td:first-child {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #dc2626;
-        border-bottom: 1px solid #e5e7eb;
-        padding-bottom: 0.75rem;
-        margin-bottom: 0.75rem;
-      }
-      
-      .action-buttons {
-        flex-direction: row;
-        justify-content: flex-start;
-        margin-top: 1rem;
-      }
-      
-      .action-btn {
-        width: auto;
-        padding: 0.5rem 1rem;
-      }
+    .badge-finalizada {
+      background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+      color: #155724;
     }
 
-    @media (max-width: 480px) {
-      .action-buttons {
-        flex-direction: column;
-        width: 100%;
-      }
-      
-      .action-btn {
-        width: 100%;
-        justify-content: center;
-      }
+    .badge-cancelada {
+      background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+      color: #721c24;
     }
 
-    /* Modal Styles */
+    .badge-atrasada {
+      background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+      color: #721c24;
+    }
+
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -560,83 +419,174 @@ import { Locacao, Orcamento } from '../../models/index';
       justify-content: center;
       align-items: center;
       z-index: 1000;
-      backdrop-filter: blur(4px);
+      padding: 2rem;
     }
 
     .modal-content {
       background: white;
       border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      max-width: 90vw;
+      max-width: 800px;
+      width: 100%;
       max-height: 90vh;
-      position: relative;
-      animation: modalSlideIn 0.3s ease-out;
-    }
-
-    @keyframes modalSlideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-20px) scale(0.95);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     }
 
     .modal-header {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      padding: 1.5rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1.5rem 2rem;
-      border-bottom: 2px solid #f3f4f6;
-      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
       border-radius: 20px 20px 0 0;
-    }
-
-    .modal-header h3 {
-      margin: 0;
-      color: #374151;
-      font-size: 1.5rem;
-      font-weight: 700;
     }
 
     .modal-close {
       background: none;
       border: none;
+      color: white;
       font-size: 2rem;
-      color: #6b7280;
       cursor: pointer;
-      padding: 0.5rem;
-      border-radius: 50%;
-      transition: all 0.3s ease;
+      padding: 0;
       width: 40px;
       height: 40px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: all 0.3s ease;
     }
 
     .modal-close:hover {
-      background: #f3f4f6;
-      color: #dc2626;
-      transform: scale(1.1);
+      background: rgba(255, 255, 255, 0.2);
     }
 
     .modal-body {
       padding: 2rem;
-      max-height: calc(90vh - 140px);
-      overflow-y: auto;
     }
 
     .modal-footer {
+      padding: 1.5rem 2rem;
+      border-top: 1px solid #e9ecef;
       display: flex;
       justify-content: flex-end;
-      gap: 1rem;
-      padding: 1.5rem 2rem;
-      border-top: 2px solid #f3f4f6;
-      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-      border-radius: 0 0 20px 20px;
+    }
+
+    /* Botões globais */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
+      border: none;
+      border-radius: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.95rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      min-width: 120px;
+      justify-content: center;
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn:active {
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-success:hover {
+      background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-danger:hover {
+      background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+      color: #212529;
+      border: 2px solid transparent;
+    }
+
+    .btn-warning:hover {
+      background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%);
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-info {
+      background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-info:hover {
+      background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-sm {
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      border-radius: 8px;
+    }
+
+    .btn-lg {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      border-radius: 16px;
     }
 
     .pdf-header {
@@ -646,12 +596,6 @@ import { Locacao, Orcamento } from '../../models/index';
       margin-bottom: 1.5rem;
       padding-bottom: 1.5rem;
       border-bottom: 1px solid #e5e7eb;
-    }
-
-    .company-info .logo {
-      font-size: 3rem;
-      margin-bottom: 0.5rem;
-      display: block;
     }
 
     .company-info .company-logo {
@@ -779,6 +723,68 @@ import { Locacao, Orcamento } from '../../models/index';
       border-top: 2px solid #dc2626;
       margin-top: 0.5rem;
       padding-top: 1rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .locacoes {
+        padding: 1rem;
+      }
+
+      .card-header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .filters {
+        justify-content: center;
+      }
+
+      .filter-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+      }
+
+      .table {
+        font-size: 0.9rem;
+      }
+
+      .table th,
+      .table td {
+        padding: 0.75rem 0.5rem;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .action-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.75rem;
+      }
+
+      .modal-content {
+        margin: 1rem;
+        max-height: 95vh;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      .filters {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .filter-btn {
+        width: 100%;
+        max-width: 200px;
+      }
     }
   `]
 })

@@ -119,34 +119,225 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
   `,
   styles: [`
     .equipamentos {
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 12px 48px rgba(220, 53, 69, 0.12);
+      overflow: hidden;
+      border: 2px solid rgba(220, 53, 69, 0.1);
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      padding: 2rem;
       display: flex;
-      flex-direction: column;
-      gap: 2rem;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .card-title {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 0;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .form-section {
-      background: #f9fafb;
-      padding: 1.5rem;
-      border-radius: 8px;
-      margin-top: 1rem;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      padding: 2rem;
+      border-radius: 20px;
+      margin-top: 1.5rem;
+      border: 2px solid rgba(220, 53, 69, 0.1);
+      box-shadow: 0 8px 32px rgba(220, 53, 69, 0.08);
     }
 
     .form-section h3 {
-      margin-top: 0;
+      color: #dc3545;
       margin-bottom: 1.5rem;
-      color: #374151;
+      font-size: 1.4rem;
+      font-weight: bold;
     }
 
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: #495057;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+    }
+
+    .form-control {
+      padding: 1rem 1.25rem;
+      border: 2px solid #e9ecef;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      color: #495057;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #dc3545;
+      box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .form-control:hover {
+      border-color: #dc3545;
+      box-shadow: 0 4px 16px rgba(220, 53, 69, 0.1);
+    }
+
+    .form-control::placeholder {
+      color: #adb5bd;
+      font-weight: 400;
     }
 
     .form-actions {
       display: flex;
       gap: 1rem;
-      margin-top: 1.5rem;
+      margin-top: 2rem;
+      justify-content: flex-end;
+    }
+
+    /* Botões globais */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
+      border: none;
+      border-radius: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.95rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      min-width: 120px;
+      justify-content: center;
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn:active {
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-success:hover {
+      background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-danger:hover {
+      background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+      color: #212529;
+      border: 2px solid transparent;
+    }
+
+    .btn-warning:hover {
+      background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%);
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-info {
+      background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-info:hover {
+      background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-sm {
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      border-radius: 8px;
+    }
+
+    .btn-lg {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      border-radius: 16px;
     }
 
     .btn-sm {
@@ -165,53 +356,29 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
     }
 
     .table-section {
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(220, 38, 38, 0.1);
-      border: 1px solid rgba(220, 38, 38, 0.1);
-      overflow: hidden;
-      margin-top: 1.5rem;
-      position: relative;
-      padding: 0;
-    }
-
-    .table-section::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(135deg, #dc2626, #ef4444);
-      z-index: 1;
+      padding: 2rem;
     }
 
     .table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      margin: 0;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(220, 53, 69, 0.08);
+      border: 2px solid rgba(220, 53, 69, 0.1);
     }
 
-    .table thead {
-      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .table thead th {
+    .table th {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
       padding: 1.25rem 1rem;
-      font-weight: 700;
-      font-size: 0.875rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: #374151;
-      border-bottom: 2px solid #e5e7eb;
       text-align: left;
-      position: relative;
-      white-space: nowrap;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .table thead th:first-child {
@@ -304,47 +471,47 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
     }
 
     .action-btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      white-space: nowrap;
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border: 2px solid transparent;
-      min-width: 80px;
-      justify-content: center;
+      padding: 0.625rem 1rem;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.85rem;
+      text-decoration: none;
+      white-space: nowrap;
+      min-width: fit-content;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .action-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
     }
 
     .action-btn.edit {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
       color: white;
-      border-color: #2563eb;
+      border: 2px solid transparent;
     }
 
     .action-btn.edit:hover {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border-color: rgba(255, 255, 255, 0.3);
     }
 
     .action-btn.delete {
-      background: linear-gradient(135deg, #6b7280, #4b5563);
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
       color: white;
-      border-color: #4b5563;
+      border: 2px solid transparent;
     }
 
     .action-btn.delete:hover {
-      background: linear-gradient(135deg, #4b5563, #374151);
+      border-color: rgba(255, 255, 255, 0.3);
     }
 
     .badge-danger {
@@ -397,64 +564,59 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
     }
 
+    /* Responsive Design */
     @media (max-width: 768px) {
-      .table thead {
-        display: none;
-      }
-      
-      .table tbody tr {
-        display: block;
-        margin-bottom: 1rem;
+      .equipamentos {
         padding: 1rem;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e5e7eb;
       }
-      
-      .table tbody td {
-        display: block;
-        padding: 0.5rem 0;
-        border: none;
-        text-align: left;
+
+      .card-header {
+        flex-direction: column;
+        text-align: center;
       }
-      
-      .table tbody td:before {
-        content: attr(data-label) ": ";
-        font-weight: 700;
-        color: #dc2626;
-        margin-right: 0.5rem;
+
+      .form-row {
+        grid-template-columns: 1fr;
       }
-      
-      .table tbody td:first-child {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #dc2626;
-        border-bottom: 1px solid #e5e7eb;
-        padding-bottom: 0.75rem;
-        margin-bottom: 0.75rem;
+
+      .form-actions {
+        flex-direction: column;
       }
-      
+
+      .table {
+        font-size: 0.9rem;
+      }
+
+      .table th,
+      .table td {
+        padding: 0.75rem 0.5rem;
+      }
+
       .action-buttons {
-        flex-direction: row;
-        justify-content: flex-start;
-        margin-top: 1rem;
+        flex-direction: column;
+        gap: 0.25rem;
       }
-      
+
       .action-btn {
-        width: auto;
-        padding: 0.5rem 1rem;
+        padding: 0.4rem 0.6rem;
+        font-size: 0.75rem;
       }
     }
 
     @media (max-width: 480px) {
+      .table {
+        display: block;
+        overflow-x: auto;
+      }
+
       .action-buttons {
         flex-direction: column;
-        width: 100%;
+        align-items: center;
       }
-      
+
       .action-btn {
         width: 100%;
+        max-width: 200px;
         justify-content: center;
       }
     }

@@ -41,26 +41,44 @@ import html2canvas from 'html2canvas';
                 </select>
               </div>
               <div class="form-group">
-                <label for="data_inicio">Data Início *</label>
-                <input type="date" id="data_inicio" name="data_inicio" 
-                       [(ngModel)]="formData.data_inicio" required
-                       class="form-control">
+                <label for="observacoes">Observações</label>
+                <textarea id="observacoes" name="observacoes" 
+                          [(ngModel)]="formData.observacoes"
+                          class="form-control" rows="3" 
+                          placeholder="Endereço de entrega, observações especiais, condições de pagamento, etc..."></textarea>
+               
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label for="data_fim">Data Fim *</label>
-                <input type="date" id="data_fim" name="data_fim" 
-                       [(ngModel)]="formData.data_fim" required
+ <label for="data_inicio">📅 Data de Início *</label>
+                <input type="date" id="data_inicio" name="data_inicio" 
+                       [(ngModel)]="formData.data_inicio" required
+                       (ngModelChange)="onDateChange()"
                        class="form-control">
+                <small class="form-help">Data em que a locação deve começar</small>
+                
               </div>
               <div class="form-group">
-                <label for="observacoes">Observações</label>
-                <textarea id="observacoes" name="observacoes" 
-                          [(ngModel)]="formData.observacoes"
-                          class="form-control" rows="3" 
-                          placeholder="Observações sobre o orçamento..."></textarea>
+                <label for="data_fim">📅 Data de Fim *</label>
+                <input type="date" id="data_fim" name="data_fim" 
+                       [(ngModel)]="formData.data_fim" required
+                       (ngModelChange)="onDateChange()"
+                       class="form-control">
+                <small class="form-help">Data em que a locação deve terminar</small>
+              
+              </div>
+            </div>
+            
+            <div class="form-row" *ngIf="periodoCalculado">
+              <div class="form-group">
+                <label>📊 Período Calculado</label>
+                <div class="periodo-info">
+                  <span class="periodo-dias">{{ periodoCalculado.dias }} dias</span>
+                  <span class="periodo-tipo">({{ periodoCalculado.tipoCobranca }})</span>
+                </div>
+                <small class="form-help">Este período será aplicado automaticamente aos itens</small>
               </div>
             </div>
 
@@ -184,7 +202,7 @@ import html2canvas from 'html2canvas';
             </div>
             
             <div class="filter-group">
-              <button class="btn btn-secondary" (click)="clearFilters()">
+              <button class="btn btn-warning" (click)="clearFilters()">
                 🔄 Limpar Filtros
               </button>
             </div>
@@ -223,6 +241,10 @@ import html2canvas from 'html2canvas';
                     <button class="action-btn reject" (click)="rejeitarOrcamento(orcamento.id)" 
                             *ngIf="orcamento.status === 'pendente'" title="Rejeitar Orçamento">
                       ❌ Rejeitar
+                    </button>
+                    <button class="action-btn create-locacao" (click)="createLocacaoFromOrcamento(orcamento.id)" 
+                            *ngIf="orcamento.status === 'aprovado'" title="Criar Locação">
+                      📦 Criar Locação
                     </button>
                     <button class="action-btn view" (click)="viewOrcamento(orcamento)" title="Visualizar Detalhes">
                       👁️ Ver
@@ -274,6 +296,22 @@ import html2canvas from 'html2canvas';
             </div>
             <div class="info-row" *ngIf="selectedOrcamento?.observacoes">
               <strong>Observações:</strong> {{ selectedOrcamento?.observacoes }}
+            </div>
+            <div class="info-row" *ngIf="!selectedOrcamento?.observacoes">
+              <strong>Observações:</strong> <em>Nenhuma observação registrada</em>
+            </div>
+          </div>
+
+          <!-- Seção especial para orçamentos aprovados -->
+          <div class="aprovado-section" *ngIf="selectedOrcamento?.status === 'aprovado'">
+            <div class="aprovado-header">
+              <h4>🎉 Orçamento Aprovado!</h4>
+              <p>Este orçamento foi aprovado e está pronto para gerar o contrato de locação.</p>
+            </div>
+            <div class="aprovado-actions">
+              <button class="btn btn-primary btn-lg" (click)="createLocacaoFromOrcamento(selectedOrcamento?.id)">
+                📋 Gerar Contrato de Locação
+              </button>
             </div>
           </div>
 
@@ -341,40 +379,170 @@ import html2canvas from 'html2canvas';
     }
 
     .form-section {
-      background: #f9fafb;
-      padding: 1.5rem;
-      border-radius: 8px;
-      margin-top: 1rem;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      padding: 2rem;
+      border-radius: 20px;
+      margin-top: 1.5rem;
+      border: 2px solid rgba(220, 53, 69, 0.1);
+      box-shadow: 0 8px 32px rgba(220, 53, 69, 0.08);
     }
 
     .form-section h3 {
-      margin-top: 0;
+      color: #dc3545;
       margin-bottom: 1.5rem;
-      color: #374151;
+      font-size: 1.4rem;
+      font-weight: bold;
     }
 
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: #495057;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+    }
+
+    .form-control {
+      padding: 1rem 1.25rem;
+      border: 2px solid #e9ecef;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      color: #495057;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #dc3545;
+      box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .form-control:hover {
+      border-color: #dc3545;
+      box-shadow: 0 4px 16px rgba(220, 53, 69, 0.1);
+    }
+
+    .form-control::placeholder {
+      color: #adb5bd;
+      font-weight: 400;
+    }
+
+    .form-help {
+      font-size: 0.8rem;
+      color: #6c757d;
+      margin-top: 0.25rem;
+      font-style: italic;
+    }
+
+    .periodo-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+      border-radius: 12px;
+      border: 2px solid #2196f3;
+      margin-top: 0.5rem;
+    }
+
+    .periodo-dias {
+      font-weight: 700;
+      color: #1976d2;
+      font-size: 1.1rem;
+    }
+
+    .periodo-tipo {
+      font-weight: 600;
+      color: #1565c0;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .aprovado-section {
+      background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+      border: 2px solid #28a745;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      box-shadow: 0 8px 25px rgba(40, 167, 69, 0.15);
+    }
+
+    .aprovado-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .aprovado-header h4 {
+      color: #155724;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+      text-shadow: 0 2px 4px rgba(21, 87, 36, 0.2);
+    }
+
+    .aprovado-header p {
+      color: #155724;
+      font-size: 1rem;
+      margin: 0;
+      font-weight: 500;
+    }
+
+    .aprovado-actions {
+      display: flex;
+      justify-content: center;
+    }
+
+    .aprovado-actions .btn {
+      font-size: 1.1rem;
+      padding: 1rem 2rem;
+      min-width: 250px;
+      box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+    }
+
+    .aprovado-actions .btn:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 35px rgba(40, 167, 69, 0.4);
     }
 
     .items-section {
       margin-top: 2rem;
       padding-top: 1.5rem;
-      border-top: 1px solid #e5e7eb;
+      border-top: 2px solid rgba(220, 53, 69, 0.1);
     }
 
     .items-section h4 {
-      margin-bottom: 1rem;
-      color: #374151;
+      color: #dc3545;
+      margin-bottom: 1.5rem;
+      font-size: 1.2rem;
+      font-weight: bold;
     }
 
     .item-form {
       background: white;
-      padding: 1rem;
-      border-radius: 8px;
+      padding: 1.5rem;
+      border-radius: 16px;
       margin-bottom: 1rem;
+      border: 2px solid rgba(220, 53, 69, 0.1);
+      box-shadow: 0 4px 20px rgba(220, 53, 69, 0.05);
     }
 
     .items-list {
@@ -392,7 +560,124 @@ import html2canvas from 'html2canvas';
     .form-actions {
       display: flex;
       gap: 1rem;
-      margin-top: 1.5rem;
+      margin-top: 2rem;
+      justify-content: flex-end;
+    }
+
+    /* Botões globais */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
+      border: none;
+      border-radius: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.95rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      min-width: 120px;
+      justify-content: center;
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn:active {
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-success:hover {
+      background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-danger:hover {
+      background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+      color: #212529;
+      border: 2px solid transparent;
+    }
+
+    .btn-warning:hover {
+      background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%);
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-info {
+      background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .btn-info:hover {
+      background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-sm {
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      border-radius: 8px;
+    }
+
+    .btn-lg {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      border-radius: 16px;
     }
 
     .btn-sm {
@@ -555,42 +840,54 @@ import html2canvas from 'html2canvas';
     /* Filtros */
     .filters-section {
       display: flex;
-      gap: 1rem;
+      gap: 1.5rem;
       margin-bottom: 1.5rem;
-      padding: 1rem;
-      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
-      align-items: end;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 16px;
+      border: 2px solid rgba(220, 53, 69, 0.1);
+      box-shadow: 0 4px 20px rgba(220, 53, 69, 0.05);
       flex-wrap: wrap;
+      align-items: end;
     }
 
     .filter-group {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      min-width: 150px;
+      gap: 0.75rem;
+      min-width: 200px;
     }
 
     .filter-group label {
-      font-weight: 600;
-      color: #374151;
-      font-size: 0.875rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #495057;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .filter-group select {
-      padding: 0.5rem;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      border: 2px solid #e9ecef;
+      border-radius: 16px;
       background: white;
-      font-size: 0.875rem;
-      transition: all 0.3s ease;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      color: #495057;
     }
 
     .filter-group select:focus {
       outline: none;
-      border-color: #dc2626;
-      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+      border-color: #dc3545;
+      box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .filter-group select:hover {
+      border-color: #dc3545;
+      box-shadow: 0 4px 16px rgba(220, 53, 69, 0.1);
     }
 
     @media (max-width: 768px) {
@@ -612,57 +909,57 @@ import html2canvas from 'html2canvas';
     }
 
     .action-btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      white-space: nowrap;
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border: 2px solid transparent;
-      min-width: 80px;
-      justify-content: center;
+      padding: 0.625rem 1rem;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.85rem;
+      text-decoration: none;
+      white-space: nowrap;
+      min-width: fit-content;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .action-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
     }
 
     .action-btn.approve {
-      background: linear-gradient(135deg, #10b981, #059669);
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
       color: white;
-      border-color: #059669;
-    }
-
-    .action-btn.approve:hover {
-      background: linear-gradient(135deg, #059669, #047857);
     }
 
     .action-btn.reject {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
       color: white;
-      border-color: #dc2626;
-    }
-
-    .action-btn.reject:hover {
-      background: linear-gradient(135deg, #dc2626, #b91c1c);
     }
 
     .action-btn.view {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: white;
-      border-color: #d97706;
+      background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+      color: #212529;
+      border: 2px solid transparent;
     }
 
     .action-btn.view:hover {
-      background: linear-gradient(135deg, #d97706, #b45309);
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .action-btn.create-locacao {
+      background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .action-btn.create-locacao:hover {
+      border-color: rgba(255, 255, 255, 0.3);
     }
 
     .item-card {
@@ -1045,6 +1342,7 @@ export class OrcamentosComponent implements OnInit {
   showViewModal = false;
   selectedMonth: string = '';
   selectedYear: string = '';
+  periodoCalculado: { dias: number; tipoCobranca: string } | null = null;
   formData: OrcamentoCreate = {
     cliente_id: 0,
     data_inicio: '',
@@ -1077,6 +1375,60 @@ export class OrcamentosComponent implements OnInit {
 
   convertToNumber(value: any): number {
     return Number(value);
+  }
+
+  onDateChange() {
+    if (this.formData.data_inicio && this.formData.data_fim) {
+      const dataInicio = new Date(this.formData.data_inicio);
+      const dataFim = new Date(this.formData.data_fim);
+      
+      if (dataFim > dataInicio) {
+        const diffTime = dataFim.getTime() - dataInicio.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
+        let tipoCobranca = 'diaria';
+        if (diffDays >= 60) { // 2 meses ou mais
+          tipoCobranca = 'mensal';
+        } else if (diffDays >= 30) { // 1 mês ou mais
+          tipoCobranca = 'mensal';
+        }
+        
+        this.periodoCalculado = {
+          dias: diffDays,
+          tipoCobranca: tipoCobranca
+        };
+        
+        // Aplicar automaticamente aos itens existentes
+        this.aplicarPeriodoCalculado();
+      } else {
+        this.periodoCalculado = null;
+      }
+    } else {
+      this.periodoCalculado = null;
+    }
+  }
+
+  aplicarPeriodoCalculado() {
+    if (this.periodoCalculado) {
+      // Aplicar aos itens existentes
+      this.formData.itens.forEach(item => {
+        item.dias = this.periodoCalculado!.dias;
+        item.tipo_cobranca = this.periodoCalculado!.tipoCobranca as 'diaria' | 'mensal';
+        
+        // Recalcular subtotal
+        const equipamento = this.equipamentos.find(e => e.id === item.equipamento_id);
+        if (equipamento) {
+          // Para simplificar, usamos o preço unitário base
+          // Em uma implementação real, você teria preços diferentes para diária/mensal
+          item.preco_unitario = equipamento.preco_unitario;
+          item.subtotal = item.quantidade * item.dias * equipamento.preco_unitario;
+        }
+      });
+      
+      // Aplicar ao novo item
+      this.newItem.dias = this.periodoCalculado!.dias;
+      this.newItem.tipo_cobranca = this.periodoCalculado!.tipoCobranca as 'diaria' | 'mensal';
+    }
   }
 
   loadData() {
@@ -1248,12 +1600,28 @@ export class OrcamentosComponent implements OnInit {
 
   aprovarOrcamento(id: number) {
     this.orcamentoService.aprovarOrcamento(id).subscribe(() => {
+      // Primeiro atualizar o orçamento localmente
+      const orcamentoIndex = this.orcamentos.findIndex(o => o.id === id);
+      if (orcamentoIndex !== -1) {
+        this.orcamentos[orcamentoIndex].status = 'aprovado';
+        this.selectedOrcamento = this.orcamentos[orcamentoIndex];
+        this.showViewModal = true;
+      }
+      
+      // Depois recarregar os dados para sincronizar com o servidor
       this.loadData();
     });
   }
 
   rejeitarOrcamento(id: number) {
     this.orcamentoService.rejeitarOrcamento(id).subscribe(() => {
+      // Atualizar o orçamento localmente
+      const orcamentoIndex = this.orcamentos.findIndex(o => o.id === id);
+      if (orcamentoIndex !== -1) {
+        this.orcamentos[orcamentoIndex].status = 'rejeitado';
+      }
+      
+      // Recarregar os dados para sincronizar com o servidor
       this.loadData();
     });
   }
@@ -1266,6 +1634,26 @@ export class OrcamentosComponent implements OnInit {
   closeViewModal() {
     this.showViewModal = false;
     this.selectedOrcamento = null;
+  }
+
+  createLocacaoFromOrcamento(orcamentoId: number | undefined) {
+    if (!orcamentoId) return;
+    
+    this.locacaoService.createLocacaoFromOrcamento(orcamentoId).subscribe({
+      next: (response) => {
+        console.log('Locação criada com sucesso:', response);
+        // Recarregar dados
+        this.loadData();
+        // Fechar modal
+        this.closeViewModal();
+        // Mostrar mensagem de sucesso (você pode implementar um toast/notification)
+        alert('Locação criada com sucesso!');
+      },
+      error: (error) => {
+        console.error('Erro ao criar locação:', error);
+        alert('Erro ao criar locação. Tente novamente.');
+      }
+    });
   }
 
   exportToXLSX() {
