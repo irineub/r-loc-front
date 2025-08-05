@@ -1,8 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LocacaoService } from '../../services/locacao.service';
-import { OrcamentoService } from '../../services/orcamento.service';
-import { Locacao, Orcamento } from '../../models/index';
+import { Locacao } from '../../models/index';
 
 @Component({
   selector: 'app-locacoes',
@@ -13,51 +12,10 @@ import { Locacao, Orcamento } from '../../models/index';
       <div class="card">
         <div class="card-header">
           <h2 class="card-title">🏢 Gestão de Locações</h2>
-          <button class="btn btn-primary" (click)="showOrcamentosAprovados = true" *ngIf="!showOrcamentosAprovados">
-            <span>📦</span> Criar Locação
-          </button>
-        </div>
-
-        <!-- Orçamentos Aprovados for Creating Locação -->
-        <div class="form-section" *ngIf="showOrcamentosAprovados">
-          <h3>📋 Criar Locação a partir de Orçamento Aprovado</h3>
-          <div class="table-section">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Cliente</th>
-                  <th>Período</th>
-                  <th>Total</th>
-                  <th>Data Aprovação</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let orcamento of orcamentosAprovados">
-                  <td data-label="ID">{{ orcamento.id }}</td>
-                  <td data-label="Cliente">{{ orcamento.cliente.nome_razao_social || 'Cliente não encontrado' }}</td>
-                  <td data-label="Período">{{ orcamento.data_inicio | date:'dd/MM/yyyy' }} - {{ orcamento.data_fim | date:'dd/MM/yyyy' }}</td>
-                  <td data-label="Total">R$ {{ orcamento.total_final | number:'1.2-2' }}</td>
-                  <td data-label="Data Aprovação">{{ orcamento.data_criacao | date:'dd/MM/yyyy' }}</td>
-                  <td data-label="Ações">
-                    <button class="btn btn-success btn-sm" (click)="createLocacao(orcamento.id)">
-                      📦 Criar Locação
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="form-actions">
-              <button type="button" class="btn btn-secondary" (click)="showOrcamentosAprovados = false">
-                Cancelar
-              </button>
-            </div>
-          </div>
         </div>
 
         <!-- Locações List -->
-        <div class="table-section" *ngIf="!showOrcamentosAprovados">
+        <div class="table-section">
           <div class="filters-container">
             <div class="filters">
               <button class="filter-btn" (click)="filterStatus = ''" [class.active]="filterStatus === ''">
@@ -790,15 +748,12 @@ import { Locacao, Orcamento } from '../../models/index';
 })
 export class LocacoesComponent implements OnInit {
   locacoes: Locacao[] = [];
-  orcamentosAprovados: Orcamento[] = [];
-  showOrcamentosAprovados = false;
   filterStatus = '';
   selectedLocacao: Locacao | null = null;
   showViewModal = false;
 
   constructor(
-    private locacaoService: LocacaoService,
-    private orcamentoService: OrcamentoService
+    private locacaoService: LocacaoService
   ) {}
 
   ngOnInit() {
@@ -806,19 +761,8 @@ export class LocacoesComponent implements OnInit {
   }
 
   loadData() {
-    // Carregar locações primeiro
     this.locacaoService.getLocacoes().subscribe(locacoes => {
       this.locacoes = locacoes;
-      
-      // Depois carregar orçamentos aprovados e filtrar
-      this.orcamentoService.getOrcamentosAprovados().subscribe(orcamentos => {
-        // Filtrar apenas orçamentos aprovados que não têm locação criada
-        this.orcamentosAprovados = orcamentos.filter(orcamento => {
-          // Verificar se já existe uma locação para este orçamento
-          const hasLocacao = this.locacoes.some(locacao => locacao.orcamento_id === orcamento.id);
-          return !hasLocacao;
-        });
-      });
     });
   }
 
@@ -829,41 +773,7 @@ export class LocacoesComponent implements OnInit {
     return this.locacoes.filter(locacao => locacao.status === this.filterStatus);
   }
 
-  createLocacao(orcamentoId: number) {
-    // Verificar se o orçamento está aprovado
-    const orcamento = this.orcamentosAprovados.find(o => o.id === orcamentoId);
-    if (!orcamento) {
-      alert('Orçamento não encontrado ou não está aprovado.');
-      return;
-    }
 
-    if (orcamento.status !== 'aprovado') {
-      alert('Apenas orçamentos aprovados podem gerar locações. Status atual: ' + orcamento.status);
-      return;
-    }
-
-    this.locacaoService.createLocacaoFromOrcamento(orcamentoId).subscribe({
-      next: () => {
-        alert('Locação criada com sucesso!');
-        this.loadData(); // Recarregar dados para atualizar listas
-        this.showOrcamentosAprovados = false;
-      },
-      error: (error) => {
-        console.error('Erro ao criar locação:', error);
-        let errorMessage = 'Erro ao criar locação.';
-        
-        if (error.status === 422) {
-          errorMessage = 'Orçamento não está aprovado ou já possui uma locação.';
-        } else if (error.status === 500) {
-          errorMessage = 'Erro interno do servidor. Tente novamente.';
-        } else if (error.status === 0) {
-          errorMessage = 'Erro de conexão. Verifique se o servidor está rodando.';
-        }
-        
-        alert(errorMessage);
-      }
-    });
-  }
 
   finalizarLocacao(id: number) {
     if (confirm('Tem certeza que deseja finalizar esta locação?')) {

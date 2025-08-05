@@ -1498,12 +1498,13 @@ export class OrcamentosComponent implements OnInit {
       this.formData.itens.push({ ...this.newItem });
       this.formData.total_final = this.calculateTotal();
       
+      // Reset do newItem mantendo o período calculado
       this.newItem = {
         equipamento_id: 0,
         quantidade: 1,
         preco_unitario: 0,
-        dias: 1,
-        tipo_cobranca: 'diaria',
+        dias: this.periodoCalculado ? this.periodoCalculado.dias : 1,
+        tipo_cobranca: this.periodoCalculado ? (this.periodoCalculado.tipoCobranca as 'diaria' | 'mensal') : 'diaria',
         subtotal: 0
       };
       console.log('Item added successfully');

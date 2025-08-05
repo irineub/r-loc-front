@@ -20,7 +20,12 @@ export class LoginComponent {
   constructor(
     private router: Router,
     private authService: AuthService
-  ) {}
+  ) {
+    // Verificar se já está logado e redirecionar
+    if (this.authService.isSessionValid()) {
+      this.router.navigate(['/dashboard']);
+    }
+  }
 
   async onLogin() {
     this.isLoading = true;

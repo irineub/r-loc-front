@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from './services/auth.service';
 import { Subscription } from 'rxjs';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-root',
@@ -16,8 +17,12 @@ export class AppComponent implements OnInit, OnDestroy {
   currentUser = '';
   private authSubscription?: Subscription;
   private userSubscription?: Subscription;
+  private sessionCheckInterval?: any;
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     this.authSubscription = this.authService.isAuthenticated$.subscribe(
@@ -27,11 +32,22 @@ export class AppComponent implements OnInit, OnDestroy {
     this.userSubscription = this.authService.currentUser$.subscribe(
       user => this.currentUser = user
     );
+
+    // Verificar expiração da sessão a cada minuto
+    this.sessionCheckInterval = setInterval(() => {
+      if (this.isAuthenticated && !this.authService.isSessionValid()) {
+        this.authService.logout();
+        this.router.navigate(['/login']);
+      }
+    }, 60000); // 1 minuto
   }
 
   ngOnDestroy() {
     this.authSubscription?.unsubscribe();
     this.userSubscription?.unsubscribe();
+    if (this.sessionCheckInterval) {
+      clearInterval(this.sessionCheckInterval);
+    }
   }
 
   logout() {
