@@ -58,7 +58,6 @@ export interface Equipamento {
   descricao: string;
   unidade: string;
   preco_unitario: number;
-  tipo_cobranca: 'diaria' | 'mensal';
   estoque: number;
   estoque_alugado: number;
   estoque_disponivel: number;
@@ -68,7 +67,6 @@ export interface EquipamentoCreate {
   descricao: string;
   unidade: string;
   preco_unitario: number;
-  tipo_cobranca: 'diaria' | 'mensal';
   estoque: number;
 }
 
@@ -76,7 +74,6 @@ export interface EquipamentoUpdate {
   descricao?: string;
   unidade?: string;
   preco_unitario?: number;
-  tipo_cobranca?: 'diaria' | 'mensal';
   estoque?: number;
 }
 

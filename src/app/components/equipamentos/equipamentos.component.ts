@@ -44,16 +44,6 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
                        [(ngModel)]="formData.preco_unitario" required min="0" step="0.01"
                        class="form-control" placeholder="0.00">
               </div>
-              <div class="form-group">
-                <label for="tipo_cobranca">Tipo de Cobrança *</label>
-                <select id="tipo_cobranca" name="tipo_cobranca" 
-                        [(ngModel)]="formData.tipo_cobranca" required
-                        class="form-control">
-                  <option value="">Selecione...</option>
-                  <option value="diaria">Diária</option>
-                  <option value="mensal">Mensal</option>
-                </select>
-              </div>
             </div>
 
             <div class="form-row">
@@ -476,7 +466,6 @@ export class EquipamentosComponent implements OnInit {
     descricao: '',
     unidade: '',
     preco_unitario: 0,
-    tipo_cobranca: 'diaria',
     estoque: 1
   };
 
@@ -525,7 +514,6 @@ export class EquipamentosComponent implements OnInit {
       descricao: equipamento.descricao,
       unidade: equipamento.unidade,
       preco_unitario: equipamento.preco_unitario,
-      tipo_cobranca: equipamento.tipo_cobranca,
       estoque: equipamento.estoque
     };
     this.showForm = true;
@@ -551,7 +539,6 @@ export class EquipamentosComponent implements OnInit {
       descricao: '',
       unidade: '',
       preco_unitario: 0,
-      tipo_cobranca: 'diaria',
       estoque: 1
     };
   }
