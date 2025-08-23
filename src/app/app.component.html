@@ -15,7 +15,6 @@
       
       <!-- Navegação principal -->
       <nav class="nav" [class.mobile-open]="isMobileMenuOpen">
-        <div class="nav-overlay" (click)="closeMobileMenu()"></div>
         <div class="nav-content">
           <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeMobileMenu()">
             📊 Dashboard
@@ -40,6 +39,9 @@
           </div>
         </div>
       </nav>
+      
+      <!-- Overlay separado para mobile -->
+      <div class="nav-overlay" (click)="closeMobileMenu()" *ngIf="isMobileMenuOpen"></div>
     </div>
   </header>
 
