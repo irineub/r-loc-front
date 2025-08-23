@@ -15,6 +15,7 @@ import { Router } from '@angular/router';
 export class AppComponent implements OnInit, OnDestroy {
   isAuthenticated = false;
   currentUser = '';
+  isMobileMenuOpen = false;
   private authSubscription?: Subscription;
   private userSubscription?: Subscription;
   private sessionCheckInterval?: any;
@@ -53,5 +54,13 @@ export class AppComponent implements OnInit, OnDestroy {
   logout() {
     this.authService.logout();
     window.location.href = '/login';
+  }
+
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  closeMobileMenu() {
+    this.isMobileMenuOpen = false;
   }
 }

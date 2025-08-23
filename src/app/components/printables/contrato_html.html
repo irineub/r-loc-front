@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Contrato de Locação</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1.2cm;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 10pt;
+      color: #000;
+      margin: 0;
+      padding: 0;
+      line-height: 1.3;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .header img {
+      max-height: 50px;
+      margin-bottom: 6px;
+    }
+
+    .header h1 {
+      font-size: 13pt;
+      margin: 0;
+      line-height: 1.1;
+      font-weight: bold;
+    }
+
+    .header h2 {
+      font-size: 9pt;
+      margin: 0;
+      font-weight: normal;
+      line-height: 1.1;
+    }
+
+    .info {
+      margin: 10px 0;
+    }
+
+    .info p {
+      margin: 1px 0;
+      page-break-inside: avoid;
+      orphans: 3;
+      widows: 3;
+      word-break: keep-all;
+      line-height: 1.2;
+      font-size: 9pt;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 9pt;
+    }
+
+    table, th, td {
+      border: 1px solid #000;
+    }
+
+    th, td {
+      padding: 3px 4px;
+      text-align: left;
+      line-height: 1.1;
+      vertical-align: top;
+    }
+
+    th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+
+    .section-title {
+      font-weight: bold;
+      margin-top: 10px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      page-break-before: auto;
+      page-break-after: avoid;
+      font-size: 10pt;
+      line-height: 1.1;
+      border-bottom: 1px solid #000;
+      padding-bottom: 2px;
+    }
+
+    .assinaturas-container {
+      margin-top: 25px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .assinaturas {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    .assinaturas:last-child {
+      margin-bottom: 0;
+    }
+
+    .assinaturas div {
+      width: 45%;
+      text-align: center;
+    }
+
+    .assinaturas p {
+      margin: 3px 0;
+      line-height: 1.1;
+      font-size: 9pt;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 9pt;
+    }
+
+    /* Regras para evitar quebras inadequadas */
+    .no-break {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .keep-together {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* Evitar quebras em títulos e seções importantes */
+    h1, h2, h3, h4, h5, h6 {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    /* Evitar quebras em parágrafos importantes */
+    .important-text {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      orphans: 3;
+      widows: 3;
+    }
+
+    /* Melhorar espaçamento geral */
+    p {
+      margin: 4px 0;
+      page-break-inside: avoid;
+      orphans: 3;
+      widows: 3;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+      line-height: 1.2;
+    }
+
+    /* Proteger seções importantes */
+    .section-title + p {
+      page-break-before: avoid;
+      page-break-after: avoid;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+
+    /* Melhorar quebra de linha */
+    .section-title {
+      page-break-after: avoid;
+      break-after: avoid;
+      margin-bottom: 4px;
+    }
+
+    /* Proteger valores e totais */
+    .total, .valor {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      margin: 8px 0;
+      font-weight: bold;
+    }
+
+    /* Estilo para valores */
+    .valor-info {
+      margin: 6px 0;
+      font-weight: bold;
+    }
+
+    /* Otimizações para impressão */
+    @media print {
+      body {
+        font-size: 9pt;
+        line-height: 1.2;
+      }
+      
+      .header {
+        margin-bottom: 8px;
+      }
+      
+      .header img {
+        max-height: 45px;
+        margin-bottom: 4px;
+      }
+      
+      .header h1 {
+        font-size: 12pt;
+      }
+      
+      .header h2 {
+        font-size: 8pt;
+      }
+      
+      .info {
+        margin: 6px 0;
+      }
+      
+      .info p {
+        margin: 0px 0;
+        font-size: 8pt;
+      }
+      
+      .section-title {
+        margin-top: 6px;
+        margin-bottom: 3px;
+        font-size: 9pt;
+      }
+      
+      p {
+        margin: 3px 0;
+      }
+      
+      table {
+        margin: 6px 0;
+        font-size: 8pt;
+      }
+      
+      th, td {
+        padding: 2px 3px;
+      }
+      
+      .assinaturas-container {
+        margin-top: 15px;
+      }
+      
+      .assinaturas {
+        margin-bottom: 10px;
+      }
+      
+      .assinaturas p {
+        font-size: 8pt;
+      }
+      
+      .footer {
+        margin-top: 12px;
+        font-size: 8pt;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <img src="/logo-r-loc.jpg" alt="R-Loc" style="max-height: 50px; margin-bottom: 6px;">
+      <h1>CONTRATO DE LOCAÇÃO DE BEM MÓVEL</h1>
+      <h2>SEM SEÇÃO DE MÃO-DE-OBRA</h2>
+    </div>
+
+    <div class="info">
+      <p><strong>Contrato:</strong> 3536</p>
+      <p><strong>Data:</strong> 14/08/2025</p>
+      <p><strong>Locatário:</strong> ASSOCIAÇÃO PARA O DESENVOLVIMENTO COESIVO DA AMAZONIA</p>
+      <p><strong>Endereço:</strong> Rua Leonora Armstrong, 9 - Gilberto Mestrinho</p>
+      <p><strong>CNPJ:</strong> 05.555.099/0001-01</p>
+      <p><strong>Locadora:</strong> JR Pinto</p>
+      <p><strong>Endereço:</strong> Rua Indio Ajuricaba, 1 - Gilberto Mestrinho / Manaus-AM</p>
+      <p><strong>CNPJ:</strong> 09.181.720/0001-75</p>
+      <p><strong>Telefone:</strong> (92) 99153-4302 / 99457-0101</p>
+    </div>
+
+    <p class="section-title">OBJETIVO DO CONTRATO</p>
+    <p>O presente instrumento tem por objetivo a locação dos equipamentos abaixo:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Material</th>
+          <th>Valor Base</th>
+          <th>Qtd</th>
+          <th>Data Início</th>
+          <th>Data Fim</th>
+          <th>Dias</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>TALHA PATENTE 2 TONELADAS</td>
+          <td>R$ 100,00</td>
+          <td>1</td>
+          <td>14/08/2025</td>
+          <td>19/08/2025</td>
+          <td>5</td>
+          <td>R$ 500,00</td>
+        </tr>
+        <tr>
+          <td>BETONEIRA 400L MOTOR TRIFÁSICO 220V</td>
+          <td>R$ 1.200,00</td>
+          <td>1</td>
+          <td>14/08/2025</td>
+          <td>19/08/2025</td>
+          <td>5</td>
+          <td>R$ 200,00</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="valor-info">
+      <p><strong>Desconto:</strong> 0% | <strong>Frete:</strong> R$ 0,00</p>
+      <p><strong>Total:</strong> R$ 700,00</p>
+    </div>
+
+    <p class="section-title">OBRIGAÇÕES DA LOCADORA</p>
+    <p>A LOCADORA entregará a LOCATÁRIA os equipamentos objeto desta locação no local indicado, testado e em perfeito estado de conservação e de uso.</p>
+    <p><strong>OBS:</strong> A LOCADORA não se responsabiliza por danos elétricos.</p>
+
+    <p class="section-title">OBRIGAÇÕES DA LOCATÁRIA</p>
+    <p>A LOCATÁRIA após o término da locação entrará em contato com a LOCADORA para que sejam devolvidos os equipamentos, nas mesmas condições recebidas.</p>
+    <p>É vedado à LOCATÁRIA emprestar, arrendar ou sublocar os equipamentos locados, bem como transferi-los para outro local que não seja de sua propriedade.</p>
+
+    <p class="section-title">PRAZO</p>
+    <p>O prazo de locação é de 14/08/2025 a 19/08/2025, podendo ser prorrogado.</p>
+
+    <p class="section-title">VALOR</p>
+    <p>O valor total da presente locação é de R$ 700,00</p>
+
+    <div class="no-break">
+      <p class="section-title">FORMA DE PAGAMENTO</p>
+      <p>O pagamento deve ser efetuado no ato da emissão do contrato.</p>
+    </div>
+
+    <div class="no-break">
+      <p class="section-title">FORO</p>
+      <p>Fica eleito o Fórum da Comarca de Manaus para dirimir quaisquer dúvidas decorrentes deste contrato.</p>
+    </div>
+
+    <div class="footer">
+      <p>Manaus, 14 de Agosto de 2025</p>
+    </div>
+
+    <div class="assinaturas-container">
+      <div class="assinaturas">
+        <div>
+          <p><strong>LOCADORA</strong></p>
+          <p>JR PINTO</p>
+          <p>CNPJ: 09.181.720/0001-75</p>
+        </div>
+        <div>
+          <p><strong>LOCATÁRIA</strong></p>
+          <p>ASSOCIAÇÃO PARA O DESENVOLVIMENTO COESIVO DA AMAZONIA</p>
+          <p>CNPJ: 05.555.099/0001-01</p>
+        </div>
+      </div>
+
+      <div class="assinaturas">
+        <div>
+          <p><strong>TESTEMUNHA 1</strong></p>
+          <p>Nome: ________________________</p>
+          <p>CPF: _________________________</p>
+        </div>
+        <div>
+          <p><strong>TESTEMUNHA 2</strong></p>
+          <p>Nome: ________________________</p>
+          <p>CPF: _________________________</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

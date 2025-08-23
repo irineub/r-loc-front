@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Recibo</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1.2cm;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 10pt;
+      color: #000;
+      margin: 0;
+      padding: 0;
+      line-height: 1.3;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .header img {
+      max-height: 50px;
+      margin-bottom: 6px;
+    }
+
+    .header h1 {
+      font-size: 13pt;
+      margin: 0;
+      line-height: 1.1;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .info {
+      margin: 10px 0;
+    }
+
+    .info p {
+      margin: 1px 0;
+      page-break-inside: avoid;
+      orphans: 3;
+      widows: 3;
+      word-break: keep-all;
+      line-height: 1.2;
+      font-size: 9pt;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 9pt;
+    }
+
+    table, th, td {
+      border: 1px solid #000;
+    }
+
+    th, td {
+      padding: 3px 4px;
+      text-align: left;
+      line-height: 1.1;
+      vertical-align: top;
+    }
+
+    th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+
+    .total {
+      margin-top: 10px;
+      font-weight: bold;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .total p {
+      margin: 3px 0;
+      font-size: 9pt;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .observacao {
+      margin-top: 15px;
+      font-size: 9pt;
+      border: 1px solid #000;
+      padding: 8px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .observacao p {
+      margin: 2px 0;
+      line-height: 1.2;
+    }
+
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 9pt;
+    }
+
+    /* Melhorar espaçamento geral */
+    p {
+      margin: 4px 0;
+      page-break-inside: avoid;
+      orphans: 3;
+      widows: 3;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+      line-height: 1.2;
+    }
+
+    /* Proteger valores e totais */
+    .total {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      margin: 8px 0;
+    }
+
+    /* Otimizações para impressão */
+    @media print {
+      body {
+        font-size: 9pt;
+        line-height: 1.2;
+      }
+      
+      .header {
+        margin-bottom: 8px;
+      }
+      
+      .header img {
+        max-height: 45px;
+        margin-bottom: 4px;
+      }
+      
+      .header h1 {
+        font-size: 12pt;
+      }
+      
+      .info {
+        margin: 6px 0;
+      }
+      
+      .info p {
+        margin: 0px 0;
+        font-size: 8pt;
+      }
+      
+      p {
+        margin: 3px 0;
+      }
+      
+      table {
+        margin: 6px 0;
+        font-size: 8pt;
+      }
+      
+      th, td {
+        padding: 2px 3px;
+      }
+      
+      .total {
+        margin-top: 6px;
+      }
+      
+      .total p {
+        font-size: 8pt;
+      }
+      
+      .observacao {
+        margin-top: 10px;
+        font-size: 8pt;
+        padding: 6px;
+      }
+      
+      .footer {
+        margin-top: 12px;
+        font-size: 8pt;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <img src="/logo-r-loc.jpg" alt="R-Loc" style="max-height: 50px; margin-bottom: 6px;">
+      <h1>RECIBO</h1>
+    </div>
+
+    <div class="info">
+      <p><strong>N. Recibo:</strong> 3536</p>
+      <p><strong>Data:</strong> 14/08/2025</p>
+      <p><strong>Locatário:</strong> ASSOCIAÇÃO PARA O DESENVOLVIMENTO COESIVO DA AMAZONIA</p>
+      <p><strong>Endereço:</strong> Rua Leonora Armstrong, 9 - Gilberto Mestrinho</p>
+      <p><strong>CNPJ:</strong> 05.555.099/0001-01</p>
+      <p><strong>Locadora:</strong> JR Pinto</p>
+      <p><strong>Endereço:</strong> Rua Indio Ajuricaba, 1 - Gilberto Mestrinho / Manaus-AM</p>
+      <p><strong>CNPJ:</strong> 09.181.720/0001-75</p>
+      <p><strong>Telefone:</strong> (92) 99153-4302 / 99457-0101</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Material</th>
+          <th>Valor Base</th>
+          <th>Qtd</th>
+          <th>Data Início</th>
+          <th>Data Fim</th>
+          <th>Dias</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>TALHA PATENTE 2 TONELADAS</td>
+          <td>R$ 100,00</td>
+          <td>1</td>
+          <td>14/08/2025</td>
+          <td>19/08/2025</td>
+          <td>5</td>
+          <td>R$ 500,00</td>
+        </tr>
+        <tr>
+          <td>BETONEIRA 400L MOTOR TRIFÁSICO 220V</td>
+          <td>R$ 1.200,00</td>
+          <td>1</td>
+          <td>14/08/2025</td>
+          <td>19/08/2025</td>
+          <td>5</td>
+          <td>R$ 200,00</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="total">
+      <p><strong>Total:</strong> R$ 700,00</p>
+      <p><strong>Desconto:</strong> 0%</p>
+      <p><strong>Frete:</strong> R$ 0,00</p>
+    </div>
+
+    <div class="observacao">
+      <p><strong>OBSERVAÇÃO:</strong></p>
+      <p>DE ACORDO COM O DECRETO N.0043 DA PMM, DE 04 DE MARÇO DE 2009 PARÁGRAFO 2° - PARA LOCAÇÃO DE BENS MÓVEIS SEM FORNECIMENTO DE MÃO-DE-OBRA, O SISTEMA NFS-E INABILITARÁ O SUBITEM 03.01.1 - LOCAÇÃO DE BENS MÓVEIS, COM INDICAÇÃO DE QUE TAL OPERAÇÃO ESTÁ DISPENSADA DA EMISSÃO DE DOCUMENTO FISCAL, EM VIRTUDE DA NÃO-INCIDÊNCIA DO ISS. EM SUBSTITUIÇÃO EMITIMOS ESTE RECIBO.</p>
+    </div>
+
+    <div class="footer">
+      <p>Manaus, 14 de Agosto de 2025</p>
+    </div>
+
+  </div>
+</body>
+</html>

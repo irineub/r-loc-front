@@ -1,7 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LocacaoService } from '../../services/locacao.service';
-import { Locacao } from '../../models/index';
+import { EquipamentoService } from '../../services/equipamento.service';
+import { PrintableService } from '../../services/printable.service';
+import { NavigationService } from '../../services/navigation.service';
+import { Locacao, Equipamento } from '../../models/index';
 
 @Component({
   selector: 'app-locacoes',
@@ -155,6 +158,12 @@ import { Locacao } from '../../models/index';
         </div>
 
         <div class="modal-footer">
+          <button class="btn btn-primary" (click)="exportToReciboPDF()">
+            📄 Recibo PDF
+          </button>
+          <button class="btn btn-warning" (click)="exportToContratoPDF()">
+            📜 Contrato PDF
+          </button>
           <button class="btn btn-secondary" (click)="closeViewModal()">
             Fechar
           </button>
@@ -748,21 +757,45 @@ import { Locacao } from '../../models/index';
 })
 export class LocacoesComponent implements OnInit {
   locacoes: Locacao[] = [];
+  equipamentos: Equipamento[] = [];
   filterStatus = '';
   selectedLocacao: Locacao | null = null;
   showViewModal = false;
 
   constructor(
-    private locacaoService: LocacaoService
+    private locacaoService: LocacaoService,
+    private equipamentoService: EquipamentoService,
+    private printableService: PrintableService,
+    private navigationService: NavigationService
   ) {}
 
   ngOnInit() {
     this.loadData();
+    
+    // Verificar se deve abrir modal de locação
+    this.navigationService.getNavigationState().subscribe(state => {
+      if (state.shouldOpenLocacaoModal && state.locacaoId) {
+        // Aguardar um pouco para os dados serem carregados
+        setTimeout(() => {
+          const locacao = this.locacoes.find(l => l.id === state.locacaoId);
+          if (locacao) {
+            this.viewLocacao(locacao);
+          }
+          // Limpar o estado
+          this.navigationService.clearNavigationState();
+        }, 500);
+      }
+    });
   }
 
   loadData() {
     this.locacaoService.getLocacoes().subscribe(locacoes => {
       this.locacoes = locacoes;
+    });
+
+    this.equipamentoService.getEquipamentos().subscribe(equipamentos => {
+      this.equipamentos = equipamentos;
+      this.printableService.setEquipamentos(equipamentos);
     });
   }
 
@@ -808,5 +841,43 @@ export class LocacoesComponent implements OnInit {
       return item?.equipamento?.descricao || 'Equipamento não encontrado';
     }
     return 'Equipamento não encontrado';
+  }
+
+
+
+  // Exportar recibo como PDF
+  exportToReciboPDF() {
+    if (!this.selectedLocacao) {
+      alert('Nenhuma locação selecionada');
+      return;
+    }
+
+    try {
+      const html = this.printableService.generateReciboHTML(this.selectedLocacao);
+      const filename = `recibo_${this.selectedLocacao.id}_${new Date().toISOString().split('T')[0]}`;
+      this.printableService.exportToPDF(html, filename);
+    } catch (error) {
+      console.error('Erro ao exportar recibo:', error);
+      alert('Erro ao exportar recibo. Tente novamente.');
+    }
+  }
+
+
+
+  // Exportar contrato como PDF
+  exportToContratoPDF() {
+    if (!this.selectedLocacao) {
+      alert('Nenhuma locação selecionada');
+      return;
+    }
+
+    try {
+      const html = this.printableService.generateContratoHTML(this.selectedLocacao);
+      const filename = `contrato_${this.selectedLocacao.id}_${new Date().toISOString().split('T')[0]}`;
+      this.printableService.exportToPDF(html, filename);
+    } catch (error) {
+      console.error('Erro ao exportar contrato:', error);
+      alert('Erro ao exportar contrato. Tente novamente.');
+    }
   }
 } 

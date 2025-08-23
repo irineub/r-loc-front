@@ -5,27 +5,39 @@
         <img src="/logo-r-loc.jpg" alt="R-Loc Logo" class="logo">
         <div class="brand-name">R-Loc</div>
       </div>
-      <nav class="nav">
-        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-          📊 Dashboard
-        </a>
-        <a routerLink="/clientes" routerLinkActive="active">
-          👥 Clientes
-        </a>
-        <a routerLink="/equipamentos" routerLinkActive="active">
-          🔧 Equipamentos
-        </a>
-        <a routerLink="/orcamentos" routerLinkActive="active">
-          📋 Orçamentos
-        </a>
-        <a routerLink="/locacoes" routerLinkActive="active">
-          📦 Locações
-        </a>
-        <div class="user-section">
-          <span class="user-info">👤 {{ currentUser }}</span>
-          <button class="btn btn-secondary btn-sm logout-btn" (click)="logout()">
-            🚪 Sair
-          </button>
+      
+      <!-- Menu hambúrguer (apenas mobile) -->
+      <button class="menu-toggle" (click)="toggleMobileMenu()" [class.active]="isMobileMenuOpen">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <!-- Navegação principal -->
+      <nav class="nav" [class.mobile-open]="isMobileMenuOpen">
+        <div class="nav-overlay" (click)="closeMobileMenu()"></div>
+        <div class="nav-content">
+          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeMobileMenu()">
+            📊 Dashboard
+          </a>
+          <a routerLink="/clientes" routerLinkActive="active" (click)="closeMobileMenu()">
+            👥 Clientes
+          </a>
+          <a routerLink="/equipamentos" routerLinkActive="active" (click)="closeMobileMenu()">
+            🔧 Equipamentos
+          </a>
+          <a routerLink="/orcamentos" routerLinkActive="active" (click)="closeMobileMenu()">
+            📋 Orçamentos
+          </a>
+          <a routerLink="/locacoes" routerLinkActive="active" (click)="closeMobileMenu()">
+            📦 Locações
+          </a>
+          <div class="user-section">
+            <span class="user-info">👤 {{ currentUser }}</span>
+            <button class="btn btn-secondary btn-sm logout-btn" (click)="logout()">
+              🚪 Sair
+            </button>
+          </div>
         </div>
       </nav>
     </div>

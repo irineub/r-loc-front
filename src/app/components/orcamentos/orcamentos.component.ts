@@ -1,13 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { OrcamentoService } from '../../services/orcamento.service';
 import { ClienteService } from '../../services/cliente.service';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { LocacaoService } from '../../services/locacao.service';
+import { PrintableService } from '../../services/printable.service';
+import { NavigationService } from '../../services/navigation.service';
 import { Orcamento, Cliente, Equipamento, OrcamentoCreate, ItemOrcamentoCreate, Locacao } from '../../models/index';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
 @Component({
@@ -202,6 +205,16 @@ import html2canvas from 'html2canvas';
             </div>
             
             <div class="filter-group">
+              <label for="status">Status:</label>
+              <select id="status" [(ngModel)]="selectedStatus" class="form-control">
+                <option value="">Todos os status</option>
+                <option value="pendente">Pendente</option>
+                <option value="aprovado">Aprovado</option>
+                <option value="rejeitado">Rejeitado</option>
+              </select>
+            </div>
+            
+            <div class="filter-group">
               <button class="btn btn-warning" (click)="clearFilters()">
                 🔄 Limpar Filtros
               </button>
@@ -361,8 +374,11 @@ import html2canvas from 'html2canvas';
           <button class="btn btn-success" (click)="exportToXLSX()">
             📊 Exportar XLSX
           </button>
-          <button class="btn btn-danger" (click)="exportToPDF()">
-            📄 Exportar PDF
+          <button class="btn btn-primary" (click)="exportToOrcamentoPDF()">
+            📋 Orçamento PDF
+          </button>
+          <button class="btn btn-warning" (click)="exportToContratoPDF()" *ngIf="selectedOrcamento?.status === 'aprovado'">
+            📜 Contrato + Recibo PDF
           </button>
           <button class="btn btn-secondary" (click)="closeViewModal()">
             Fechar
@@ -376,6 +392,52 @@ import html2canvas from 'html2canvas';
       display: flex;
       flex-direction: column;
       gap: 2rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 12px 48px rgba(220, 53, 69, 0.12);
+      overflow: hidden;
+      border: 2px solid rgba(220, 53, 69, 0.1);
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+      color: white !important;
+      padding: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .card-title {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 0;
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .form-section {
@@ -1342,6 +1404,7 @@ export class OrcamentosComponent implements OnInit {
   showViewModal = false;
   selectedMonth: string = '';
   selectedYear: string = '';
+  selectedStatus: string = '';
   periodoCalculado: { dias: number; tipoCobranca: string } | null = null;
   formData: OrcamentoCreate = {
     cliente_id: 0,
@@ -1366,7 +1429,10 @@ export class OrcamentosComponent implements OnInit {
     private orcamentoService: OrcamentoService,
     private clienteService: ClienteService,
     private equipamentoService: EquipamentoService,
-    private locacaoService: LocacaoService
+    private locacaoService: LocacaoService,
+    private printableService: PrintableService,
+    private router: Router,
+    private navigationService: NavigationService
   ) {}
 
   ngOnInit() {
@@ -1452,6 +1518,7 @@ export class OrcamentosComponent implements OnInit {
 
     this.equipamentoService.getEquipamentos().subscribe(data => {
       this.equipamentos = data;
+      this.printableService.setEquipamentos(data);
     });
   }
 
@@ -1565,12 +1632,20 @@ export class OrcamentosComponent implements OnInit {
       });
     }
 
+    // Filtrar por status
+    if (this.selectedStatus) {
+      filtered = filtered.filter(orcamento => {
+        return orcamento.status === this.selectedStatus;
+      });
+    }
+
     return filtered;
   }
 
   clearFilters() {
     this.selectedMonth = '';
     this.selectedYear = '';
+    this.selectedStatus = '';
   }
 
   saveOrcamento() {
@@ -1599,8 +1674,35 @@ export class OrcamentosComponent implements OnInit {
     }
   }
 
-  aprovarOrcamento(id: number) {
-    this.orcamentoService.aprovarOrcamento(id).subscribe(() => {
+  // Método auxiliar para gerar contrato e recibo
+  private async generateDocumentsFromOrcamento(orcamento: Orcamento, prefix: string = '') {
+    try {
+      // Criar uma locação temporária baseada no orçamento para gerar os documentos
+      const locacaoTemp: any = {
+        ...orcamento,
+        cliente: orcamento.cliente,
+        itens: orcamento.itens
+      };
+
+      // Gerar contrato
+      const contratoHtml = this.printableService.generateContratoHTML(locacaoTemp);
+      const contratoFilename = `contrato_${prefix}${orcamento.id}_${new Date().toISOString().split('T')[0]}.pdf`;
+      await this.printableService.exportToPDF(contratoHtml, contratoFilename);
+
+      // Gerar recibo
+      const reciboHtml = this.printableService.generateReciboHTML(locacaoTemp);
+      const reciboFilename = `recibo_${prefix}${orcamento.id}_${new Date().toISOString().split('T')[0]}.pdf`;
+      await this.printableService.exportToPDF(reciboHtml, reciboFilename);
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao gerar documentos:', error);
+      return false;
+    }
+  }
+
+  async aprovarOrcamento(id: number) {
+    this.orcamentoService.aprovarOrcamento(id).subscribe(async () => {
       // Primeiro atualizar o orçamento localmente
       const orcamentoIndex = this.orcamentos.findIndex(o => o.id === id);
       if (orcamentoIndex !== -1) {
@@ -1611,6 +1713,8 @@ export class OrcamentosComponent implements OnInit {
       
       // Depois recarregar os dados para sincronizar com o servidor
       this.loadData();
+      
+      alert('Orçamento aprovado com sucesso!');
     });
   }
 
@@ -1637,18 +1741,57 @@ export class OrcamentosComponent implements OnInit {
     this.selectedOrcamento = null;
   }
 
-  createLocacaoFromOrcamento(orcamentoId: number | undefined) {
-    if (!orcamentoId) return;
+  async createLocacaoFromOrcamento(orcamentoId: number | undefined) {
+    if (!orcamentoId || !this.selectedOrcamento) return;
     
     this.locacaoService.createLocacaoFromOrcamento(orcamentoId).subscribe({
-      next: (response) => {
+      next: async (response) => {
         console.log('Locação criada com sucesso:', response);
+        
         // Recarregar dados
         this.loadData();
-        // Fechar modal
+        
+        // Fechar modal do orçamento
         this.closeViewModal();
-        // Mostrar mensagem de sucesso (você pode implementar um toast/notification)
-        alert('Locação criada com sucesso!');
+        
+        // Aguardar um pouco para os dados serem carregados
+        setTimeout(async () => {
+          // Buscar a locação criada
+          const locacaoCriada = this.locacoes.find(l => l.orcamento_id === orcamentoId);
+          
+          if (locacaoCriada) {
+            // Gerar contrato e recibo automaticamente
+            try {
+              // Gerar contrato
+              const contratoHtml = this.printableService.generateContratoHTML(locacaoCriada);
+              const contratoFilename = `contrato_${locacaoCriada.id}_${new Date().toISOString().split('T')[0]}`;
+              this.printableService.exportToPDF(contratoHtml, contratoFilename);
+
+              // Gerar recibo
+              const reciboHtml = this.printableService.generateReciboHTML(locacaoCriada);
+              const reciboFilename = `recibo_${locacaoCriada.id}_${new Date().toISOString().split('T')[0]}`;
+              this.printableService.exportToPDF(reciboHtml, reciboFilename);
+
+              alert('Locação criada com sucesso! Contrato e recibo foram gerados automaticamente. Redirecionando para a página de locações...');
+              
+              // Definir estado para abrir modal da locação
+              this.navigationService.setNavigationState({
+                shouldOpenLocacaoModal: true,
+                locacaoId: locacaoCriada.id
+              });
+              
+              // Redirecionar para a página de locações
+              this.router.navigate(['/locacoes']);
+            } catch (error) {
+              console.error('Erro ao gerar documentos:', error);
+              alert('Locação criada com sucesso, mas houve erro ao gerar os documentos. Redirecionando para a página de locações...');
+              this.router.navigate(['/locacoes']);
+            }
+          } else {
+            alert('Locação criada com sucesso! Redirecionando para a página de locações...');
+            this.router.navigate(['/locacoes']);
+          }
+        }, 1000);
       },
       error: (error) => {
         console.error('Erro ao criar locação:', error);
@@ -1692,6 +1835,58 @@ export class OrcamentosComponent implements OnInit {
     XLSX.writeFile(wb, `orcamento_${this.selectedOrcamento.id}.xlsx`);
   }
 
+
+
+  // Exportar orçamento como PDF usando template personalizado
+  exportToOrcamentoPDF() {
+    if (!this.selectedOrcamento) {
+      alert('Nenhum orçamento selecionado');
+      return;
+    }
+
+    try {
+      const html = this.printableService.generateOrcamentoHTML(this.selectedOrcamento);
+      const filename = `orcamento_${this.selectedOrcamento.id}_${new Date().toISOString().split('T')[0]}`;
+      this.printableService.exportToPDF(html, filename);
+    } catch (error) {
+      console.error('Erro ao exportar orçamento:', error);
+      alert('Erro ao exportar orçamento. Tente novamente.');
+    }
+  }
+
+  // Exportar contrato como PDF usando template personalizado
+  exportToContratoPDF() {
+    if (!this.selectedOrcamento) {
+      alert('Nenhum orçamento selecionado');
+      return;
+    }
+
+    try {
+      // Criar uma locação temporária baseada no orçamento para gerar os documentos
+      const locacaoTemp: any = {
+        ...this.selectedOrcamento,
+        cliente: this.selectedOrcamento.cliente,
+        itens: this.selectedOrcamento.itens
+      };
+
+      // Gerar contrato
+      const contratoHtml = this.printableService.generateContratoHTML(locacaoTemp);
+      const contratoFilename = `contrato_${this.selectedOrcamento.id}_${new Date().toISOString().split('T')[0]}`;
+      this.printableService.exportToPDF(contratoHtml, contratoFilename);
+
+      // Gerar recibo
+      const reciboHtml = this.printableService.generateReciboHTML(locacaoTemp);
+      const reciboFilename = `recibo_${this.selectedOrcamento.id}_${new Date().toISOString().split('T')[0]}`;
+      this.printableService.exportToPDF(reciboHtml, reciboFilename);
+
+      alert('Contrato e recibo gerados com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar documentos:', error);
+      alert('Erro ao exportar documentos. Tente novamente.');
+    }
+  }
+
+  // Método antigo mantido para compatibilidade
   async exportToPDF() {
     if (!this.selectedOrcamento) {
       console.error('Nenhum orçamento selecionado');
@@ -1700,7 +1895,11 @@ export class OrcamentosComponent implements OnInit {
 
     try {
       // Criar PDF usando jsPDF diretamente
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4'
+      });
       
       // Configurações de página
       const pageWidth = 210;
