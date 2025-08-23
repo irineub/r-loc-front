@@ -398,6 +398,7 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
       height: 2px;
       background: linear-gradient(135deg, #dc2626, #ef4444);
       opacity: 0.3;
+      display: none; /* Removendo a linha vermelha */
     }
 
     .table tbody tr {
