@@ -61,6 +61,12 @@ export class PrintableService {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Orçamento ${orcamento.id} - ${orcamento.cliente?.nome_razao_social}</title>
   <style>
+    @page {
+      size: A4;
+      margin: 1.5cm;
+      page-break-inside: avoid;
+    }
+    
     :root {
       --accent: #0f766e;
       --ink: #0f172a;
@@ -72,9 +78,11 @@ export class PrintableService {
     html, body { height: 100%; }
     body {
       margin: 0;
-      font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      font: 12px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
       color: var(--ink);
       background: var(--bg);
+      orphans: 3;
+      widows: 3;
     }
 
     .page {
@@ -85,6 +93,7 @@ export class PrintableService {
       border: 1px solid var(--line);
       border-radius: 16px;
       box-shadow: 0 8px 24px rgba(2,6,23,0.06);
+      page-break-inside: avoid;
     }
 
     header {
@@ -95,6 +104,7 @@ export class PrintableService {
       border-bottom: 2px solid var(--line);
       padding-bottom: 16px;
       margin-bottom: 20px;
+      page-break-inside: avoid;
     }
     .brand h1 {
       margin: 0 0 6px 0;
@@ -144,7 +154,8 @@ export class PrintableService {
       width: 100%;
       border-collapse: collapse;
       margin: 8px 0 16px;
-      font-size: 13px;
+      font-size: 12px;
+      page-break-inside: avoid;
     }
     thead th {
       text-align: left;
@@ -152,11 +163,16 @@ export class PrintableService {
       background: #f8fafc;
       color: var(--muted);
       border-bottom: 1px solid var(--line);
+      page-break-inside: avoid;
       font-weight: 600;
     }
     tbody td {
       padding: 10px 8px;
       border-bottom: 1px solid var(--line);
+      page-break-inside: avoid;
+    }
+    tbody tr {
+      page-break-inside: avoid;
       vertical-align: top;
     }
     tfoot td {
@@ -348,16 +364,19 @@ export class PrintableService {
   <style>
     @page {
       size: A4;
-      margin: 2cm;
+      margin: 1.5cm;
+      page-break-inside: avoid;
     }
 
     body {
       font-family: Arial, sans-serif;
-      font-size: 12pt;
+      font-size: 11pt;
       color: #000;
       margin: 0;
       padding: 0;
-      line-height: 1.5;
+      line-height: 1.4;
+      orphans: 3;
+      widows: 3;
     }
 
     .container {
@@ -368,6 +387,7 @@ export class PrintableService {
     .header {
       text-align: center;
       margin-bottom: 20px;
+      page-break-inside: avoid;
     }
 
     .header img {
@@ -388,6 +408,7 @@ export class PrintableService {
 
     .info {
       margin: 15px 0;
+      page-break-inside: avoid;
     }
 
     .info p {
@@ -398,6 +419,7 @@ export class PrintableService {
       width: 100%;
       border-collapse: collapse;
       margin: 15px 0;
+      page-break-inside: avoid;
     }
 
     table, th, td {
@@ -407,13 +429,19 @@ export class PrintableService {
     th, td {
       padding: 6px;
       text-align: left;
-      font-size: 11pt;
+      font-size: 10pt;
+      page-break-inside: avoid;
+    }
+
+    tr {
+      page-break-inside: avoid;
     }
 
     .section-title {
       font-weight: bold;
       margin-top: 15px;
       text-transform: uppercase;
+      page-break-after: avoid;
     }
 
     .assinaturas-container {
@@ -426,6 +454,7 @@ export class PrintableService {
       display: flex;
       justify-content: space-between;
       margin-bottom: 15px;
+      page-break-inside: avoid;
     }
 
     .assinaturas:last-child {
@@ -440,11 +469,19 @@ export class PrintableService {
     .footer {
       margin-top: 40px;
       text-align: center;
+      page-break-inside: avoid;
     }
 
     .linha {
       margin-top: 50px;
       text-align: center;
+    }
+
+    /* Evitar quebra de página em elementos importantes */
+    p {
+      page-break-inside: avoid;
+      orphans: 2;
+      widows: 2;
     }
   </style>
 </head>
@@ -493,23 +530,48 @@ export class PrintableService {
 
     <p class="section-title">OBRIGAÇÕES DA LOCADORA</p>
     <p>A LOCADORA entregará a LOCATÁRIA os equipamentos objeto desta locação no local indicado, testado e em perfeito estado de conservação e de uso.</p>
-    <p><strong>OBS:</strong> A LOCADORA não se responsabiliza por danos elétricos.</p>
+    <p>A LOCADORA se compromete a fornecer assistência técnica básica durante o período de locação, conforme disponibilidade.</p>
+    <p><strong>OBS:</strong> A LOCADORA não se responsabiliza por danos elétricos, falhas de energia, condições climáticas adversas ou uso inadequado dos equipamentos.</p>
 
     <p class="section-title">OBRIGAÇÕES DA LOCATÁRIA</p>
-    <p>A LOCATÁRIA após o término da locação entrará em contato com a LOCADORA para que sejam devolvidos os equipamentos, nas mesmas condições recebidas.</p>
-    <p>É vedado à LOCATÁRIA emprestar, arrendar ou sublocar os equipamentos locados, bem como transferi-los para outro local que não seja de sua propriedade.</p>
+    <p>A LOCATÁRIA se compromete a:</p>
+    <p>a) Utilizar os equipamentos exclusivamente para os fins a que se destinam;</p>
+    <p>b) Manter os equipamentos em perfeito estado de conservação durante todo o período de locação;</p>
+    <p>c) Não realizar modificações, reparos ou alterações nos equipamentos sem autorização prévia da LOCADORA;</p>
+    <p>d) Devolver os equipamentos no prazo estabelecido, nas mesmas condições em que foram recebidos;</p>
+    <p>e) Comunicar imediatamente à LOCADORA qualquer dano, avaria ou defeito nos equipamentos;</p>
+    <p>f) Não emprestar, arrendar ou sublocar os equipamentos locados;</p>
+    <p>g) Não transferir os equipamentos para outro local sem autorização prévia da LOCADORA;</p>
+    <p>h) Responsabilizar-se por todos os danos causados aos equipamentos durante o período de locação.</p>
 
-    <p class="section-title">PRAZO</p>
-    <p>O prazo de locação é de ${dataInicio} a ${dataFim}, podendo ser prorrogado.</p>
+    <p class="section-title">PRAZO E ENTREGA</p>
+    <p>O prazo de locação é de ${dataInicio} a ${dataFim}, podendo ser prorrogado mediante acordo entre as partes.</p>
+    <p>A entrega dos equipamentos será realizada no endereço: ${locacao.cliente?.endereco || 'A ser definido'}.</p>
+    <p>A devolução dos equipamentos deverá ser realizada no endereço da LOCADORA: ${this.empresaData.endereco}.</p>
 
-    <p class="section-title">VALOR</p>
-    <p>O valor total da presente locação é de R$ ${total}</p>
+    <p class="section-title">VALOR E FORMA DE PAGAMENTO</p>
+    <p>O valor total da presente locação é de R$ ${total}.</p>
+    <p>O pagamento deve ser efetuado no ato da emissão do contrato, através de: dinheiro, cartão de débito/crédito ou transferência bancária.</p>
+    <p>Em caso de atraso no pagamento, será cobrada multa de 2% (dois por cento) sobre o valor em atraso, mais juros de 1% (um por cento) ao mês.</p>
 
-    <p class="section-title">FORMA DE PAGAMENTO</p>
-    <p>O pagamento deve ser efetuado no ato da emissão do contrato.</p>
+    <p class="section-title">PENALIDADES E MULTA</p>
+    <p>Em caso de atraso na devolução dos equipamentos, será cobrada multa de 10% (dez por cento) do valor total da locação por dia de atraso.</p>
+    <p>Em caso de danos aos equipamentos, a LOCATÁRIA se responsabiliza pelo custo total do reparo ou substituição.</p>
+    <p>Em caso de perda ou furto dos equipamentos, a LOCATÁRIA se responsabiliza pelo valor integral dos equipamentos.</p>
 
-    <p class="section-title">FORO</p>
-    <p>Fica eleito o Fórum da Comarca de Manaus para dirimir quaisquer dúvidas decorrentes deste contrato.</p>
+    <p class="section-title">RESCISÃO E RESOLUÇÃO</p>
+    <p>O presente contrato poderá ser rescindido por qualquer das partes mediante aviso prévio de 24 (vinte e quatro) horas.</p>
+    <p>Em caso de descumprimento das obrigações por parte da LOCATÁRIA, a LOCADORA poderá resolver o contrato imediatamente, sem prejuízo das multas e penalidades previstas.</p>
+    <p>Em caso de rescisão antecipada por parte da LOCATÁRIA, não haverá restituição de valores já pagos.</p>
+
+    <p class="section-title">RESPONSABILIDADES</p>
+    <p>A LOCATÁRIA se responsabiliza integralmente pelo uso adequado dos equipamentos e por todos os danos que possam ocorrer durante o período de locação.</p>
+    <p>A LOCADORA não se responsabiliza por acidentes, danos pessoais ou materiais decorrentes do uso dos equipamentos.</p>
+    <p>É de responsabilidade da LOCATÁRIA verificar as condições técnicas adequadas para o funcionamento dos equipamentos no local de uso.</p>
+
+    <p class="section-title">FORO E JURISDIÇÃO</p>
+    <p>Fica eleito o Fórum da Comarca de Manaus para dirimir quaisquer dúvidas ou controvérsias decorrentes deste contrato.</p>
+    <p>Este contrato é regido pelas leis brasileiras e qualquer alteração deverá ser feita por escrito e assinada por ambas as partes.</p>
 
     <div class="footer">
       <p>Manaus, ${dataAtual}</p>
@@ -586,16 +648,19 @@ export class PrintableService {
   <style>
     @page {
       size: A4;
-      margin: 2cm;
+      margin: 1.5cm;
+      page-break-inside: avoid;
     }
 
     body {
       font-family: Arial, sans-serif;
-      font-size: 12pt;
+      font-size: 11pt;
       color: #000;
       margin: 0;
       padding: 0;
-      line-height: 1.5;
+      line-height: 1.4;
+      orphans: 3;
+      widows: 3;
     }
 
     .container {
@@ -606,6 +671,7 @@ export class PrintableService {
     .header {
       text-align: center;
       margin-bottom: 20px;
+      page-break-inside: avoid;
     }
 
     .header img {
@@ -621,6 +687,7 @@ export class PrintableService {
 
     .info {
       margin: 15px 0;
+      page-break-inside: avoid;
     }
 
     .info p {
@@ -631,6 +698,7 @@ export class PrintableService {
       width: 100%;
       border-collapse: collapse;
       margin: 15px 0;
+      page-break-inside: avoid;
     }
 
     table, th, td {
@@ -640,12 +708,18 @@ export class PrintableService {
     th, td {
       padding: 6px;
       text-align: left;
-      font-size: 11pt;
+      font-size: 10pt;
+      page-break-inside: avoid;
+    }
+
+    tr {
+      page-break-inside: avoid;
     }
 
     .total {
       margin-top: 15px;
       font-weight: bold;
+      page-break-inside: avoid;
     }
 
     .observacao {

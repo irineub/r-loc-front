@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { ClienteService } from '../../services/cliente.service';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { OrcamentoService } from '../../services/orcamento.service';
@@ -79,13 +80,18 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
         <div class="activity-section">
           <h3>Locações Ativas</h3>
           <div class="activity-list" *ngIf="locacoesAtivas.length > 0; else noLocacoes">
-            <div class="activity-item" *ngFor="let locacao of locacoesAtivas" (click)="viewLocacao(locacao)" style="cursor:pointer;">
+            <div class="activity-item" *ngFor="let locacao of locacoesAtivas">
               <div class="activity-icon">📦</div>
-              <div class="activity-content">
+              <div class="activity-content" (click)="viewLocacao(locacao)" style="cursor:pointer; flex: 1;">
                 <p><strong>Locação #{{ locacao.id }}</strong> - {{ locacao.cliente.nome_razao_social || 'Cliente não encontrado' }}</p>
                 <small>Até {{ locacao.data_fim | date:'dd/MM/yyyy' }}</small>
               </div>
-              <span class="badge badge-ativa">{{ locacao.status }}</span>
+              <div class="activity-actions">
+                <span class="badge badge-ativa">{{ locacao.status }}</span>
+                <button class="btn btn-recebimento" (click)="abrirRecebimento(locacao.id)" title="Receber Equipamentos">
+                  📦 Receber
+                </button>
+              </div>
             </div>
           </div>
           <ng-template #noLocacoes>
@@ -417,6 +423,26 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
       transform: translateX(4px);
       box-shadow: 0 4px 16px rgba(220, 53, 69, 0.15);
       background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    }
+
+    .activity-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-recebimento {
+      background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+      color: white;
+      border: 2px solid transparent;
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      min-width: auto;
+    }
+
+    .btn-recebimento:hover {
+      background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+      border-color: rgba(255, 255, 255, 0.3);
     }
 
     .activity-icon {
@@ -833,6 +859,8 @@ export class DashboardComponent implements OnInit {
   selectedLocacao: Locacao | null = null;
   showLocacaoModal = false;
 
+  private router = inject(Router);
+
   constructor(
     private clienteService: ClienteService,
     private equipamentoService: EquipamentoService,
@@ -922,6 +950,10 @@ export class DashboardComponent implements OnInit {
   closeViewModal() {
     this.showViewModal = false;
     this.selectedOrcamento = null;
+  }
+
+  abrirRecebimento(locacaoId: number) {
+    this.router.navigate(['/recebimento', locacaoId]);
   }
 
   getOrcamentoSubtotal(orcamento: Orcamento | null): number {

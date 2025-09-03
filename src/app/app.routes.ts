@@ -29,5 +29,10 @@ export const routes: Routes = [
     loadComponent: () => import('./components/locacoes/locacoes.component').then(m => m.LocacoesComponent),
     canActivate: [AuthGuard]
   },
+  { 
+    path: 'recebimento/:id', 
+    loadComponent: () => import('./components/recebimento/recebimento.component').then(m => m.RecebimentoComponent),
+    canActivate: [AuthGuard]
+  },
   { path: '**', redirectTo: '/login' }
 ];
