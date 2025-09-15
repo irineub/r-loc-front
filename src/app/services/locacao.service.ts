@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { Locacao } from '../models/index';
 
@@ -14,7 +15,17 @@ export class LocacaoService {
   }
 
   getLocacao(id: number): Observable<Locacao> {
-    return this.apiService.getById<Locacao>('/locacoes', id);
+    // Workaround: Use a lista de locações e filtre pelo ID
+    // até que a rota GET /api/locacoes/{id}/ seja corrigida no backend
+    return this.apiService.get<Locacao>('/locacoes').pipe(
+      map(locacoes => {
+        const locacao = locacoes.find(l => l.id === id);
+        if (!locacao) {
+          throw new Error(`Locação com ID ${id} não encontrada`);
+        }
+        return locacao;
+      })
+    );
   }
 
   createLocacaoFromOrcamento(orcamentoId: number): Observable<any> {
