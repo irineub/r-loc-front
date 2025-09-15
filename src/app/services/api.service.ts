@@ -10,7 +10,9 @@ import { environment } from '../../environments/environment';
 export class ApiService {
   private baseUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) { 
+    console.log('API Service initialized with baseUrl:', this.baseUrl);
+  }
 
   // Generic CRUD methods
   get<T>(endpoint: string): Observable<T[]> {
@@ -24,6 +26,10 @@ export class ApiService {
   getById<T>(endpoint: string, id: number): Observable<T> {
     const url = `${this.baseUrl}${endpoint}/${id}/`;
     console.log('GET by ID request:', url);
+    console.log('Base URL:', this.baseUrl);
+    console.log('Endpoint:', endpoint);
+    console.log('ID:', id);
+    console.log('Full URL constructed:', url);
     return this.http.get<T>(url).pipe(
       catchError(this.handleError)
     );
@@ -68,6 +74,9 @@ export class ApiService {
     console.error('Error status:', error.status);
     console.error('Error message:', error.message);
     console.error('Error URL:', error.url);
+    console.error('Error headers:', error.headers);
+    console.error('Error body:', error.error);
+    console.error('Current baseUrl:', this.baseUrl);
     
     let errorMessage = 'An error occurred';
     if (error.error instanceof ErrorEvent) {
