@@ -255,10 +255,7 @@ import html2canvas from 'html2canvas';
                             *ngIf="orcamento.status === 'pendente'" title="Rejeitar Orçamento">
                       ❌ Rejeitar
                     </button>
-                    <button class="action-btn create-locacao" (click)="createLocacaoFromOrcamento(orcamento.id)" 
-                            *ngIf="orcamento.status === 'aprovado'" title="Criar Locação">
-                      📦 Criar Locação
-                    </button>
+
                     <button class="action-btn view" (click)="viewOrcamento(orcamento)" title="Visualizar Detalhes">
                       👁️ Ver
                     </button>
@@ -377,9 +374,7 @@ import html2canvas from 'html2canvas';
           <button class="btn btn-primary" (click)="exportToOrcamentoPDF()">
             📋 Orçamento PDF
           </button>
-          <button class="btn btn-warning" (click)="exportToContratoPDF()" *ngIf="selectedOrcamento?.status === 'aprovado'">
-            📜 Contrato + Recibo PDF
-          </button>
+
           <button class="btn btn-secondary" (click)="closeViewModal()">
             Fechar
           </button>

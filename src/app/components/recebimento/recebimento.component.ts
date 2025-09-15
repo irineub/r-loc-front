@@ -35,7 +35,7 @@ interface ItemRecebimento extends ItemLocacao {
                 <strong>ID da Locação:</strong> {{ locacao.id }}
               </div>
               <div class="info-item">
-                <strong>Cliente:</strong> {{ locacao.cliente?.nome_razao_social }}
+                <strong>Cliente:</strong> {{ locacao.cliente.nome_razao_social }}
               </div>
               <div class="info-item">
                 <strong>Data Início:</strong> {{ locacao.data_inicio | date:'dd/MM/yyyy' }}
