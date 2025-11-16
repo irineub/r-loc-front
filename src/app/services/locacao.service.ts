@@ -15,17 +15,8 @@ export class LocacaoService {
   }
 
   getLocacao(id: number): Observable<Locacao> {
-    // Workaround: Use a lista de locações e filtre pelo ID
-    // até que a rota GET /api/locacoes/{id}/ seja corrigida no backend
-    return this.apiService.get<Locacao>('/locacoes').pipe(
-      map(locacoes => {
-        const locacao = locacoes.find(l => l.id === id);
-        if (!locacao) {
-          throw new Error(`Locação com ID ${id} não encontrada`);
-        }
-        return locacao;
-      })
-    );
+    // Backend já expõe GET /locacoes/{id}/
+    return this.apiService.getById<Locacao>('/locacoes', id);
   }
 
   createLocacaoFromOrcamento(orcamentoId: number): Observable<any> {
@@ -42,6 +33,10 @@ export class LocacaoService {
 
   cancelarLocacao(id: number): Observable<any> {
     return this.apiService.postCustom(`/locacoes/${id}/cancelar`);
+  }
+
+  receberParcial(id: number, itens: { equipamento_id: number, quantidade: number }[]): Observable<any> {
+    return this.apiService.postCustom(`/locacoes/${id}/receber`, { itens });
   }
 
   getLocacoesAtivas(): Observable<Locacao[]> {

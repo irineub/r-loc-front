@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyBrPipe } from '../../pipes/currency-br.pipe';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { OrcamentoService } from '../../services/orcamento.service';
@@ -16,7 +17,7 @@ import html2canvas from 'html2canvas';
 @Component({
   selector: 'app-orcamentos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CurrencyBrPipe],
   template: `
     <div class="orcamentos">
       <div class="card">
@@ -150,7 +151,7 @@ import html2canvas from 'html2canvas';
                     <span class="item-details">
                       {{ item.quantidade }} x {{ item.dias }} dias 
                       ({{ item.tipo_cobranca === 'mensal' ? 'mensal' : 'diária' }}) = 
-                      R$ {{ item.subtotal | number:'1.2-2' }}
+                      {{ item.subtotal | currencyBr }}
                     </span>
                   </div>
                   <button type="button" class="btn btn-danger btn-sm" (click)="removeItem(i)">
@@ -238,7 +239,7 @@ import html2canvas from 'html2canvas';
                 <td data-label="ID">{{ orcamento.id }}</td>
                                   <td data-label="Cliente">{{ orcamento.cliente.nome_razao_social || 'Cliente não encontrado' }}</td>
                 <td data-label="Período">{{ orcamento.data_inicio | date:'dd/MM/yyyy' }} - {{ orcamento.data_fim | date:'dd/MM/yyyy' }}</td>
-                <td data-label="Total">R$ {{ orcamento.total_final | number:'1.2-2' }}</td>
+                <td data-label="Total">{{ orcamento.total_final | currencyBr }}</td>
                 <td data-label="Status">
                   <span class="badge" [class]="'badge-' + orcamento.status">
                     {{ orcamento.status }}
@@ -344,8 +345,8 @@ import html2canvas from 'html2canvas';
                   <td>{{ item.quantidade }}</td>
                   <td>{{ item.dias }}</td>
                   <td>{{ item.tipo_cobranca === 'mensal' ? 'Mensal' : 'Diária' }}</td>
-                  <td>R$ {{ item.preco_unitario | number:'1.2-2' }}</td>
-                  <td>R$ {{ item.subtotal | number:'1.2-2' }}</td>
+                  <td>{{ item.preco_unitario | currencyBr }}</td>
+                  <td>{{ item.subtotal | currencyBr }}</td>
                 </tr>
               </tbody>
             </table>
@@ -353,16 +354,16 @@ import html2canvas from 'html2canvas';
 
           <div class="totals-section">
             <div class="total-row">
-              <strong>Subtotal:</strong> R$ {{ getOrcamentoSubtotal(selectedOrcamento) | number:'1.2-2' }}
+              <strong>Subtotal:</strong> {{ getOrcamentoSubtotal(selectedOrcamento) | currencyBr }}
             </div>
             <div class="total-row">
-              <strong>Desconto:</strong> R$ {{ selectedOrcamento?.desconto | number:'1.2-2' }}
+              <strong>Desconto:</strong> {{ selectedOrcamento?.desconto | currencyBr }}
             </div>
             <div class="total-row">
-              <strong>Frete:</strong> R$ {{ selectedOrcamento?.frete | number:'1.2-2' }}
+              <strong>Frete:</strong> {{ selectedOrcamento?.frete | currencyBr }}
             </div>
             <div class="total-row final-total">
-              <strong>Total Final:</strong> R$ {{ selectedOrcamento?.total_final | number:'1.2-2' }}
+              <strong>Total Final:</strong> {{ selectedOrcamento?.total_final | currencyBr }}
             </div>
           </div>
         </div>

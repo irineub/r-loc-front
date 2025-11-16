@@ -1,15 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyBrPipe } from '../../pipes/currency-br.pipe';
 import { LocacaoService } from '../../services/locacao.service';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { PrintableService } from '../../services/printable.service';
 import { NavigationService } from '../../services/navigation.service';
 import { Locacao, Equipamento } from '../../models/index';
 
+import { Router } from '@angular/router';
+
 @Component({
   selector: 'app-locacoes',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CurrencyBrPipe],
   template: `
     <div class="locacoes">
       <div class="card">
@@ -53,7 +56,7 @@ import { Locacao, Equipamento } from '../../models/index';
                 <td data-label="ID">{{ locacao.id }}</td>
                 <td data-label="Cliente">{{ locacao.cliente.nome_razao_social || 'Cliente não encontrado' }}</td>
                 <td data-label="Período">{{ locacao.data_inicio | date:'dd/MM/yyyy' }} - {{ locacao.data_fim | date:'dd/MM/yyyy' }}</td>
-                <td data-label="Total">R$ {{ locacao.total_final | number:'1.2-2' }}</td>
+                <td data-label="Total">{{ locacao.total_final | currencyBr }}</td>
                 <td data-label="Status">
                   <span class="badge" [class]="'badge-' + locacao.status">
                     {{ locacao.status }}
@@ -65,6 +68,10 @@ import { Locacao, Equipamento } from '../../models/index';
                     <button class="action-btn approve" (click)="finalizarLocacao(locacao.id)" 
                             *ngIf="locacao.status === 'ativa'" title="Finalizar Locação">
                       ✅ Finalizar
+                    </button>
+                    <button class="action-btn view" (click)="irParaRecebimento(locacao.id)" 
+                            *ngIf="locacao.status === 'ativa'" title="Receber/Devolver Itens">
+                      ↩️ Receber
                     </button>
                     <button class="action-btn reject" (click)="cancelarLocacao(locacao.id)" 
                             *ngIf="locacao.status === 'ativa'" title="Cancelar Locação">
@@ -143,8 +150,8 @@ import { Locacao, Equipamento } from '../../models/index';
                   <td>{{ getEquipamentoDescricao(item.equipamento_id) }}</td>
                   <td>{{ item.quantidade }}</td>
                   <td>{{ item.dias }}</td>
-                  <td>R$ {{ item.preco_unitario | number:'1.2-2' }}</td>
-                  <td>R$ {{ item.subtotal | number:'1.2-2' }}</td>
+                  <td>{{ item.preco_unitario | currencyBr }}</td>
+                  <td>{{ item.subtotal | currencyBr }}</td>
                 </tr>
               </tbody>
             </table>
@@ -152,7 +159,7 @@ import { Locacao, Equipamento } from '../../models/index';
 
           <div class="totals-section">
             <div class="total-row final-total">
-              <strong>Total Final:</strong> R$ {{ selectedLocacao?.total_final | number:'1.2-2' }}
+              <strong>Total Final:</strong> {{ selectedLocacao?.total_final | currencyBr }}
             </div>
           </div>
         </div>
@@ -766,7 +773,8 @@ export class LocacoesComponent implements OnInit {
     private locacaoService: LocacaoService,
     private equipamentoService: EquipamentoService,
     private printableService: PrintableService,
-    private navigationService: NavigationService
+    private navigationService: NavigationService,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -879,5 +887,9 @@ export class LocacoesComponent implements OnInit {
       console.error('Erro ao exportar contrato:', error);
       alert('Erro ao exportar contrato. Tente novamente.');
     }
+  }
+
+  irParaRecebimento(locacaoId: number) {
+    this.router.navigate([`/recebimento/${locacaoId}`]);
   }
 } 

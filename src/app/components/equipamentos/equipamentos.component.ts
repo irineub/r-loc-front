@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyBrPipe } from '../../pipes/currency-br.pipe';
 import { FormsModule } from '@angular/forms';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { Equipamento, EquipamentoCreate } from '../../models/index';
@@ -7,7 +8,7 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
 @Component({
   selector: 'app-equipamentos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CurrencyBrPipe],
   template: `
     <div class="equipamentos">
       <div class="card">
@@ -85,7 +86,7 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
                 <td data-label="ID">{{ equipamento.id }}</td>
                 <td data-label="Descrição">{{ equipamento.descricao }}</td>
                 <td data-label="Unidade">{{ equipamento.unidade }}</td>
-                <td data-label="Preço Unitário">R$ {{ equipamento.preco_unitario | number:'1.2-2' }}</td>
+                <td data-label="Preço Unitário">{{ equipamento.preco_unitario | currencyBr }}</td>
                 <td data-label="Estoque">
                   <div class="estoque-info">
                     <span class="estoque-total">{{ equipamento.estoque }}</span>

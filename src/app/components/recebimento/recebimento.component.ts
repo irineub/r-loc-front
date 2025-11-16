@@ -1,21 +1,25 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyBrPipe } from '../../pipes/currency-br.pipe';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LocacaoService } from '../../services/locacao.service';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { Locacao, ItemLocacao, Equipamento } from '../../models/index';
+import { forkJoin } from 'rxjs';
 
 interface ItemRecebimento extends ItemLocacao {
   devolvido: boolean;
   observacoes?: string;
   danificado?: boolean;
+  devolverQuantidade?: number;
+  quantidade_devolvida?: number;
 }
 
 @Component({
   selector: 'app-recebimento',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CurrencyBrPipe],
   template: `
     <div class="recebimento">
       <div class="card">
@@ -63,8 +67,10 @@ interface ItemRecebimento extends ItemLocacao {
                   <div class="equipamento-info">
                     <h4>{{ getEquipamentoDescricao(item.equipamento_id) }}</h4>
                     <div class="equipamento-details">
-                      <span class="quantidade">Quantidade: {{ item.quantidade }}</span>
-                      <span class="preco">Preço: R$ {{ item.preco_unitario | number:'1.2-2' }}</span>
+                      <span class="quantidade">Qtd locada: {{ item.quantidade }}</span>
+                      <span class="quantidade">Qtd devolvida: {{ item.quantidade_devolvida || 0 }}</span>
+                      <span class="quantidade">Qtd pendente: {{ item.quantidade - (item.quantidade_devolvida || 0) }}</span>
+                      <span class="preco">Preço: {{ item.preco_unitario | currencyBr }}</span>
                     </div>
                   </div>
                 </div>
@@ -101,6 +107,12 @@ interface ItemRecebimento extends ItemLocacao {
                 </div>
 
                 <div class="equipamento-details-expanded" *ngIf="item.devolvido">
+                  <div class="form-group">
+                    <label for="qtd-{{i}}">Quantidade a devolver:</label>
+                    <input id="qtd-{{i}}" type="number" class="form-control"
+                           [(ngModel)]="item.devolverQuantidade"
+                           [min]="0" [max]="item.quantidade - (item.quantidade_devolvida || 0)" />
+                  </div>
                   <div class="form-group">
                     <label>
                       <input type="checkbox" [(ngModel)]="item.danificado">
@@ -754,7 +766,8 @@ export class RecebimentoComponent implements OnInit {
           ...item,
           devolvido: false,
           observacoes: '',
-          danificado: false
+          danificado: false,
+          devolverQuantidade: 0
         })) || [];
       },
       error: (error) => {
@@ -775,15 +788,22 @@ export class RecebimentoComponent implements OnInit {
     if (!item.devolvido) {
       item.danificado = false;
       item.observacoes = '';
+      item.devolverQuantidade = 0; // Resetar quantidade ao desmarcar devolução
+    } else {
+      if (!item.devolverQuantidade || item.devolverQuantidade <= 0) {
+        item.devolverQuantidade = item.quantidade; // pré-preencher com total para conveniência
+      }
     }
   }
 
   getTotalDevolvidos(): number {
-    return this.itensRecebimento.filter(item => item.devolvido).length;
+    return this.itensRecebimento
+      .filter(item => item.devolvido && (item.devolverQuantidade || 0) > 0)
+      .length;
   }
 
   getTotalNaoDevolvidos(): number {
-    return this.itensRecebimento.filter(item => !item.devolvido).length;
+    return this.itensRecebimento.filter(item => !item.devolvido || (item.devolverQuantidade || 0) === 0).length;
   }
 
   getTotalDanificados(): number {
@@ -796,7 +816,7 @@ export class RecebimentoComponent implements OnInit {
       return;
     }
 
-    const todosDevolvidos = this.getTotalNaoDevolvidos() === 0;
+    const todosDevolvidos = this.itensRecebimento.every(item => item.devolvido && (item.devolverQuantidade || 0) === item.quantidade);
     const confirmMessage = todosDevolvidos 
       ? 'Todos os equipamentos foram devolvidos. Deseja finalizar a locação?'
       : `Atenção: ${this.getTotalNaoDevolvidos()} item(ns) não foi(ram) devolvido(s). Deseja continuar mesmo assim?`;
@@ -804,31 +824,50 @@ export class RecebimentoComponent implements OnInit {
     if (confirm(confirmMessage)) {
       // Se todos os equipamentos foram devolvidos, finalizar a locação
       if (todosDevolvidos && this.locacaoId) {
-        this.locacaoService.finalizarLocacao(this.locacaoId).subscribe({
-          next: (response) => {
-            console.log('Locação finalizada:', response);
-            alert('Locação finalizada com sucesso! Todos os equipamentos foram devolvidos.');
-            this.voltar();
+        const itens = this.itensRecebimento.map(item => ({
+          equipamento_id: item.equipamento_id,
+          quantidade: item.quantidade - (item.quantidade_devolvida || 0)
+        }));
+        this.locacaoService.receberParcial(this.locacaoId as number, itens).subscribe({
+          next: () => {
+            this.locacaoService.finalizarLocacao(this.locacaoId as number).subscribe({
+              next: () => {
+                alert('Locação finalizada com sucesso! Todos os equipamentos foram devolvidos.');
+                this.voltar();
+              },
+              error: (error) => {
+                console.error('Erro ao finalizar locação:', error);
+                alert('Erro ao finalizar locação. Tente novamente.');
+              }
+            });
           },
           error: (error) => {
-            console.error('Erro ao finalizar locação:', error);
-            alert('Erro ao finalizar locação. Tente novamente.');
+            console.error('Erro ao registrar recebimento total:', error);
+            alert('Erro ao registrar recebimento. Tente novamente.');
           }
         });
       } else {
-        // Se nem todos foram devolvidos, apenas registrar o recebimento parcial
-        const dadosRecebimento = {
-          locacaoId: this.locacao.id,
-          itens: this.itensRecebimento,
-          dataRecebimento: new Date().toISOString(),
-          totalDevolvidos: this.getTotalDevolvidos(),
-          totalNaoDevolvidos: this.getTotalNaoDevolvidos(),
-          totalDanificados: this.getTotalDanificados()
-        };
+        // Recebimento parcial via locação (atualiza quantidade_devolvida e estoque)
+        const itens = this.itensRecebimento
+          .filter(item => item.devolvido && (item.devolverQuantidade || 0) > 0)
+          .map(item => ({ equipamento_id: item.equipamento_id, quantidade: item.devolverQuantidade as number }));
 
-        console.log('Recebimento parcial registrado:', dadosRecebimento);
-        alert(`Recebimento parcial registrado! ${this.getTotalDevolvidos()} equipamento(s) devolvido(s), ${this.getTotalNaoDevolvidos()} ainda pendente(s).`);
-        this.voltar();
+        if (itens.length === 0) {
+          alert('Nenhuma quantidade válida informada para devolução.');
+          return;
+        }
+
+        this.locacaoService.receberParcial(this.locacaoId as number, itens).subscribe({
+          next: (locacaoAtualizada) => {
+            this.locacao = locacaoAtualizada;
+            alert(`Recebimento parcial registrado! ${this.getTotalDevolvidos()} item(ns) com devolução processada.`);
+            this.carregarLocacao();
+          },
+          error: (error) => {
+            console.error('Erro ao registrar recebimento parcial:', error);
+            alert('Erro ao registrar recebimento parcial. Tente novamente.');
+          }
+        });
       }
     }
   }

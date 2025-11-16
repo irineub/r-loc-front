@@ -28,4 +28,13 @@ export class EquipamentoService {
   deleteEquipamento(id: number): Observable<any> {
     return this.apiService.delete('/equipamentos', id);
   }
+
+  // Ações de locação
+  alugar(equipamentoId: number, quantidade: number): Observable<any> {
+    return this.apiService.postCustom(`/equipamentos/${equipamentoId}/alugar?quantidade=${quantidade}`);
+  }
+
+  devolver(equipamentoId: number, quantidade: number): Observable<any> {
+    return this.apiService.postCustom(`/equipamentos/${equipamentoId}/devolver?quantidade=${quantidade}`);
+  }
 } 

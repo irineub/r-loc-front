@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyBrPipe } from '../../pipes/currency-br.pipe';
 import { Router } from '@angular/router';
 import { ClienteService } from '../../services/cliente.service';
 import { EquipamentoService } from '../../services/equipamento.service';
@@ -10,7 +11,7 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CurrencyBrPipe],
   template: `
     <div class="dashboard">
       <div class="card">
@@ -47,7 +48,7 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
           <div class="stat-card">
             <div class="stat-icon">📦</div>
             <div class="stat-content">
-              <h3>{{ locacoes.length }}</h3>
+              <h3>{{ locacoesAtivas.length }}</h3>
               <p>Locações Ativas</p>
             </div>
           </div>
@@ -130,7 +131,7 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
                 <div class="report-rank">#{{ i + 1 }}</div>
                 <div class="report-content">
                   <strong>{{ cliente.nome }}</strong>
-                  <small>{{ cliente.totalLocacoes }} locações • R$ {{ cliente.totalValor | number:'1.2-2' }}</small>
+                  <small>{{ cliente.totalLocacoes }} locações • {{ cliente.totalValor | currencyBr }}</small>
                 </div>
               </div>
             </div>
@@ -202,8 +203,8 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
                   <td>{{ item.quantidade }}</td>
                   <td>{{ item.dias }}</td>
                   <td>{{ item.tipo_cobranca === 'mensal' ? 'Mensal' : 'Diária' }}</td>
-                  <td>R$ {{ item.preco_unitario | number:'1.2-2' }}</td>
-                  <td>R$ {{ item.subtotal | number:'1.2-2' }}</td>
+                  <td>{{ item.preco_unitario | currencyBr }}</td>
+                  <td>{{ item.subtotal | currencyBr }}</td>
                 </tr>
               </tbody>
             </table>
@@ -211,16 +212,16 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
 
           <div class="totals-section">
             <div class="total-row">
-              <strong>Subtotal:</strong> R$ {{ getOrcamentoSubtotal(selectedOrcamento) | number:'1.2-2' }}
+              <strong>Subtotal:</strong> {{ getOrcamentoSubtotal(selectedOrcamento) | currencyBr }}
             </div>
             <div class="total-row">
-              <strong>Desconto:</strong> R$ {{ selectedOrcamento?.desconto | number:'1.2-2' }}
+              <strong>Desconto:</strong> {{ selectedOrcamento?.desconto | currencyBr }}
             </div>
             <div class="total-row">
-              <strong>Frete:</strong> R$ {{ selectedOrcamento?.frete | number:'1.2-2' }}
+              <strong>Frete:</strong> {{ selectedOrcamento?.frete | currencyBr }}
             </div>
             <div class="total-row final-total">
-              <strong>Total Final:</strong> R$ {{ selectedOrcamento?.total_final | number:'1.2-2' }}
+              <strong>Total Final:</strong> {{ selectedOrcamento?.total_final | currencyBr }}
             </div>
           </div>
         </div>
@@ -291,15 +292,15 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
                   <td>{{ getEquipamentoDescricao(item.equipamento_id) }}</td>
                   <td>{{ item.quantidade }}</td>
                   <td>{{ item.dias }}</td>
-                  <td>R$ {{ item.preco_unitario | number:'1.2-2' }}</td>
-                  <td>R$ {{ item.subtotal | number:'1.2-2' }}</td>
+                  <td>{{ item.preco_unitario | currencyBr }}</td>
+                  <td>{{ item.subtotal | currencyBr }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div class="totals-section">
             <div class="total-row final-total">
-              <strong>Total Final:</strong> R$ {{ selectedLocacao?.total_final | number:'1.2-2' }}
+              <strong>Total Final:</strong> {{ selectedLocacao?.total_final | currencyBr }}
             </div>
           </div>
         </div>

@@ -12,6 +12,10 @@ export class PrintableService {
 
   constructor() { }
 
+  private formatCurrency(value: number): string {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  }
+
   // Método para definir os equipamentos disponíveis
   setEquipamentos(equipamentos: Equipamento[]) {
     this.equipamentos = equipamentos;
@@ -43,19 +47,19 @@ export class PrintableService {
     const itensHTML = orcamento.itens?.map(item => `
       <tr>
         <td>${this.getEquipamentoDescricao(item.equipamento_id)}</td>
-        <td>R$ ${item.preco_unitario.toFixed(2).replace('.', ',')}</td>
+        <td>${this.formatCurrency(item.preco_unitario)}</td>
         <td>${item.quantidade}</td>
         <td>${dataInicio}</td>
         <td>${dataFim}</td>
         <td>${item.dias}</td>
-        <td>R$ ${item.subtotal.toFixed(2).replace('.', ',')}</td>
+        <td>${this.formatCurrency(item.subtotal)}</td>
       </tr>
     `).join('') || '';
 
     const subtotal = orcamento.itens?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
-    const descontoValor = orcamento.desconto.toFixed(2).replace('.', ',');
-    const frete = orcamento.frete.toFixed(2).replace('.', ',');
-    const total = orcamento.total_final.toFixed(2).replace('.', ',');
+    const descontoValor = this.formatCurrency(orcamento.desconto);
+    const frete = this.formatCurrency(orcamento.frete);
+    const total = this.formatCurrency(orcamento.total_final);
 
     return `
 <!DOCTYPE html>
@@ -192,7 +196,7 @@ export class PrintableService {
     </table>
 
     <div class="total">
-      <p><strong>Subtotal:</strong> R$ ${subtotal.toFixed(2).replace('.', ',')}</p>
+      <p><strong>Subtotal:</strong> ${this.formatCurrency(subtotal)}</p>
       <p><strong>Desconto:</strong> R$ ${descontoValor}</p>
       <p><strong>Frete:</strong> R$ ${frete}</p>
       <p><strong>Total:</strong> R$ ${total}</p>
@@ -230,16 +234,16 @@ export class PrintableService {
     const itensHTML = locacao.itens?.map(item => `
       <tr>
         <td>${this.getEquipamentoDescricao(item.equipamento_id)}</td>
-        <td>R$ ${item.preco_unitario.toFixed(2).replace('.', ',')}</td>
+        <td>${this.formatCurrency(item.preco_unitario)}</td>
         <td>${item.quantidade}</td>
         <td>${dataInicio}</td>
         <td>${dataFim}</td>
         <td>${item.dias}</td>
-        <td>R$ ${item.subtotal.toFixed(2).replace('.', ',')}</td>
+        <td>${this.formatCurrency(item.subtotal)}</td>
       </tr>
     `).join('') || '';
 
-    const total = locacao.total_final.toFixed(2).replace('.', ',');
+    const total = this.formatCurrency(locacao.total_final);
 
     return `
 <!DOCTYPE html>
@@ -250,7 +254,7 @@ export class PrintableService {
   <style>
     @page {
       size: A4;
-      margin: 1.5cm;
+      margin: 10mm; /* margens menores e consistentes */
       page-break-inside: avoid;
     }
 
@@ -266,13 +270,12 @@ export class PrintableService {
     }
 
     .page {
-      width: 210mm;
-      min-height: 297mm;
-      padding: 8mm;
-      margin: 0 auto 0 auto;
+      width: 100%;
+      padding: 6mm 0; /* remover sobra lateral, usar container centralizado */
+      margin: 0 auto;
       background: white;
       position: relative;
-      page-break-after: always;
+      page-break-after: avoid;
     }
 
     .page:last-child {
@@ -320,33 +323,34 @@ export class PrintableService {
 
     .container {
       width: 100%;
+      max-width: 180mm; /* conteúdo centralizado e largura confortável */
       margin: 0 auto;
     }
 
     .header {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 12px; /* reduzir espaço abaixo do cabeçalho */
       page-break-inside: avoid;
     }
 
     .header img {
-      max-height: 80px;
-      margin-bottom: 10px;
+      max-height: 64px; /* logo mais compacto */
+      margin-bottom: 8px;
     }
 
     .header h1 {
-      font-size: 16pt;
+      font-size: 15pt;
       margin: 0;
     }
 
     .header h2 {
-      font-size: 12pt;
+      font-size: 11pt;
       margin: 0;
       font-weight: normal;
     }
 
     .info {
-      margin: 15px 0;
+      margin: 8px 0;
       page-break-inside: avoid;
     }
 
@@ -357,7 +361,7 @@ export class PrintableService {
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 15px 0;
+      margin: 8px 0;
       page-break-inside: avoid;
     }
 
@@ -366,7 +370,7 @@ export class PrintableService {
     }
 
     th, td {
-      padding: 6px;
+      padding: 5px 6px;
       text-align: left;
       font-size: 10pt;
       page-break-inside: avoid;
@@ -378,9 +382,10 @@ export class PrintableService {
 
     .section-title {
       font-weight: bold;
-      margin-top: 15px;
+      margin-top: 10px;
       text-transform: uppercase;
       page-break-after: avoid;
+      text-align: center; /* melhor alinhamento visual */
     }
 
     .assinaturas-container {
@@ -406,7 +411,7 @@ export class PrintableService {
     }
 
     .footer {
-      margin-top: 40px;
+      margin-top: 16px; /* reduzir espaço para evitar pular página cedo */
       text-align: center;
       page-break-inside: avoid;
     }
@@ -475,7 +480,7 @@ export class PrintableService {
         </tbody>
       </table>
 
-      <p><strong>Total:</strong> R$ ${total}</p>
+      <p><strong>Total:</strong> ${total}</p>
 
       
 
@@ -492,7 +497,7 @@ export class PrintableService {
       <p>A devolução dos equipamentos deverá ser realizada no endereço da LOCADORA: ${this.empresaData.endereco}.</p>
 
       <p class="section-title">VALOR E FORMA DE PAGAMENTO</p>
-      <p>O valor total da presente locação é de R$ ${total}.</p>
+      <p>O valor total da presente locação é de ${total}.</p>
       <p>O pagamento deve ser efetuado no ato da emissão do contrato, através de: dinheiro, cartão de débito/crédito ou transferência bancária.</p>
       <p>Em caso de atraso no pagamento, será cobrada multa de 2% (dois por cento) sobre o valor em atraso, mais juros de 1% (um por cento) ao mês.</p>
 
@@ -576,16 +581,16 @@ export class PrintableService {
     const itensHTML = locacao.itens?.map(item => `
       <tr>
         <td>${this.getEquipamentoDescricao(item.equipamento_id)}</td>
-        <td>R$ ${item.preco_unitario.toFixed(2).replace('.', ',')}</td>
+        <td>${this.formatCurrency(item.preco_unitario)}</td>
         <td>${item.quantidade}</td>
         <td>${dataInicio}</td>
         <td>${dataFim}</td>
         <td>${item.dias}</td>
-        <td>R$ ${item.subtotal.toFixed(2).replace('.', ',')}</td>
+        <td>${this.formatCurrency(item.subtotal)}</td>
       </tr>
     `).join('') || '';
 
-    const total = locacao.total_final.toFixed(2).replace('.', ',');
+    const total = this.formatCurrency(locacao.total_final);
 
     return `
 <!DOCTYPE html>
@@ -721,7 +726,7 @@ export class PrintableService {
     </table>
 
     <div class="total">
-      <p><strong>Total:</strong> R$ ${total}</p>
+      <p><strong>Total:</strong> ${total}</p>
     </div>
 
     <div class="observacao">
