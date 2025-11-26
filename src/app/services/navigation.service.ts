@@ -4,6 +4,8 @@ import { BehaviorSubject } from 'rxjs';
 export interface NavigationState {
   shouldOpenLocacaoModal?: boolean;
   locacaoId?: number;
+  shouldOpenOrcamentoModal?: boolean;
+  orcamentoId?: number;
 }
 
 @Injectable({

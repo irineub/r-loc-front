@@ -6,6 +6,7 @@ import { ClienteService } from '../../services/cliente.service';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { OrcamentoService } from '../../services/orcamento.service';
 import { LocacaoService } from '../../services/locacao.service';
+import { NavigationService } from '../../services/navigation.service';
 import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
 
 @Component({
@@ -910,7 +911,8 @@ export class DashboardComponent implements OnInit {
     private clienteService: ClienteService,
     private equipamentoService: EquipamentoService,
     private orcamentoService: OrcamentoService,
-    private locacaoService: LocacaoService
+    private locacaoService: LocacaoService,
+    private navigationService: NavigationService
   ) {}
 
   ngOnInit() {

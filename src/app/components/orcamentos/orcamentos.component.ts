@@ -1452,6 +1452,26 @@ export class OrcamentosComponent implements OnInit {
 
   ngOnInit() {
     this.loadData();
+    
+    // Verificar se deve abrir modal de orçamento
+    this.navigationService.getNavigationState().subscribe(state => {
+      if (state.shouldOpenOrcamentoModal && state.orcamentoId) {
+        // Aguardar um pouco para garantir que os dados foram carregados
+        setTimeout(() => {
+          const orcamento = this.orcamentos.find(o => o.id === state.orcamentoId);
+          if (orcamento) {
+            this.viewOrcamento(orcamento);
+          } else {
+            // Se não encontrou, buscar do servidor
+            this.orcamentoService.getOrcamento(state.orcamentoId).subscribe(orc => {
+              this.viewOrcamento(orc);
+            });
+          }
+          // Limpar estado de navegação
+          this.navigationService.clearNavigationState();
+        }, 500);
+      }
+    });
   }
 
   convertToNumber(value: any): number {
@@ -1513,18 +1533,14 @@ export class OrcamentosComponent implements OnInit {
   }
 
   loadData() {
-    // Carregar locações primeiro para filtrar orçamentos
+    // Carregar locações
     this.locacaoService.getLocacoes().subscribe(locacoes => {
       this.locacoes = locacoes;
-      
-      // Depois carregar orçamentos e filtrar os que viraram locação
-      this.orcamentoService.getOrcamentos().subscribe(data => {
-        this.orcamentos = data.filter(orcamento => {
-          // Verificar se já existe uma locação para este orçamento
-          const hasLocacao = this.locacoes.some(locacao => locacao.orcamento_id === orcamento.id);
-          return !hasLocacao; // Retorna apenas orçamentos que NÃO têm locação
-        });
-      });
+    });
+
+    // Carregar todos os orçamentos (sem filtrar)
+    this.orcamentoService.getOrcamentos().subscribe(data => {
+      this.orcamentos = data;
     });
 
     this.clienteService.getClientes().subscribe(data => {
