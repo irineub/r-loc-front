@@ -1455,15 +1455,16 @@ export class OrcamentosComponent implements OnInit {
     
     // Verificar se deve abrir modal de orçamento
     this.navigationService.getNavigationState().subscribe(state => {
-      if (state.shouldOpenOrcamentoModal && state.orcamentoId) {
+      if (state.shouldOpenOrcamentoModal && state.orcamentoId !== undefined) {
+        const orcamentoId = state.orcamentoId;
         // Aguardar um pouco para garantir que os dados foram carregados
         setTimeout(() => {
-          const orcamento = this.orcamentos.find(o => o.id === state.orcamentoId);
+          const orcamento = this.orcamentos.find(o => o.id === orcamentoId);
           if (orcamento) {
             this.viewOrcamento(orcamento);
           } else {
             // Se não encontrou, buscar do servidor
-            this.orcamentoService.getOrcamento(state.orcamentoId).subscribe(orc => {
+            this.orcamentoService.getOrcamento(orcamentoId).subscribe(orc => {
               this.viewOrcamento(orc);
             });
           }
