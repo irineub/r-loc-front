@@ -1136,6 +1136,7 @@ import html2canvas from 'html2canvas';
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      min-height: 0;
     }
 
     .modal-header {
@@ -1147,6 +1148,7 @@ import html2canvas from 'html2canvas';
       align-items: center;
       border-top-left-radius: 20px;
       border-top-right-radius: 20px;
+      flex-shrink: 0;
     }
 
     .modal-header h3 {
@@ -1172,6 +1174,8 @@ import html2canvas from 'html2canvas';
       padding: 2rem;
       overflow-y: auto;
       flex-grow: 1;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
     }
 
     .modal-body #orcamento-pdf-content {
@@ -1267,6 +1271,7 @@ import html2canvas from 'html2canvas';
       border-radius: 10px;
       box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
       border: 1px solid #e5e7eb;
+      overflow-x: auto;
     }
 
     .itens-section h4 {
@@ -1287,6 +1292,7 @@ import html2canvas from 'html2canvas';
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      min-width: 600px;
     }
 
     .items-table th {
@@ -1358,6 +1364,8 @@ import html2canvas from 'html2canvas';
       background: #f9fafb;
       border-bottom-left-radius: 15px;
       border-bottom-right-radius: 15px;
+      flex-shrink: 0;
+      border-top: 1px solid #e9ecef;
     }
 
     .modal-footer .btn {
@@ -1369,6 +1377,7 @@ import html2canvas from 'html2canvas';
       .modal-content {
         width: 95vw;
         max-height: 95vh;
+        margin: 1rem;
       }
       
       .modal-body {
@@ -1377,6 +1386,7 @@ import html2canvas from 'html2canvas';
       
       .items-table {
         font-size: 0.8rem;
+        min-width: 500px;
       }
       
       .items-table th,
@@ -1386,6 +1396,14 @@ import html2canvas from 'html2canvas';
       
       .modal-footer {
         flex-direction: column;
+      }
+      
+      .modal-footer .btn {
+        width: 100%;
+      }
+      
+      .itens-section {
+        overflow-x: auto;
       }
     }
   `]

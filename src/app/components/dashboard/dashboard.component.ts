@@ -492,6 +492,39 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
       .stat-content h3 {
         font-size: 2rem;
       }
+      
+      .modal-content {
+        width: 95vw;
+        max-height: 95vh;
+        margin: 1rem;
+      }
+      
+      .modal-body {
+        padding: 1rem;
+      }
+      
+      .items-table {
+        font-size: 0.8rem;
+        min-width: 500px;
+      }
+      
+      .items-table th,
+      .items-table td {
+        padding: 0.5rem 0.25rem;
+      }
+      
+      .modal-footer {
+        flex-direction: column;
+        padding: 1rem;
+      }
+      
+      .modal-footer .btn {
+        width: 100%;
+      }
+      
+      .itens-section {
+        overflow-x: auto;
+      }
     }
 
     /* Modal Styles */
@@ -515,8 +548,13 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       max-width: 90vw;
       max-height: 90vh;
+      width: 800px;
       position: relative;
       animation: modalSlideIn 0.3s ease-out;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
     }
 
     @keyframes modalSlideIn {
@@ -538,6 +576,7 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
       border-bottom: 2px solid #f3f4f6;
       background: linear-gradient(135deg, #f8fafc, #f1f5f9);
       border-radius: 20px 20px 0 0;
+      flex-shrink: 0;
     }
 
     .modal-header h3 {
@@ -571,8 +610,10 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
 
     .modal-body {
       padding: 2rem;
-      max-height: calc(90vh - 140px);
       overflow-y: auto;
+      flex-grow: 1;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
     }
 
     .modal-footer {
@@ -583,6 +624,7 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
       border-top: 2px solid #f3f4f6;
       background: linear-gradient(135deg, #f8fafc, #f1f5f9);
       border-radius: 0 0 20px 20px;
+      flex-shrink: 0;
     }
 
     .pdf-header {
@@ -663,6 +705,7 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
       box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
       border: 1px solid #e5e7eb;
       margin-bottom: 1.5rem;
+      overflow-x: auto;
     }
 
     .itens-section h4 {
@@ -683,6 +726,7 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      min-width: 600px;
     }
 
     .items-table th {

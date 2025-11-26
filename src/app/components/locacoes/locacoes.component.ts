@@ -402,8 +402,11 @@ import { Router } from '@angular/router';
       max-width: 800px;
       width: 100%;
       max-height: 90vh;
-      overflow-y: auto;
+      overflow: hidden;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
     .modal-header {
@@ -414,6 +417,7 @@ import { Router } from '@angular/router';
       justify-content: space-between;
       align-items: center;
       border-radius: 20px 20px 0 0;
+      flex-shrink: 0;
     }
 
     .modal-close {
@@ -438,6 +442,10 @@ import { Router } from '@angular/router';
 
     .modal-body {
       padding: 2rem;
+      overflow-y: auto;
+      flex-grow: 1;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
     }
 
     .modal-footer {
@@ -445,6 +453,9 @@ import { Router } from '@angular/router';
       border-top: 1px solid #e9ecef;
       display: flex;
       justify-content: flex-end;
+      gap: 1rem;
+      flex-shrink: 0;
+      background: #f9fafb;
     }
 
     /* Botões globais */
@@ -635,6 +646,7 @@ import { Router } from '@angular/router';
       box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
       border: 1px solid #e5e7eb;
       margin-bottom: 1.5rem;
+      overflow-x: auto;
     }
 
     .itens-section h4 {
@@ -655,6 +667,7 @@ import { Router } from '@angular/router';
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      min-width: 600px;
     }
 
     .items-table th {
@@ -741,6 +754,34 @@ import { Router } from '@angular/router';
       .modal-content {
         margin: 1rem;
         max-height: 95vh;
+        width: 95vw;
+      }
+      
+      .modal-body {
+        padding: 1rem;
+      }
+      
+      .items-table {
+        font-size: 0.8rem;
+        min-width: 500px;
+      }
+      
+      .items-table th,
+      .items-table td {
+        padding: 0.5rem 0.25rem;
+      }
+      
+      .modal-footer {
+        flex-direction: column;
+        padding: 1rem;
+      }
+      
+      .modal-footer .btn {
+        width: 100%;
+      }
+      
+      .itens-section {
+        overflow-x: auto;
       }
     }
 
