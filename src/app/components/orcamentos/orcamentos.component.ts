@@ -315,7 +315,7 @@ import { take } from 'rxjs/operators';
           </div>
 
           <!-- Seção especial para orçamentos aprovados -->
-          <div class="aprovado-section" *ngIf="selectedOrcamento?.status === 'aprovado'">
+          <div class="aprovado-section" *ngIf="selectedOrcamento?.status === 'aprovado' && !hasLocacaoForOrcamento(selectedOrcamento?.id)">
             <div class="aprovado-header">
               <h4>🎉 Orçamento Aprovado!</h4>
               <p>Este orçamento foi aprovado e está pronto para gerar o contrato de locação.</p>
@@ -323,6 +323,19 @@ import { take } from 'rxjs/operators';
             <div class="aprovado-actions">
               <button class="btn btn-primary btn-lg" (click)="createLocacaoFromOrcamento(selectedOrcamento?.id)">
                 📋 Gerar Contrato de Locação
+              </button>
+            </div>
+          </div>
+
+          <!-- Mensagem quando já existe locação -->
+          <div class="aprovado-section" *ngIf="selectedOrcamento?.status === 'aprovado' && hasLocacaoForOrcamento(selectedOrcamento?.id)">
+            <div class="aprovado-header">
+              <h4>✅ Locação Já Criada</h4>
+              <p>Este orçamento já possui uma locação criada. Verifique a lista de locações para mais detalhes.</p>
+            </div>
+            <div class="aprovado-actions">
+              <button class="btn btn-secondary btn-lg" (click)="irParaLocacoes()">
+                📋 Ver Locações
               </button>
             </div>
           </div>
@@ -1829,9 +1842,35 @@ export class OrcamentosComponent implements OnInit {
       },
       error: (error) => {
         console.error('Erro ao criar locação:', error);
+        let errorMessage = 'Erro ao criar locação, tente novamente';
+        if (error && error.message) {
+          errorMessage = error.message;
+          // Se a mensagem contém "Já existe uma locação", usar mensagem mais amigável
+          if (errorMessage.includes('Já existe uma locação')) {
+            errorMessage = 'Este orçamento já possui uma locação criada. Verifique a lista de locações.';
+          } else if (errorMessage.includes('Orçamento não encontrado')) {
+            errorMessage = 'Orçamento não encontrado. Recarregue a página e tente novamente.';
+          } else if (errorMessage.includes('Apenas orçamentos aprovados')) {
+            errorMessage = 'Apenas orçamentos aprovados podem gerar locações. Aprove o orçamento primeiro.';
+          }
+        }
+        alert(errorMessage);
+      }
+      error: (error) => {
+        console.error('Erro ao criar locação:', error);
         alert('Erro ao criar locação. Tente novamente.');
       }
     });
+  }
+
+  hasLocacaoForOrcamento(orcamentoId: number | undefined): boolean {
+    if (!orcamentoId) return false;
+    return this.locacoes.some(locacao => locacao.orcamento_id === orcamentoId);
+  }
+
+  irParaLocacoes() {
+    this.closeViewModal();
+    this.router.navigate(['/locacoes']);
   }
 
   exportToXLSX() {

@@ -69,7 +69,7 @@ export class ApiService {
     );
   }
 
-  private handleError(error: HttpErrorResponse) {
+  private handleError = (error: HttpErrorResponse) => {
     console.error('API Error:', error);
     console.error('Error status:', error.status);
     console.error('Error message:', error.message);
@@ -84,7 +84,12 @@ export class ApiService {
       errorMessage = error.error.message;
     } else {
       // Server-side error
-      errorMessage = error.status + ': ' + error.message;
+      // Extrair mensagem de erro do backend se disponível
+      if (error.error && error.error.detail) {
+        errorMessage = error.error.detail;
+      } else {
+        errorMessage = `${error.status}: ${error.message || 'Erro desconhecido'}`;
+      }
     }
     return throwError(() => new Error(errorMessage));
   }
