@@ -79,7 +79,15 @@ export class ApiService {
     console.error('Current baseUrl:', this.baseUrl);
     
     let errorMessage = 'An error occurred';
-    if (error.error instanceof ErrorEvent) {
+    
+    // Tratar erros de parsing JSON
+    if (error.message && error.message.includes('Http failure during parsing')) {
+      if (error.status === 200) {
+        errorMessage = 'A resposta do servidor não é um JSON válido. Verifique se o endpoint está correto.';
+      } else {
+        errorMessage = `Erro ao processar resposta do servidor (Status: ${error.status})`;
+      }
+    } else if (error.error instanceof ErrorEvent) {
       // Client-side error
       errorMessage = error.error.message;
     } else {
@@ -87,6 +95,8 @@ export class ApiService {
       // Extrair mensagem de erro do backend se disponível
       if (error.error && error.error.detail) {
         errorMessage = error.error.detail;
+      } else if (error.error && typeof error.error === 'string') {
+        errorMessage = error.error;
       } else {
         errorMessage = `${error.status}: ${error.message || 'Erro desconhecido'}`;
       }
