@@ -759,23 +759,53 @@ export class RecebimentoComponent implements OnInit {
   carregarLocacao() {
     if (!this.locacaoId) return;
 
+    // Primeiro, tentar buscar da lista de locações (mais eficiente e funciona)
+    this.locacaoService.getLocacoes().subscribe({
+      next: (locacoes) => {
+        const locacaoEncontrada = locacoes.find(l => l.id === this.locacaoId);
+        if (locacaoEncontrada && locacaoEncontrada.itens) {
+          // Se encontrou na lista e tem itens, usar diretamente
+          this.processarLocacao(locacaoEncontrada);
+        } else {
+          // Se não encontrou ou não tem itens, tentar buscar individualmente
+          this.buscarLocacaoIndividual();
+        }
+      },
+      error: () => {
+        // Se falhar ao buscar lista, tentar buscar individualmente
+        this.buscarLocacaoIndividual();
+      }
+    });
+  }
+
+  private buscarLocacaoIndividual() {
+    if (!this.locacaoId) return;
+
     this.locacaoService.getLocacao(this.locacaoId).subscribe({
       next: (locacao) => {
-        this.locacao = locacao;
-        this.itensRecebimento = locacao.itens?.map(item => ({
-          ...item,
-          devolvido: false,
-          observacoes: '',
-          danificado: false,
-          devolverQuantidade: 0
-        })) || [];
+        this.processarLocacao(locacao);
       },
       error: (error) => {
         console.error('Erro ao carregar locação:', error);
-        alert('Erro ao carregar informações da locação.');
+        let errorMessage = 'Erro ao carregar informações da locação.';
+        if (error.message && error.message.includes('não é um JSON válido')) {
+          errorMessage = 'O endpoint de locação não está disponível no servidor. Verifique a configuração da API.';
+        }
+        alert(errorMessage);
         this.voltar();
       }
     });
+  }
+
+  private processarLocacao(locacao: Locacao) {
+    this.locacao = locacao;
+    this.itensRecebimento = locacao.itens?.map(item => ({
+      ...item,
+      devolvido: false,
+      observacoes: '',
+      danificado: false,
+      devolverQuantidade: 0
+    })) || [];
   }
 
   getEquipamentoDescricao(equipamentoId: number): string {
