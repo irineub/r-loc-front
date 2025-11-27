@@ -13,6 +13,7 @@ import { Orcamento, Cliente, Equipamento, OrcamentoCreate, ItemOrcamentoCreate, 
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-orcamentos',
@@ -1454,9 +1455,12 @@ export class OrcamentosComponent implements OnInit {
     this.loadData();
     
     // Verificar se deve abrir modal de orçamento
-    this.navigationService.getNavigationState().subscribe(state => {
+    this.navigationService.getNavigationState().pipe(take(1)).subscribe(state => {
       if (state.shouldOpenOrcamentoModal && state.orcamentoId !== undefined) {
         const orcamentoId = state.orcamentoId;
+        // Limpar estado imediatamente para evitar múltiplas execuções
+        this.navigationService.clearNavigationState();
+        
         // Aguardar um pouco para garantir que os dados foram carregados
         setTimeout(() => {
           const orcamento = this.orcamentos.find(o => o.id === orcamentoId);
@@ -1468,9 +1472,7 @@ export class OrcamentosComponent implements OnInit {
               this.viewOrcamento(orc);
             });
           }
-          // Limpar estado de navegação
-          this.navigationService.clearNavigationState();
-        }, 500);
+        }, 1000);
       }
     });
   }

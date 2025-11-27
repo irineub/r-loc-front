@@ -838,13 +838,26 @@ export class LocacoesComponent implements OnInit {
   }
 
   loadData() {
-    this.locacaoService.getLocacoes().subscribe(locacoes => {
-      this.locacoes = locacoes;
+    this.locacaoService.getLocacoes().subscribe({
+      next: (locacoes) => {
+        this.locacoes = locacoes || [];
+        console.log('Locações carregadas:', this.locacoes.length);
+      },
+      error: (error) => {
+        console.error('Erro ao carregar locações:', error);
+        this.locacoes = [];
+      }
     });
 
-    this.equipamentoService.getEquipamentos().subscribe(equipamentos => {
-      this.equipamentos = equipamentos;
-      this.printableService.setEquipamentos(equipamentos);
+    this.equipamentoService.getEquipamentos().subscribe({
+      next: (equipamentos) => {
+        this.equipamentos = equipamentos || [];
+        this.printableService.setEquipamentos(this.equipamentos);
+      },
+      error: (error) => {
+        console.error('Erro ao carregar equipamentos:', error);
+        this.equipamentos = [];
+      }
     });
   }
 

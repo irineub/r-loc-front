@@ -61,6 +61,7 @@ export interface ItemLocacao {
   locacao_id: number;
   equipamento_id: number;
   quantidade: number;
+  quantidade_devolvida?: number;
   preco_unitario: number;
   dias: number;
   subtotal: number;
