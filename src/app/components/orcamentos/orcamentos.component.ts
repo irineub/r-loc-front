@@ -1856,10 +1856,6 @@ export class OrcamentosComponent implements OnInit {
         }
         alert(errorMessage);
       }
-      error: (error) => {
-        console.error('Erro ao criar locação:', error);
-        alert('Erro ao criar locação. Tente novamente.');
-      }
     });
   }
 
