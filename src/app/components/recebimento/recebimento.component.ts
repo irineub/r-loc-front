@@ -75,7 +75,16 @@ interface ItemRecebimento extends ItemLocacao {
                   </div>
                 </div>
 
-                <div class="status-selection">
+                <!-- Mostrar status de já recebido se totalmente devolvido -->
+                <div class="status-ja-recebido" *ngIf="(item.quantidade_devolvida || 0) >= item.quantidade">
+                  <div class="status-completo-badge">
+                    <span class="status-icon">✅</span>
+                    <span class="status-label">Equipamento totalmente recebido</span>
+                  </div>
+                </div>
+
+                <!-- Mostrar opções de status apenas se ainda houver quantidade pendente -->
+                <div class="status-selection" *ngIf="(item.quantidade_devolvida || 0) < item.quantidade">
                   <h5>Status do Equipamento:</h5>
                   <div class="status-options">
                     <label class="status-option devolvido" [class.selected]="item.devolvido">
@@ -106,7 +115,7 @@ interface ItemRecebimento extends ItemLocacao {
                   </div>
                 </div>
 
-                <div class="equipamento-details-expanded" *ngIf="item.devolvido">
+                <div class="equipamento-details-expanded" *ngIf="item.devolvido && (item.quantidade_devolvida || 0) < item.quantidade">
                   <div class="form-group">
                     <label for="qtd-{{i}}">Quantidade a devolver:</label>
                     <input id="qtd-{{i}}" type="number" class="form-control"
@@ -319,6 +328,30 @@ interface ItemRecebimento extends ItemLocacao {
     .equipamento-item:hover {
       border-color: #dc3545;
       box-shadow: 0 4px 16px rgba(220, 53, 69, 0.1);
+    }
+
+    .status-ja-recebido {
+      margin-bottom: 1rem;
+    }
+
+    .status-completo-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+      border: 2px solid #28a745;
+      border-radius: 12px;
+      padding: 1rem;
+      color: #155724;
+      font-weight: 600;
+    }
+
+    .status-completo-badge .status-icon {
+      font-size: 1.5rem;
+    }
+
+    .status-completo-badge .status-label {
+      font-size: 1rem;
     }
 
     .equipamento-header {

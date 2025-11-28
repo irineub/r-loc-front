@@ -1009,9 +1009,29 @@ export class DashboardComponent implements OnInit {
   }
 
   getEquipamentoDescricao(equipamentoId: number): string {
-    if (!this.selectedOrcamento?.itens) return 'Equipamento não encontrado';
-    const item = this.selectedOrcamento.itens.find(i => i.equipamento_id === equipamentoId);
-    return item?.equipamento?.descricao || 'Equipamento não encontrado';
+    // Primeiro, tentar buscar na lista de equipamentos
+    const equipamento = this.equipamentos.find(e => e.id === equipamentoId);
+    if (equipamento) {
+      return equipamento.descricao;
+    }
+    
+    // Se não encontrou, tentar buscar nos itens do orçamento selecionado
+    if (this.selectedOrcamento?.itens) {
+      const item = this.selectedOrcamento.itens.find(i => i.equipamento_id === equipamentoId);
+      if (item?.equipamento?.descricao) {
+        return item.equipamento.descricao;
+      }
+    }
+    
+    // Se não encontrou, tentar buscar nos itens da locação selecionada
+    if (this.selectedLocacao?.itens) {
+      const item = this.selectedLocacao.itens.find(i => i.equipamento_id === equipamentoId);
+      if (item?.equipamento?.descricao) {
+        return item.equipamento.descricao;
+      }
+    }
+    
+    return 'Equipamento não encontrado';
   }
 
   viewLocacao(locacao: Locacao) {
