@@ -1,5 +1,9 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
+import { catchError, map } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -13,7 +17,7 @@ export class AuthService {
   public isAuthenticated$: Observable<boolean> = this.isAuthenticatedSubject.asObservable();
   public currentUser$: Observable<string> = this.currentUserSubject.asObservable();
 
-  constructor() {
+  constructor(private http: HttpClient) {
     this.checkAuthStatus();
   }
 
@@ -40,22 +44,46 @@ export class AuthService {
 
   login(username: string, password: string): Promise<boolean> {
     return new Promise((resolve) => {
-      setTimeout(() => {
-        if (username === 'rloc' && password === 'admin0609') {
-          const expiryTime = Date.now() + this.SESSION_DURATION;
-          
-          localStorage.setItem('isAuthenticated', 'true');
-          localStorage.setItem('currentUser', username);
-          localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiryTime.toString());
-          
-          this.isAuthenticatedSubject.next(true);
-          this.currentUserSubject.next(username);
-          
-          resolve(true);
-        } else {
-          resolve(false);
-        }
-      }, 1000);
+      // Verificar se é o usuário admin principal
+      if (username === 'rloc' && password === 'admin0609') {
+        const expiryTime = Date.now() + this.SESSION_DURATION;
+        
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('currentUser', username);
+        localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiryTime.toString());
+        
+        this.isAuthenticatedSubject.next(true);
+        this.currentUserSubject.next(username);
+        
+        resolve(true);
+        return;
+      }
+      
+      // Tentar autenticar como funcionário
+      this.http.post<any>(`${environment.apiUrl}/funcionarios/login`, { username, senha: password })
+        .pipe(
+          map((funcionario) => {
+            if (funcionario && funcionario.ativo) {
+              const expiryTime = Date.now() + this.SESSION_DURATION;
+              
+              localStorage.setItem('isAuthenticated', 'true');
+              localStorage.setItem('currentUser', funcionario.username);
+              localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiryTime.toString());
+              
+              this.isAuthenticatedSubject.next(true);
+              this.currentUserSubject.next(funcionario.username);
+              
+              return true;
+            }
+            return false;
+          }),
+          catchError(() => {
+            return of(false);
+          })
+        )
+        .subscribe((success) => {
+          resolve(success);
+        });
     });
   }
 

@@ -7,7 +7,30 @@
     </div>
 
     <div class="login-body">
-      <form (ngSubmit)="onLogin()" class="login-form">
+      <!-- Tabs -->
+      <div class="login-tabs">
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="!showCadastro"
+          (click)="toggleCadastro()"
+          [disabled]="isLoading"
+        >
+          Entrar
+        </button>
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="showCadastro"
+          (click)="toggleCadastro()"
+          [disabled]="isLoading"
+        >
+          Cadastrar Funcionário
+        </button>
+      </div>
+
+      <!-- Formulário de Login -->
+      <form (ngSubmit)="onLogin()" class="login-form" *ngIf="!showCadastro">
         <div class="form-group">
           <label for="username" class="form-label">Usuário</label>
           <div class="input-wrapper">
@@ -55,6 +78,98 @@
         >
           <span *ngIf="!isLoading">Entrar</span>
           <span *ngIf="isLoading" class="loading-spinner">⏳ Entrando...</span>
+        </button>
+      </form>
+
+      <!-- Formulário de Cadastro -->
+      <form (ngSubmit)="onCadastrar()" class="login-form" *ngIf="showCadastro">
+        <div class="form-group">
+          <label for="cadastroUsername" class="form-label">Usuário *</label>
+          <div class="input-wrapper">
+            <input
+              type="text"
+              id="cadastroUsername"
+              name="cadastroUsername"
+              [(ngModel)]="cadastroUsername"
+              class="form-input"
+              placeholder="Digite o usuário"
+              (keypress)="onKeyPress($event)"
+              [disabled]="isLoading"
+              required
+            >
+            <div class="input-icon">👤</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cadastroNome" class="form-label">Nome Completo *</label>
+          <div class="input-wrapper">
+            <input
+              type="text"
+              id="cadastroNome"
+              name="cadastroNome"
+              [(ngModel)]="cadastroNome"
+              class="form-input"
+              placeholder="Digite o nome completo"
+              (keypress)="onKeyPress($event)"
+              [disabled]="isLoading"
+              required
+            >
+            <div class="input-icon">👨‍💼</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cadastroSenha" class="form-label">Senha *</label>
+          <div class="input-wrapper">
+            <input
+              type="password"
+              id="cadastroSenha"
+              name="cadastroSenha"
+              [(ngModel)]="cadastroSenha"
+              class="form-input"
+              placeholder="Mínimo 4 caracteres"
+              (keypress)="onKeyPress($event)"
+              [disabled]="isLoading"
+              required
+            >
+            <div class="input-icon">🔒</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cadastroConfirmarSenha" class="form-label">Confirmar Senha *</label>
+          <div class="input-wrapper">
+            <input
+              type="password"
+              id="cadastroConfirmarSenha"
+              name="cadastroConfirmarSenha"
+              [(ngModel)]="cadastroConfirmarSenha"
+              class="form-input"
+              placeholder="Digite a senha novamente"
+              (keypress)="onKeyPress($event)"
+              [disabled]="isLoading"
+              required
+            >
+            <div class="input-icon">🔒</div>
+          </div>
+        </div>
+
+        <div class="error-message" *ngIf="errorMessage">
+          {{ errorMessage }}
+        </div>
+
+        <div class="success-message" *ngIf="successMessage">
+          {{ successMessage }}
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn-primary login-btn"
+          [disabled]="isLoading || !cadastroUsername || !cadastroNome || !cadastroSenha || !cadastroConfirmarSenha"
+        >
+          <span *ngIf="!isLoading">Cadastrar</span>
+          <span *ngIf="isLoading" class="loading-spinner">⏳ Cadastrando...</span>
         </button>
       </form>
     </div>

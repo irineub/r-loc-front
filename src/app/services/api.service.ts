@@ -14,11 +14,20 @@ export class ApiService {
     console.log('API Service initialized with baseUrl:', this.baseUrl);
   }
 
+  private getHeaders(): { [key: string]: string } {
+    const currentUser = localStorage.getItem('currentUser') || '';
+    const headers: { [key: string]: string } = {};
+    if (currentUser && currentUser !== 'rloc') {
+      headers['X-Funcionario-Username'] = currentUser;
+    }
+    return headers;
+  }
+
   // Generic CRUD methods
   get<T>(endpoint: string): Observable<T[]> {
     const url = `${this.baseUrl}${endpoint}/`;
     console.log('GET request:', url);
-    return this.http.get<T[]>(url).pipe(
+    return this.http.get<T[]>(url, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
@@ -30,7 +39,7 @@ export class ApiService {
     console.log('Endpoint:', endpoint);
     console.log('ID:', id);
     console.log('Full URL constructed:', url);
-    return this.http.get<T>(url).pipe(
+    return this.http.get<T>(url, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
@@ -39,7 +48,7 @@ export class ApiService {
     const url = `${this.baseUrl}${endpoint}/`;
     console.log('POST request:', url, data);
     console.log('Full URL being called:', url);
-    return this.http.post<T>(url, data).pipe(
+    return this.http.post<T>(url, data, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
@@ -47,7 +56,7 @@ export class ApiService {
   put<T>(endpoint: string, id: number, data: any): Observable<T> {
     const url = `${this.baseUrl}${endpoint}/${id}/`;
     console.log('PUT request:', url, data);
-    return this.http.put<T>(url, data).pipe(
+    return this.http.put<T>(url, data, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
@@ -55,7 +64,7 @@ export class ApiService {
   delete(endpoint: string, id: number): Observable<any> {
     const url = `${this.baseUrl}${endpoint}/${id}/`;
     console.log('DELETE request:', url);
-    return this.http.delete(url).pipe(
+    return this.http.delete(url, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
@@ -64,7 +73,7 @@ export class ApiService {
   postCustom<T>(endpoint: string, data?: any): Observable<T> {
     const url = `${this.baseUrl}${endpoint}`;
     console.log('POST Custom request:', url, data);
-    return this.http.post<T>(url, data).pipe(
+    return this.http.post<T>(url, data, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
