@@ -31,10 +31,10 @@
           <a routerLink="/locacoes" routerLinkActive="active" (click)="closeMobileMenu()">
             📦 Locações
           </a>
-          <a routerLink="/funcionarios" routerLinkActive="active" (click)="closeMobileMenu()">
+          <a *ngIf="isMasterUser()" routerLink="/funcionarios" routerLinkActive="active" (click)="closeMobileMenu()">
             👨‍💼 Funcionários
           </a>
-          <a routerLink="/logs" routerLinkActive="active" (click)="closeMobileMenu()">
+          <a *ngIf="isMasterUser()" routerLink="/logs" routerLinkActive="active" (click)="closeMobileMenu()">
             📋 Logs
           </a>
           <div class="user-section">

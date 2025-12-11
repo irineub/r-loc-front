@@ -117,4 +117,12 @@ export class AuthService {
     
     return currentTime <= expiryTime;
   }
+
+  isMasterUser(): boolean {
+    const user = this.currentUser;
+    if (!user) {
+      return false;
+    }
+    return user === 'rloc' || user.includes('.master');
+  }
 } 

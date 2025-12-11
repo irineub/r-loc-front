@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
+import { MasterGuard } from './guards/master.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -37,12 +38,12 @@ export const routes: Routes = [
   { 
     path: 'funcionarios', 
     loadComponent: () => import('./components/funcionarios/funcionarios.component').then(m => m.FuncionariosComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, MasterGuard]
   },
   { 
     path: 'logs', 
     loadComponent: () => import('./components/logs/logs.component').then(m => m.LogsComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, MasterGuard]
   },
   { path: '**', redirectTo: '/login' }
 ];

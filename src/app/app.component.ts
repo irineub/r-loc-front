@@ -79,4 +79,8 @@ export class AppComponent implements OnInit, OnDestroy {
       this.closeMobileMenu();
     }
   }
+
+  isMasterUser(): boolean {
+    return this.authService.isMasterUser();
+  }
 }
