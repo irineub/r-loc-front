@@ -14,12 +14,12 @@ import { FuncionarioService, Funcionario } from '../../services/funcionario.serv
         <div class="card-header">
           <h2 class="card-title">📋 Logs de Auditoria</h2>
           <div class="filters">
-            <select [(ngModel)]="selectedFuncionario" (change)="loadLogs()" class="form-control">
-              <option [value]="undefined">Todos os funcionários</option>
-              <option *ngFor="let func of funcionarios" [value]="func.id">{{ func.nome }} ({{ func.username }})</option>
+            <select [(ngModel)]="selectedFuncionario" (change)="onFilterChange()" class="form-control">
+              <option [ngValue]="null">Todos os funcionários</option>
+              <option *ngFor="let func of funcionarios" [ngValue]="func.id">{{ func.nome }} ({{ func.username }})</option>
             </select>
-            <select [(ngModel)]="selectedEntidade" (change)="loadLogs()" class="form-control">
-              <option [value]="undefined">Todas as entidades</option>
+            <select [(ngModel)]="selectedEntidade" (change)="onFilterChange()" class="form-control">
+              <option [ngValue]="null">Todas as entidades</option>
               <option value="orcamento">Orçamentos</option>
               <option value="locacao">Locações</option>
               <option value="cliente">Clientes</option>
@@ -43,7 +43,7 @@ import { FuncionarioService, Funcionario } from '../../services/funcionario.serv
             </thead>
             <tbody>
               <tr *ngFor="let log of logs">
-                <td data-label="Data/Hora">{{ log.data_hora | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                <td data-label="Data/Hora">{{ formatDateTime(log.data_hora) }}</td>
                 <td data-label="Funcionário">
                   <span class="badge badge-info">{{ log.funcionario_username || 'rloc' }}</span>
                 </td>
@@ -196,8 +196,8 @@ import { FuncionarioService, Funcionario } from '../../services/funcionario.serv
 export class LogsComponent implements OnInit {
   logs: LogAuditoria[] = [];
   funcionarios: Funcionario[] = [];
-  selectedFuncionario?: number;
-  selectedEntidade?: string;
+  selectedFuncionario: number | null = null;
+  selectedEntidade: string | null = null;
   isLoading = false;
 
   constructor(
@@ -221,9 +221,16 @@ export class LogsComponent implements OnInit {
     });
   }
 
+  onFilterChange() {
+    this.loadLogs();
+  }
+
   loadLogs() {
     this.isLoading = true;
-    this.logService.getLogs(this.selectedFuncionario, this.selectedEntidade).subscribe({
+    const funcionarioId = this.selectedFuncionario !== null ? this.selectedFuncionario : undefined;
+    const entidade = this.selectedEntidade !== null ? this.selectedEntidade : undefined;
+    
+    this.logService.getLogs(funcionarioId, entidade).subscribe({
       next: (data) => {
         this.logs = data;
         this.isLoading = false;
@@ -233,6 +240,36 @@ export class LogsComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  formatDateTime(dateTimeString: string): string {
+    if (!dateTimeString) return '-';
+    
+    try {
+      // Converter a string UTC para Date
+      // O JavaScript automaticamente converte para o horário local do navegador
+      const date = new Date(dateTimeString);
+      
+      // Verificar se a data é válida
+      if (isNaN(date.getTime())) {
+        return dateTimeString;
+      }
+      
+      // Formatar no horário local do computador/navegador
+      // Se o computador estiver em Manaus (GMT-4), mostrará horário de Manaus
+      // Se estiver em outro fuso, mostrará o horário local
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      
+      return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    } catch (error) {
+      console.error('Erro ao formatar data:', error);
+      return dateTimeString;
+    }
   }
 
   getActionLabel(acao: string): string {

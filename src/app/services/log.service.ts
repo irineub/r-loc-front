@@ -20,18 +20,20 @@ export class LogService {
   constructor(private apiService: ApiService) { }
 
   getLogs(funcionario_id?: number, entidade?: string): Observable<LogAuditoria[]> {
-    let params = '';
     const queryParams: string[] = [];
-    if (funcionario_id !== undefined) {
+    if (funcionario_id !== undefined && funcionario_id !== null) {
       queryParams.push(`funcionario_id=${funcionario_id}`);
     }
-    if (entidade) {
+    if (entidade && entidade !== null && entidade !== '') {
       queryParams.push(`entidade=${entidade}`);
     }
+    
+    let endpoint = '/logs';
     if (queryParams.length > 0) {
-      params = '?' + queryParams.join('&');
+      endpoint += '?' + queryParams.join('&');
     }
-    return this.apiService.get<LogAuditoria>(`/logs${params}`);
+    
+    return this.apiService.get<LogAuditoria>(endpoint);
   }
 
   getLog(id: number): Observable<LogAuditoria> {
