@@ -203,7 +203,7 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
                   <td>{{ getEquipamentoDescricao(item.equipamento_id) }}</td>
                   <td>{{ item.quantidade }}</td>
                   <td>{{ item.dias }}</td>
-                  <td>{{ item.tipo_cobranca === 'mensal' ? 'Mensal' : 'Diária' }}</td>
+                  <td>{{ getTipoCobrancaLabel(item.tipo_cobranca) }}</td>
                   <td>{{ item.preco_unitario | currencyBr }}</td>
                   <td>{{ item.subtotal | currencyBr }}</td>
                 </tr>
@@ -1006,6 +1006,21 @@ export class DashboardComponent implements OnInit {
   getOrcamentoSubtotal(orcamento: Orcamento | null): number {
     if (!orcamento || !orcamento.itens) return 0;
     return orcamento.itens.reduce((total, item) => total + item.subtotal, 0);
+  }
+
+  getTipoCobrancaLabel(tipoCobranca: string): string {
+    switch(tipoCobranca) {
+      case 'diaria':
+        return 'Diária';
+      case 'semanal':
+        return 'Semanal';
+      case 'quinzenal':
+        return 'Quinzenal';
+      case 'mensal':
+        return 'Mensal';
+      default:
+        return 'Diária';
+    }
   }
 
   getEquipamentoDescricao(equipamentoId: number): string {

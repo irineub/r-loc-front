@@ -81,7 +81,7 @@ import { take } from 'rxjs/operators';
                 <label>📊 Período Calculado</label>
                 <div class="periodo-info">
                   <span class="periodo-dias">{{ periodoCalculado.dias }} dias</span>
-                  <span class="periodo-tipo">({{ periodoCalculado.tipoCobranca }})</span>
+                  <span class="periodo-tipo">({{ getTipoCobrancaLabel(periodoCalculado.tipoCobranca).toLowerCase() }})</span>
                 </div>
                 <small class="form-help">Este período será aplicado automaticamente aos itens</small>
               </div>
@@ -128,6 +128,8 @@ import { take } from 'rxjs/operators';
                             [(ngModel)]="newItem.tipo_cobranca" required
                             class="form-control">
                       <option value="diaria">Diária</option>
+                      <option value="semanal">Semanal</option>
+                      <option value="quinzenal">Quinzenal</option>
                       <option value="mensal">Mensal</option>
                     </select>
                   </div>
@@ -151,7 +153,7 @@ import { take } from 'rxjs/operators';
                     <strong>{{ getEquipamentoDescricao(item.equipamento_id) }}</strong>
                     <span class="item-details">
                       {{ item.quantidade }} x {{ item.dias }} dias 
-                      ({{ item.tipo_cobranca === 'mensal' ? 'mensal' : 'diária' }}) = 
+                      ({{ getTipoCobrancaLabel(item.tipo_cobranca).toLowerCase() }}) = 
                       {{ item.subtotal | currencyBr }}
                     </span>
                   </div>
@@ -358,7 +360,7 @@ import { take } from 'rxjs/operators';
                   <td>{{ getEquipamentoDescricao(item.equipamento_id) }}</td>
                   <td>{{ item.quantidade }}</td>
                   <td>{{ item.dias }}</td>
-                  <td>{{ item.tipo_cobranca === 'mensal' ? 'Mensal' : 'Diária' }}</td>
+                  <td>{{ getTipoCobrancaLabel(item.tipo_cobranca) }}</td>
                   <td>{{ item.preco_unitario | currencyBr }}</td>
                   <td>{{ item.subtotal | currencyBr }}</td>
                 </tr>
@@ -1508,6 +1510,10 @@ export class OrcamentosComponent implements OnInit {
           tipoCobranca = 'mensal';
         } else if (diffDays >= 30) { // 1 mês ou mais
           tipoCobranca = 'mensal';
+        } else if (diffDays >= 15) { // 15 dias ou mais (quinzenal)
+          tipoCobranca = 'quinzenal';
+        } else if (diffDays >= 7) { // 7 dias ou mais (semanal)
+          tipoCobranca = 'semanal';
         }
         
         this.periodoCalculado = {
@@ -1530,21 +1536,24 @@ export class OrcamentosComponent implements OnInit {
       // Aplicar aos itens existentes
       this.formData.itens.forEach(item => {
         item.dias = this.periodoCalculado!.dias;
-        item.tipo_cobranca = this.periodoCalculado!.tipoCobranca as 'diaria' | 'mensal';
+        item.tipo_cobranca = this.periodoCalculado!.tipoCobranca as 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
         
         // Recalcular subtotal
         const equipamento = this.equipamentos.find(e => e.id === item.equipamento_id);
         if (equipamento) {
-          // Para simplificar, usamos o preço unitário base
-          // Em uma implementação real, você teria preços diferentes para diária/mensal
-          item.preco_unitario = equipamento.preco_unitario;
-          item.subtotal = item.quantidade * item.dias * equipamento.preco_unitario;
+          item.preco_unitario = this.getPrecoPorTipoCobranca(equipamento, item.tipo_cobranca);
+          item.subtotal = this.calcularSubtotalPorTipoCobranca(
+            item.quantidade,
+            equipamento,
+            item.dias,
+            item.tipo_cobranca
+          );
         }
       });
       
       // Aplicar ao novo item
       this.newItem.dias = this.periodoCalculado!.dias;
-      this.newItem.tipo_cobranca = this.periodoCalculado!.tipoCobranca as 'diaria' | 'mensal';
+      this.newItem.tipo_cobranca = this.periodoCalculado!.tipoCobranca as 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
     }
   }
 
@@ -1596,17 +1605,16 @@ export class OrcamentosComponent implements OnInit {
     console.log('equipamento found:', equipamento);
     
     if (equipamento) {
-      this.newItem.preco_unitario = equipamento.preco_unitario;
+      const precoUnitario = this.getPrecoPorTipoCobranca(equipamento, this.newItem.tipo_cobranca);
+      this.newItem.preco_unitario = precoUnitario;
       
       // Calcular subtotal baseado no tipo de cobrança do item
-      if (this.newItem.tipo_cobranca === 'mensal') {
-        // Para cobrança mensal, calcular por mês (30 dias)
-        const meses = Math.ceil(this.newItem.dias / 30);
-        this.newItem.subtotal = this.newItem.quantidade * this.newItem.preco_unitario * meses;
-      } else {
-        // Para cobrança diária, calcular por dia
-        this.newItem.subtotal = this.newItem.quantidade * this.newItem.preco_unitario * this.newItem.dias;
-      }
+      this.newItem.subtotal = this.calcularSubtotalPorTipoCobranca(
+        this.newItem.quantidade,
+        equipamento,
+        this.newItem.dias,
+        this.newItem.tipo_cobranca
+      );
       
       console.log('Adding item to formData:', this.newItem);
       this.formData.itens.push({ ...this.newItem });
@@ -1618,7 +1626,7 @@ export class OrcamentosComponent implements OnInit {
         quantidade: 1,
         preco_unitario: 0,
         dias: this.periodoCalculado ? this.periodoCalculado.dias : 1,
-        tipo_cobranca: this.periodoCalculado ? (this.periodoCalculado.tipoCobranca as 'diaria' | 'mensal') : 'diaria',
+        tipo_cobranca: this.periodoCalculado ? (this.periodoCalculado.tipoCobranca as 'diaria' | 'semanal' | 'quinzenal' | 'mensal') : 'diaria',
         subtotal: 0
       };
       console.log('Item added successfully');
@@ -1643,14 +1651,62 @@ export class OrcamentosComponent implements OnInit {
     return equipamento ? equipamento.descricao : '';
   }
 
-  getEquipamentoPrice(id: number): number {
+  getEquipamentoPrice(id: number, tipoCobranca: string = 'diaria'): number {
     const equipamento = this.equipamentos.find(e => e.id === id);
-    return equipamento ? equipamento.preco_unitario : 0;
+    if (!equipamento) return 0;
+    return this.getPrecoPorTipoCobranca(equipamento, tipoCobranca);
   }
 
   getEquipamentoDescricao(equipamentoId: number): string {
     const equipamento = this.equipamentos.find(e => e.id === equipamentoId);
     return equipamento ? equipamento.descricao : 'Equipamento não encontrado';
+  }
+
+  getTipoCobrancaLabel(tipoCobranca: string): string {
+    switch(tipoCobranca) {
+      case 'diaria':
+        return 'Diária';
+      case 'semanal':
+        return 'Semanal';
+      case 'quinzenal':
+        return 'Quinzenal';
+      case 'mensal':
+        return 'Mensal';
+      default:
+        return 'Diária';
+    }
+  }
+
+  getPrecoPorTipoCobranca(equipamento: Equipamento, tipoCobranca: string): number {
+    switch(tipoCobranca) {
+      case 'diaria':
+        return equipamento.preco_diaria;
+      case 'semanal':
+        return equipamento.preco_semanal;
+      case 'quinzenal':
+        return equipamento.preco_quinzenal;
+      case 'mensal':
+        return equipamento.preco_mensal;
+      default:
+        return equipamento.preco_diaria;
+    }
+  }
+
+  calcularSubtotalPorTipoCobranca(quantidade: number, equipamento: Equipamento, dias: number, tipoCobranca: string): number {
+    const precoUnitario = this.getPrecoPorTipoCobranca(equipamento, tipoCobranca);
+    
+    if (tipoCobranca === 'mensal') {
+      const meses = Math.ceil(dias / 30);
+      return quantidade * precoUnitario * meses;
+    } else if (tipoCobranca === 'semanal') {
+      const semanas = Math.ceil(dias / 7);
+      return quantidade * precoUnitario * semanas;
+    } else if (tipoCobranca === 'quinzenal') {
+      const quinzenas = Math.ceil(dias / 15);
+      return quantidade * precoUnitario * quinzenas;
+    } else {
+      return quantidade * precoUnitario * dias;
+    }
   }
 
   getOrcamentoSubtotal(orcamento: Orcamento | null): number {
@@ -2112,7 +2168,7 @@ export class OrcamentosComponent implements OnInit {
           addText(this.getEquipamentoDescricao(item.equipamento_id), colPositions[0], yPosition, 8);
           addText(item.quantidade.toString(), colPositions[1], yPosition, 8);
           addText(item.dias.toString(), colPositions[2], yPosition, 8);
-          addText(item.tipo_cobranca === 'mensal' ? 'Mensal' : 'Diária', colPositions[3], yPosition, 8);
+          addText(this.getTipoCobrancaLabel(item.tipo_cobranca), colPositions[3], yPosition, 8);
           addText(`R$ ${item.preco_unitario.toFixed(2)}`, colPositions[4], yPosition, 8);
           addText(`R$ ${item.subtotal.toFixed(2)}`, colPositions[5], yPosition, 8);
           yPosition += 5;

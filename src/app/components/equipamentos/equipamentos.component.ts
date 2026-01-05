@@ -40,9 +40,30 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
             
             <div class="form-row">
               <div class="form-group">
-                <label for="preco_unitario">Preço Unitário (R$) *</label>
-                <input type="number" id="preco_unitario" name="preco_unitario" 
-                       [(ngModel)]="formData.preco_unitario" required min="0" step="0.01"
+                <label for="preco_diaria">Preço Diária (R$) *</label>
+                <input type="number" id="preco_diaria" name="preco_diaria" 
+                       [(ngModel)]="formData.preco_diaria" required min="0" step="0.01"
+                       class="form-control" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="preco_semanal">Preço Semanal (R$) *</label>
+                <input type="number" id="preco_semanal" name="preco_semanal" 
+                       [(ngModel)]="formData.preco_semanal" required min="0" step="0.01"
+                       class="form-control" placeholder="0.00">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="preco_quinzenal">Preço Quinzenal (R$) *</label>
+                <input type="number" id="preco_quinzenal" name="preco_quinzenal" 
+                       [(ngModel)]="formData.preco_quinzenal" required min="0" step="0.01"
+                       class="form-control" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="preco_mensal">Preço Mensal (R$) *</label>
+                <input type="number" id="preco_mensal" name="preco_mensal" 
+                       [(ngModel)]="formData.preco_mensal" required min="0" step="0.01"
                        class="form-control" placeholder="0.00">
               </div>
             </div>
@@ -69,51 +90,72 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
 
         <!-- Table Section -->
         <div class="table-section" *ngIf="!showForm">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Descrição</th>
-                <th>Unidade</th>
-                <th>Preço Unitário</th>
-                <th>Estoque</th>
-                <th>Status</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let equipamento of equipamentos">
-                <td data-label="ID">{{ equipamento.id }}</td>
-                <td data-label="Descrição">{{ equipamento.descricao }}</td>
-                <td data-label="Unidade">{{ equipamento.unidade }}</td>
-                <td data-label="Preço Unitário">{{ equipamento.preco_unitario | currencyBr }}</td>
-                <td data-label="Estoque">
-                  <div class="estoque-info">
-                    <span class="estoque-total">{{ equipamento.estoque }}</span>
-                    <span class="estoque-alugado">-{{ equipamento.estoque_alugado }}</span>
-                    <span class="estoque-disponivel">={{ equipamento.estoque_disponivel }}</span>
-                  </div>
-                </td>
-                <td data-label="Status">
-                  <span class="badge" [class]="getStatusClass(equipamento)">
-                    {{ getStatusText(equipamento) }}
-                  </span>
-                </td>
-                <td data-label="Ações">
-                  <div class="action-buttons">
-                    <button class="action-btn edit" (click)="editEquipamento(equipamento)" 
-                            title="Editar Equipamento" [disabled]="equipamento.estoque_alugado > 0">
-                      ✏️ Editar
-                    </button>
-                    <button class="action-btn delete" (click)="deleteEquipamento(equipamento.id)" 
-                            title="Excluir Equipamento" [disabled]="equipamento.estoque_alugado > 0">
-                      🗑️ Excluir
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Descrição</th>
+                  <th>Unidade</th>
+                  <th class="precos-column">Preços</th>
+                  <th>Estoque</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let equipamento of equipamentos">
+                  <td data-label="ID">{{ equipamento.id }}</td>
+                  <td data-label="Descrição">{{ equipamento.descricao }}</td>
+                  <td data-label="Unidade">{{ equipamento.unidade }}</td>
+                  <td data-label="Preços" class="precos-cell">
+                    <div class="precos-list">
+                      <div class="preco-item">
+                        <span class="preco-label">Diária:</span>
+                        <span class="preco-value">{{ equipamento.preco_diaria | currencyBr }}</span>
+                      </div>
+                      <div class="preco-item">
+                        <span class="preco-label">Semanal:</span>
+                        <span class="preco-value">{{ equipamento.preco_semanal | currencyBr }}</span>
+                      </div>
+                      <div class="preco-item">
+                        <span class="preco-label">Quinzenal:</span>
+                        <span class="preco-value">{{ equipamento.preco_quinzenal | currencyBr }}</span>
+                      </div>
+                      <div class="preco-item">
+                        <span class="preco-label">Mensal:</span>
+                        <span class="preco-value">{{ equipamento.preco_mensal | currencyBr }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td data-label="Estoque">
+                    <div class="estoque-info">
+                      <span class="estoque-total">{{ equipamento.estoque }}</span>
+                      <span class="estoque-alugado">-{{ equipamento.estoque_alugado }}</span>
+                      <span class="estoque-disponivel">={{ equipamento.estoque_disponivel }}</span>
+                    </div>
+                  </td>
+                  <td data-label="Status">
+                    <span class="badge" [class]="getStatusClass(equipamento)">
+                      {{ getStatusText(equipamento) }}
+                    </span>
+                  </td>
+                  <td data-label="Ações">
+                    <div class="action-buttons">
+                      <button class="action-btn edit" (click)="editEquipamento(equipamento)" 
+                              title="Editar Equipamento" [disabled]="equipamento.estoque_alugado > 0">
+                        ✏️ Editar
+                      </button>
+                      <button class="action-btn delete" (click)="deleteEquipamento(equipamento.id)" 
+                              title="Excluir Equipamento" [disabled]="equipamento.estoque_alugado > 0">
+                        🗑️ Excluir
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -555,6 +597,52 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
       font-weight: 700;
     }
 
+    .precos-column {
+      min-width: 200px;
+      width: 200px;
+    }
+
+    .precos-cell {
+      padding: 0.75rem;
+    }
+
+    .precos-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .preco-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.8rem;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border-left: 3px solid #059669;
+      margin-bottom: 0.2rem;
+    }
+
+    .preco-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .preco-label {
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: capitalize;
+      min-width: 65px;
+      font-size: 0.75rem;
+    }
+
+    .preco-value {
+      font-weight: 700;
+      color: #059669;
+      text-align: right;
+      font-size: 0.85rem;
+    }
+
     .action-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -594,6 +682,24 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
         padding: 0.75rem 0.5rem;
       }
 
+      .precos-column {
+        min-width: 150px;
+      }
+
+      .preco-item {
+        padding: 0.3rem 0.4rem;
+        font-size: 0.75rem;
+      }
+
+      .preco-label {
+        font-size: 0.7rem;
+        min-width: 55px;
+      }
+
+      .preco-value {
+        font-size: 0.8rem;
+      }
+
       .action-buttons {
         flex-direction: column;
         gap: 0.25rem;
@@ -629,7 +735,10 @@ export class EquipamentosComponent implements OnInit {
   formData: EquipamentoCreate = {
     descricao: '',
     unidade: '',
-    preco_unitario: 0,
+    preco_diaria: 0,
+    preco_semanal: 0,
+    preco_quinzenal: 0,
+    preco_mensal: 0,
     estoque: 1
   };
 
@@ -677,7 +786,10 @@ export class EquipamentosComponent implements OnInit {
     this.formData = {
       descricao: equipamento.descricao,
       unidade: equipamento.unidade,
-      preco_unitario: equipamento.preco_unitario,
+      preco_diaria: equipamento.preco_diaria,
+      preco_semanal: equipamento.preco_semanal,
+      preco_quinzenal: equipamento.preco_quinzenal,
+      preco_mensal: equipamento.preco_mensal,
       estoque: equipamento.estoque
     };
     this.showForm = true;
@@ -702,7 +814,10 @@ export class EquipamentosComponent implements OnInit {
     this.formData = {
       descricao: '',
       unidade: '',
-      preco_unitario: 0,
+      preco_diaria: 0,
+      preco_semanal: 0,
+      preco_quinzenal: 0,
+      preco_mensal: 0,
       estoque: 1
     };
   }

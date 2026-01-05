@@ -29,7 +29,7 @@ export class PrintableService {
     telefone: '(92) 99153-4302 / 99457-0101'
   };
 
-  // Gerar HTML do orçamento usando o template personalizado (similar ao recibo)
+  // Gerar HTML do orçamento usando o template personalizado
   generateOrcamentoHTML(orcamento: Orcamento): string {
     const dataInicio = new Date(orcamento.data_inicio).toLocaleDateString('pt-BR');
     const dataFim = new Date(orcamento.data_fim).toLocaleDateString('pt-BR');
@@ -42,21 +42,23 @@ export class PrintableService {
 
     // Obter informações do documento do cliente
     const documentoCliente = this.getDocumentoInfo(orcamento.cliente?.cnpj || orcamento.cliente?.cpf);
+    const documentoFormatado = documentoCliente.documento.replace(/\D/g, '');
 
     // Gerar linhas da tabela de itens
     const itensHTML = orcamento.itens?.map(item => `
       <tr>
         <td>${this.getEquipamentoDescricao(item.equipamento_id)}</td>
-        <td>${this.formatCurrency(item.preco_unitario)}</td>
-        <td>${item.quantidade}</td>
-        <td>${dataInicio}</td>
-        <td>${dataFim}</td>
-        <td>${item.dias}</td>
-        <td>${this.formatCurrency(item.subtotal)}</td>
+        <td style="text-align: right;">${this.formatCurrency(item.preco_unitario)}</td>
+        <td style="text-align: center;">${item.quantidade}</td>
+        <td style="text-align: center;">${dataInicio}</td>
+        <td style="text-align: center;">${dataFim}</td>
+        <td style="text-align: center;">${item.dias}</td>
+        <td style="text-align: right;">${this.formatCurrency(item.subtotal)}</td>
       </tr>
     `).join('') || '';
 
     const subtotal = orcamento.itens?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
+    const descontoPercentual = subtotal > 0 ? ((orcamento.desconto / subtotal) * 100).toFixed(0) : '0';
     const descontoValor = this.formatCurrency(orcamento.desconto);
     const frete = this.formatCurrency(orcamento.frete);
     const total = this.formatCurrency(orcamento.total_final);
@@ -66,7 +68,7 @@ export class PrintableService {
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Orçamento</title>
+  <title>Orçamento ${orcamento.id}</title>
   <style>
     @page {
       size: A4;
@@ -75,110 +77,191 @@ export class PrintableService {
     }
 
     body {
-      font-family: Arial, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
       font-size: 11pt;
       color: #000;
       margin: 0;
       padding: 0;
       line-height: 1.4;
-      orphans: 3;
-      widows: 3;
+      background: white;
     }
 
-    .container {
-      width: 100%;
+    .container-orcamento {
+      width: 210mm;
+      max-width: 800px;
       margin: 0 auto;
+      padding: 15mm;
+      border: 1px solid #000;
+      box-sizing: border-box;
+      background: white;
     }
 
-    .header {
-      text-align: center;
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
       margin-bottom: 20px;
       page-break-inside: avoid;
     }
 
-    .header img {
-      max-height: 80px;
-      margin-bottom: 10px;
-    }
-
-    .header h1 {
-      font-size: 18pt;
-      margin: 0;
+    .empresa {
+      font-size: 16pt;
+      font-weight: bold;
       text-transform: uppercase;
     }
 
-    .info {
+    .info-orcamento {
+      text-align: right;
+    }
+
+    .info-orcamento p {
+      margin: 2px 0;
+      font-size: 11pt;
+    }
+
+    .titulo {
+      text-align: center;
+      font-size: 18pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 20px 0;
+      page-break-inside: avoid;
+    }
+
+    .dados-empresa {
       margin: 15px 0;
       page-break-inside: avoid;
     }
 
-    .info p {
+    .dados-empresa p {
       margin: 2px 0;
+      font-size: 10pt;
     }
 
-    table {
+    .bloco {
+      margin: 15px 0;
+      page-break-inside: avoid;
+    }
+
+    .bloco strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 11pt;
+    }
+
+    .bloco p {
+      margin: 2px 0;
+      font-size: 10pt;
+    }
+
+    .tabela-materiais {
       width: 100%;
       border-collapse: collapse;
-      margin: 15px 0;
+      margin: 20px 0;
       page-break-inside: avoid;
     }
 
-    table, th, td {
+    .tabela-materiais th,
+    .tabela-materiais td {
       border: 1px solid #000;
-    }
-
-    th, td {
       padding: 6px;
-      text-align: left;
       font-size: 10pt;
-      page-break-inside: avoid;
     }
 
-    tr {
-      page-break-inside: avoid;
-    }
-
-    .total {
-      margin-top: 15px;
+    .tabela-materiais th {
+      background-color: #f0f0f0;
       font-weight: bold;
+      text-align: center;
+    }
+
+    .tabela-materiais tbody tr {
       page-break-inside: avoid;
     }
 
-    .observacao {
-      margin-top: 30px;
-      font-size: 11pt;
-      border: 1px solid #000;
-      padding: 10px;
+    .resumo {
+      margin-top: 20px;
+      text-align: right;
+      page-break-inside: avoid;
     }
 
-    .footer {
+    .resumo p {
+      margin: 5px 0;
+      font-size: 11pt;
+    }
+
+    .resumo .total {
+      font-weight: bold;
+      font-size: 13pt;
+      margin-top: 10px;
+      padding-top: 5px;
+      border-top: 2px solid #000;
+    }
+
+    .rodape {
       margin-top: 40px;
       text-align: center;
+      page-break-inside: avoid;
+    }
+
+    .rodape img {
+      max-height: 60px;
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .container-orcamento {
+        border: none;
+        box-shadow: none;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container-orcamento">
 
-    <div class="header">
-      <img src="/logo-r-loc.jpg" alt="R-Loc" style="max-height: 80px; margin-bottom: 10px;">
-      <h1>ORÇAMENTO</h1>
+    <!-- Cabeçalho Superior -->
+    <div class="header-top">
+      <div class="empresa">${this.empresaData.nome}</div>
+      <div class="info-orcamento">
+        <p><strong>Orçamento: ${orcamento.id}</strong></p>
+        <p><strong>Data: ${dataCriacao}</strong></p>
+      </div>
     </div>
 
-    <div class="info">
-      <p><strong>N. Orçamento:</strong> ${orcamento.id}</p>
-      <p><strong>Data:</strong> ${dataCriacao}</p>
-      <p><strong>Cliente:</strong> ${orcamento.cliente?.nome_razao_social || 'Cliente não encontrado'}</p>
-      <p><strong>Endereço:</strong> ${orcamento.cliente?.endereco || 'Endereço não informado'}</p>
-      <p><strong>${documentoCliente.tipo}:</strong> ${documentoCliente.documento}</p>
-      <p><strong>Período:</strong> ${dataInicio} a ${dataFim}</p>
-      <p><strong>Locadora:</strong> ${this.empresaData.nome}</p>
+    <!-- Título -->
+    <h1 class="titulo">ORÇAMENTO</h1>
+
+    <!-- Dados da Empresa (Locadora) -->
+    <div class="dados-empresa">
       <p><strong>Endereço:</strong> ${this.empresaData.endereco}</p>
       <p><strong>CNPJ:</strong> ${this.empresaData.cnpj}</p>
       <p><strong>Telefone:</strong> ${this.empresaData.telefone}</p>
     </div>
 
-    <table>
+    <!-- Dados do Locatário -->
+    <div class="bloco">
+      <strong>Locatário:</strong>
+      <p>${orcamento.cliente?.nome_razao_social || 'Cliente não encontrado'}</p>
+      <p>Endereço: ${orcamento.cliente?.endereco || 'Endereço não informado'}</p>
+      <p>${documentoCliente.tipo}: ${documentoFormatado}</p>
+      <p>Celular: ${orcamento.cliente?.telefone_celular || 'Não informado'}</p>
+      <p>Tel. Comercial: ${orcamento.cliente?.telefone_comercial || 'Não informado'}</p>
+    </div>
+
+    <!-- Dados da Locadora -->
+    <div class="bloco">
+      <strong>Locadora:</strong>
+      <p>${this.empresaData.nome}</p>
+      <p>Endereço: ${this.empresaData.endereco}</p>
+      <p>CNPJ: ${this.empresaData.cnpj}</p>
+      <p>Telefone: ${this.empresaData.telefone}</p>
+    </div>
+
+    <!-- Tabela de Materiais -->
+    <table class="tabela-materiais">
       <thead>
         <tr>
           <th>Material</th>
@@ -195,20 +278,16 @@ export class PrintableService {
       </tbody>
     </table>
 
-    <div class="total">
-      <p><strong>Subtotal:</strong> ${this.formatCurrency(subtotal)}</p>
-      <p><strong>Desconto:</strong> R$ ${descontoValor}</p>
-      <p><strong>Frete:</strong> R$ ${frete}</p>
-      <p><strong>Total:</strong> R$ ${total}</p>
+    <!-- Resumo Financeiro -->
+    <div class="resumo">
+      <p>Desconto: ${descontoPercentual}%</p>
+      <p>Frete: ${frete}</p>
+      <p class="total">Total: ${total}</p>
     </div>
 
-    <div class="observacao">
-      <p><strong>OBSERVAÇÃO:</strong></p>
-      <p>${orcamento.observacoes || 'Este orçamento tem validade de 30 dias a partir da data de emissão. Os valores estão sujeitos a alteração sem aviso prévio.'}</p>
-    </div>
-
-    <div class="footer">
-      <p>Manaus, ${dataAtual}</p>
+    <!-- Rodapé -->
+    <div class="rodape">
+      <img src="/logo-r-loc.jpg" alt="Grupo JR Pinto">
     </div>
 
   </div>

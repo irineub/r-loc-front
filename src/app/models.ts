@@ -57,7 +57,10 @@ export interface Equipamento {
   id: number;
   descricao: string;
   unidade: string;
-  preco_unitario: number;
+  preco_diaria: number;
+  preco_semanal: number;
+  preco_quinzenal: number;
+  preco_mensal: number;
   estoque: number;
   estoque_alugado: number;
   estoque_disponivel: number;
@@ -66,14 +69,20 @@ export interface Equipamento {
 export interface EquipamentoCreate {
   descricao: string;
   unidade: string;
-  preco_unitario: number;
+  preco_diaria: number;
+  preco_semanal: number;
+  preco_quinzenal: number;
+  preco_mensal: number;
   estoque: number;
 }
 
 export interface EquipamentoUpdate {
   descricao?: string;
   unidade?: string;
-  preco_unitario?: number;
+  preco_diaria?: number;
+  preco_semanal?: number;
+  preco_quinzenal?: number;
+  preco_mensal?: number;
   estoque?: number;
 }
 
@@ -90,7 +99,7 @@ export interface Orcamento {
   total_final: number;
   desconto: number;
   frete: number;
-  tipo_cobranca: 'diaria' | 'mensal';
+  tipo_cobranca: 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
   observacoes?: string;
   cliente?: Cliente;
   itens?: ItemOrcamento[];
@@ -137,7 +146,7 @@ export interface ItemOrcamentoCreate {
   dias: number;
   preco_unitario: number;
   subtotal: number;
-  tipo_cobranca: 'diaria' | 'mensal';
+  tipo_cobranca: 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
 }
 
 // Interfaces para Locação

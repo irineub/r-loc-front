@@ -23,7 +23,10 @@ export interface Equipamento {
   id: number;
   descricao: string;
   unidade: string;
-  preco_unitario: number;
+  preco_diaria: number;
+  preco_semanal: number;
+  preco_quinzenal: number;
+  preco_mensal: number;
   estoque: number;
   estoque_alugado: number;
   estoque_disponivel: number;
@@ -36,7 +39,7 @@ export interface ItemOrcamento {
   quantidade: number;
   preco_unitario: number;
   dias: number;
-  tipo_cobranca: 'diaria' | 'mensal';
+  tipo_cobranca: 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
   subtotal: number;
   equipamento: Equipamento;
 }
@@ -107,7 +110,10 @@ export interface ClienteCreate {
 export interface EquipamentoCreate {
   descricao: string;
   unidade: string;
-  preco_unitario: number;
+  preco_diaria: number;
+  preco_semanal: number;
+  preco_quinzenal: number;
+  preco_mensal: number;
   estoque: number;
 }
 
@@ -116,7 +122,7 @@ export interface ItemOrcamentoCreate {
   quantidade: number;
   preco_unitario: number;
   dias: number;
-  tipo_cobranca: 'diaria' | 'mensal';
+  tipo_cobranca: 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
   subtotal: number;
 }
 
