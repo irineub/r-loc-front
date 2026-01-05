@@ -234,11 +234,13 @@ export class PrintableService {
     <!-- Título -->
     <h1 class="titulo">ORÇAMENTO</h1>
 
-    <!-- Dados da Empresa (Locadora) -->
-    <div class="dados-empresa">
-      <p><strong>Endereço:</strong> ${this.empresaData.endereco}</p>
-      <p><strong>CNPJ:</strong> ${this.empresaData.cnpj}</p>
-      <p><strong>Telefone:</strong> ${this.empresaData.telefone}</p>
+    <!-- Dados da Locadora -->
+    <div class="bloco">
+      <strong>Locadora:</strong>
+      <p>${this.empresaData.nome}</p>
+      <p>Endereço: ${this.empresaData.endereco}</p>
+      <p>CNPJ: ${this.empresaData.cnpj}</p>
+      <p>Telefone: ${this.empresaData.telefone}</p>
     </div>
 
     <!-- Dados do Locatário -->
@@ -251,14 +253,6 @@ export class PrintableService {
       <p>Tel. Comercial: ${orcamento.cliente?.telefone_comercial || 'Não informado'}</p>
     </div>
 
-    <!-- Dados da Locadora -->
-    <div class="bloco">
-      <strong>Locadora:</strong>
-      <p>${this.empresaData.nome}</p>
-      <p>Endereço: ${this.empresaData.endereco}</p>
-      <p>CNPJ: ${this.empresaData.cnpj}</p>
-      <p>Telefone: ${this.empresaData.telefone}</p>
-    </div>
 
     <!-- Tabela de Materiais -->
     <table class="tabela-materiais">
