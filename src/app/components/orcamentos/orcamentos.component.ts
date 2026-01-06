@@ -272,6 +272,43 @@ import { take } from 'rxjs/operators';
       </div>
     </div>
 
+    <!-- Dialog de Endereço de Entrega -->
+    <div class="modal-overlay" *ngIf="showEnderecoDialog" (click)="closeEnderecoDialog()" style="z-index: 2000;">
+      <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 600px;">
+        <div class="modal-header">
+          <h3>📍 Endereço de Entrega</h3>
+          <button class="modal-close" (click)="closeEnderecoDialog()">×</button>
+        </div>
+        <div class="modal-body">
+          <p style="margin-bottom: 1rem; color: #666;">
+            Confirme ou edite o endereço onde os equipamentos serão entregues. 
+            Este endereço será usado no contrato de locação.
+          </p>
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="endereco_entrega" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+              Endereço de Entrega *
+            </label>
+            <textarea 
+              id="endereco_entrega" 
+              name="endereco_entrega"
+              [(ngModel)]="enderecoEntrega"
+              rows="4"
+              required
+              style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; resize: vertical;"
+              placeholder="Ex: Av. Paulista, 8659, São Paulo - SP"></textarea>
+          </div>
+          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+            <button class="btn btn-secondary" (click)="closeEnderecoDialog()">
+              Cancelar
+            </button>
+            <button class="btn btn-primary" (click)="confirmarEnderecoECriarLocacao()" [disabled]="!enderecoEntrega || enderecoEntrega.trim() === ''">
+              Confirmar e Gerar Contrato
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal de Visualização de Orçamento -->
     <div class="modal-overlay" *ngIf="showViewModal" (click)="closeViewModal()">
       <div class="modal-content" (click)="$event.stopPropagation()">
@@ -323,7 +360,7 @@ import { take } from 'rxjs/operators';
               <p>Este orçamento foi aprovado e está pronto para gerar o contrato de locação.</p>
             </div>
             <div class="aprovado-actions">
-              <button class="btn btn-primary btn-lg" (click)="createLocacaoFromOrcamento(selectedOrcamento?.id)">
+              <button class="btn btn-primary btn-lg" (click)="openEnderecoDialog(selectedOrcamento?.id)">
                 📋 Gerar Contrato de Locação
               </button>
             </div>
@@ -1433,6 +1470,9 @@ export class OrcamentosComponent implements OnInit {
   editingOrcamento: Orcamento | null = null;
   selectedOrcamento: Orcamento | null = null;
   showViewModal = false;
+  showEnderecoDialog = false;
+  enderecoEntrega = '';
+  orcamentoIdParaLocacao: number | undefined;
   selectedMonth: string = '';
   selectedYear: string = '';
   selectedStatus: string = '';
@@ -1844,10 +1884,59 @@ export class OrcamentosComponent implements OnInit {
     this.selectedOrcamento = null;
   }
 
-  async createLocacaoFromOrcamento(orcamentoId: number | undefined) {
-    if (!orcamentoId || !this.selectedOrcamento) return;
+  openEnderecoDialog(orcamentoId: number | undefined) {
+    console.log('openEnderecoDialog chamado', { orcamentoId, selectedOrcamento: this.selectedOrcamento });
+    if (!orcamentoId || !this.selectedOrcamento) {
+      console.log('Validação falhou', { orcamentoId, selectedOrcamento: this.selectedOrcamento });
+      return;
+    }
     
-    this.locacaoService.createLocacaoFromOrcamento(orcamentoId).subscribe({
+    // Preencher com o endereço do cliente como padrão
+    this.enderecoEntrega = this.selectedOrcamento.cliente?.endereco || '';
+    this.orcamentoIdParaLocacao = orcamentoId;
+    this.showEnderecoDialog = true;
+    console.log('Dialog aberto', { showEnderecoDialog: this.showEnderecoDialog, enderecoEntrega: this.enderecoEntrega });
+  }
+
+  closeEnderecoDialog() {
+    this.showEnderecoDialog = false;
+    this.enderecoEntrega = '';
+    this.orcamentoIdParaLocacao = undefined;
+  }
+
+  confirmarEnderecoECriarLocacao() {
+    console.log('confirmarEnderecoECriarLocacao chamado', {
+      orcamentoIdParaLocacao: this.orcamentoIdParaLocacao,
+      enderecoEntrega: this.enderecoEntrega
+    });
+    
+    if (!this.orcamentoIdParaLocacao || !this.enderecoEntrega || this.enderecoEntrega.trim() === '') {
+      alert('Por favor, informe o endereço de entrega.');
+      return;
+    }
+    
+    // Salvar os valores antes de fechar o dialog
+    const orcamentoId = this.orcamentoIdParaLocacao;
+    const endereco = this.enderecoEntrega.trim();
+    
+    // Fechar o dialog
+    this.showEnderecoDialog = false;
+    
+    // Criar a locação com os valores salvos
+    this.createLocacaoFromOrcamento(orcamentoId, endereco);
+  }
+
+  async createLocacaoFromOrcamento(orcamentoId: number | undefined, enderecoEntrega?: string) {
+    console.log('createLocacaoFromOrcamento chamado', { orcamentoId, enderecoEntrega, selectedOrcamento: this.selectedOrcamento });
+    
+    if (!orcamentoId || !this.selectedOrcamento) {
+      console.error('Validação falhou em createLocacaoFromOrcamento', { orcamentoId, selectedOrcamento: this.selectedOrcamento });
+      alert('Erro: Orçamento não selecionado. Por favor, tente novamente.');
+      return;
+    }
+    
+    console.log('Criando locação via API...', { orcamentoId, enderecoEntrega });
+    this.locacaoService.createLocacaoFromOrcamento(orcamentoId, enderecoEntrega).subscribe({
       next: async (response) => {
         console.log('Locação criada com sucesso:', response);
         
@@ -1898,18 +1987,36 @@ export class OrcamentosComponent implements OnInit {
       },
       error: (error) => {
         console.error('Erro ao criar locação:', error);
-        let errorMessage = 'Erro ao criar locação, tente novamente';
-        if (error && error.message) {
-          errorMessage = error.message;
-          // Se a mensagem contém "Já existe uma locação", usar mensagem mais amigável
-          if (errorMessage.includes('Já existe uma locação')) {
-            errorMessage = 'Este orçamento já possui uma locação criada. Verifique a lista de locações.';
-          } else if (errorMessage.includes('Orçamento não encontrado')) {
-            errorMessage = 'Orçamento não encontrado. Recarregue a página e tente novamente.';
-          } else if (errorMessage.includes('Apenas orçamentos aprovados')) {
-            errorMessage = 'Apenas orçamentos aprovados podem gerar locações. Aprove o orçamento primeiro.';
-          }
+        console.error('Detalhes do erro:', {
+          status: error?.status,
+          message: error?.message,
+          error: error?.error
+        });
+        
+        // Reabrir o dialog em caso de erro
+        if (orcamentoId) {
+          this.orcamentoIdParaLocacao = orcamentoId;
+          this.enderecoEntrega = enderecoEntrega || '';
+          this.showEnderecoDialog = true;
         }
+        
+        let errorMessage = 'Erro ao criar locação, tente novamente';
+        if (error?.error?.detail) {
+          errorMessage = error.error.detail;
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
+        
+        // Mensagens mais amigáveis
+        if (errorMessage.includes('Já existe uma locação')) {
+          errorMessage = 'Este orçamento já possui uma locação criada. Verifique a lista de locações.';
+          this.showEnderecoDialog = false; // Não reabrir se já existe locação
+        } else if (errorMessage.includes('Orçamento não encontrado')) {
+          errorMessage = 'Orçamento não encontrado. Recarregue a página e tente novamente.';
+        } else if (errorMessage.includes('Apenas orçamentos aprovados')) {
+          errorMessage = 'Apenas orçamentos aprovados podem gerar locações. Aprove o orçamento primeiro.';
+        }
+        
         alert(errorMessage);
       }
     });

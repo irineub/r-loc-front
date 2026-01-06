@@ -19,8 +19,10 @@ export class LocacaoService {
     return this.apiService.getById<Locacao>('/locacoes', id);
   }
 
-  createLocacaoFromOrcamento(orcamentoId: number): Observable<any> {
-    return this.apiService.postCustom(`/locacoes/from-orcamento/${orcamentoId}`);
+  createLocacaoFromOrcamento(orcamentoId: number, enderecoEntrega?: string): Observable<any> {
+    const body = { endereco_entrega: enderecoEntrega || null };
+    console.log('LocacaoService.createLocacaoFromOrcamento', { orcamentoId, enderecoEntrega, body });
+    return this.apiService.postCustom(`/locacoes/from-orcamento/${orcamentoId}`, body);
   }
 
   updateLocacao(id: number, locacao: Partial<Locacao>): Observable<Locacao> {

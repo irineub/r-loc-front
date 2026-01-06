@@ -23,7 +23,7 @@ export class PrintableService {
 
   // Dados da empresa (configuráveis)
   private empresaData = {
-    nome: 'JR Pinto',
+    nome: 'JR Loc',
     endereco: 'Rua Indio Ajuricaba, 1 - Gilberto Mestrinho / Manaus-AM',
     cnpj: '09.181.720/0001-75',
     telefone: '(92) 99153-4302 / 99457-0101'
@@ -224,7 +224,7 @@ export class PrintableService {
 
     <!-- Cabeçalho Superior -->
     <div class="header-top">
-      <div class="empresa">${this.empresaData.nome}</div>
+      <div class="empresa"><img src="/logo-r-loc.jpg" alt="Grupo JR Loc" style="max-height: 60px;"></div>
       <div class="info-orcamento">
         <p><strong>Orçamento: ${orcamento.id}</strong></p>
         <p><strong>Data: ${dataCriacao}</strong></p>
@@ -281,7 +281,7 @@ export class PrintableService {
 
     <!-- Rodapé -->
     <div class="rodape">
-      <img src="/logo-r-loc.jpg" alt="Grupo JR Pinto">
+      <img src="/logo-r-loc.jpg" alt="Grupo JR Loc">
     </div>
 
   </div>
@@ -566,7 +566,7 @@ export class PrintableService {
     <div class="container">
       <p class="section-title">PRAZO E ENTREGA</p>
       <p>O prazo de locação é de ${dataInicio} a ${dataFim}, podendo ser prorrogado mediante acordo entre as partes.</p>
-      <p>A entrega dos equipamentos será realizada no endereço: ${locacao.cliente?.endereco || 'A ser definido'}.</p>
+      <p>A entrega dos equipamentos será realizada no endereço: ${locacao.endereco_entrega || locacao.cliente?.endereco || 'A ser definido'}.</p>
       <p>A devolução dos equipamentos deverá ser realizada no endereço da LOCADORA: ${this.empresaData.endereco}.</p>
 
       <p class="section-title">VALOR E FORMA DE PAGAMENTO</p>

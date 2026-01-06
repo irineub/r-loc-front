@@ -81,6 +81,7 @@ export interface Locacao {
   total_final: number;
   observacoes?: string;
   data_devolucao?: string;
+  endereco_entrega?: string;
   data_criacao: string;
   orcamento: Orcamento;
   cliente: Cliente;
