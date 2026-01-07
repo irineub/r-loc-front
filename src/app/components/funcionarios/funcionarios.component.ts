@@ -254,14 +254,113 @@ import { FuncionarioService, Funcionario, FuncionarioCreate, FuncionarioUpdate }
       text-align: center;
     }
     @media (max-width: 768px) {
+      .funcionarios {
+        padding: 1rem;
+      }
+
+      .card-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+      }
+
       .form-row {
         grid-template-columns: 1fr;
+        gap: 1rem;
       }
-      .table {
-        font-size: 0.875rem;
+
+      .form-actions {
+        flex-direction: column;
       }
-      .table th, .table td {
-        padding: 0.5rem;
+
+      .form-actions .btn {
+        width: 100%;
+      }
+
+      .form-control {
+        font-size: 16px;
+        padding: 0.875rem 1rem;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .form-section {
+        padding: 1.5rem;
+      }
+
+      .table thead {
+        display: none;
+      }
+      
+      .table tbody tr {
+        display: block;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+      }
+      
+      .table tbody td {
+        display: block;
+        padding: 0.5rem 0;
+        border: none;
+        text-align: left;
+      }
+      
+      .table tbody td:before {
+        content: attr(data-label) ": ";
+        font-weight: 700;
+        color: #dc2626;
+        margin-right: 0.5rem;
+      }
+      
+      .table tbody td:first-child {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #dc2626;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .action-buttons {
+        flex-direction: row;
+        justify-content: flex-start;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .btn-sm {
+        width: auto;
+        padding: 0.5rem 1rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .form-section {
+        padding: 1rem;
+      }
+      
+      .card-header {
+        padding: 1.5rem;
+      }
+      
+      .form-control {
+        padding: 0.75rem;
+        font-size: 16px;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+        width: 100%;
+      }
+      
+      .btn-sm {
+        width: 100%;
+        justify-content: center;
       }
     }
   `]

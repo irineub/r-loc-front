@@ -716,15 +716,54 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
         font-size: 0.8rem;
       }
 
+      .table thead {
+        display: none;
+      }
+      
+      .table tbody tr {
+        display: block;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+      }
+      
+      .table tbody td {
+        display: block;
+        padding: 0.5rem 0;
+        border: none;
+        text-align: left;
+      }
+      
+      .table tbody td:before {
+        content: attr(data-label) ": ";
+        font-weight: 700;
+        color: #dc2626;
+        margin-right: 0.5rem;
+      }
+      
+      .table tbody td:first-child {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #dc2626;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+
       .action-buttons {
-        flex-direction: column;
-        gap: 0.25rem;
+        flex-direction: row;
+        justify-content: flex-start;
+        margin-top: 1rem;
+        flex-wrap: wrap;
       }
 
       .action-btn {
-        padding: 0.4rem 0.6rem;
-        width: 100%;
+        padding: 0.5rem 1rem;
         font-size: 0.75rem;
+        width: auto;
       }
     }
 
@@ -741,20 +780,14 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
         padding: 0.75rem;
         font-size: 16px;
       }
-      
-      .table {
-        display: block;
-        overflow-x: auto;
-      }
 
       .action-buttons {
         flex-direction: column;
-        align-items: center;
+        width: 100%;
       }
 
       .action-btn {
         width: 100%;
-        max-width: 200px;
         justify-content: center;
       }
     }

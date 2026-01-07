@@ -181,14 +181,98 @@ import { FuncionarioService, Funcionario } from '../../services/funcionario.serv
       text-align: center;
     }
     @media (max-width: 768px) {
+      .logs {
+        padding: 1rem;
+      }
+
+      .card-header {
+        flex-direction: column;
+        text-align: center;
+      }
+
       .filters {
         flex-direction: column;
+        gap: 0.75rem;
+        width: 100%;
       }
-      .table {
-        font-size: 0.875rem;
+
+      .form-control {
+        font-size: 16px;
+        padding: 0.875rem 1rem;
+        width: 100%;
+        box-sizing: border-box;
       }
-      .table th, .table td {
+
+      .table-section {
+        padding: 1rem;
+      }
+
+      .table thead {
+        display: none;
+      }
+      
+      .table tbody tr {
+        display: block;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+      }
+      
+      .table tbody td {
+        display: block;
+        padding: 0.5rem 0;
+        border: none;
+        text-align: left;
+        word-wrap: break-word;
+      }
+      
+      .table tbody td:before {
+        content: attr(data-label) ": ";
+        font-weight: 700;
+        color: #dc2626;
+        margin-right: 0.5rem;
+        display: inline-block;
+        min-width: 100px;
+      }
+      
+      .table tbody td:first-child {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #dc2626;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .table tbody tr:last-child td {
+        text-align: center;
+        padding: 1rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .logs {
         padding: 0.5rem;
+      }
+
+      .card-header {
+        padding: 1rem;
+      }
+
+      .table-section {
+        padding: 0.5rem;
+      }
+
+      .table tbody tr {
+        padding: 0.75rem;
+      }
+
+      .table tbody td:before {
+        min-width: 80px;
+        font-size: 0.85rem;
       }
     }
   `]
