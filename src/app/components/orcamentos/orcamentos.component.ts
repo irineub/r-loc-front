@@ -245,8 +245,10 @@ import { take } from 'rxjs/operators';
             
             <div class="filter-group">
               <label for="year">Ano:</label>
-              <input type="number" id="year" [(ngModel)]="selectedYear" class="form-control">
-              </input>
+              <select id="year" [(ngModel)]="selectedYear" class="form-control">
+                <option value="">Todos os anos</option>
+                <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
+              </select>
             </div>
             
             <div class="filter-group">
@@ -1241,24 +1243,8 @@ import { take } from 'rxjs/operators';
       border: 2px solid transparent;
     }
 
-    .action-btn.edit:hover:not(:disabled) {
+    .action-btn.edit:hover {
       border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    .action-btn.edit.disabled,
-    .action-btn.edit:disabled {
-      background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-      color: #adb5bd;
-      cursor: not-allowed;
-      opacity: 0.6;
-      transform: none !important;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    .action-btn.edit.disabled:hover,
-    .action-btn.edit:disabled:hover {
-      transform: none !important;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
     }
 
     .action-btn.create-locacao {
