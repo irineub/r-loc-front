@@ -58,8 +58,16 @@ export class ApiService {
   put<T>(endpoint: string, id: number, data: any): Observable<T> {
     const url = `${this.baseUrl}${endpoint}/${id}/`;
     console.log('PUT request:', url, data);
+    // Tentar PUT primeiro, se falhar com 405, tentar PATCH
     return this.http.put<T>(url, data, { headers: this.getHeaders() }).pipe(
-      catchError(this.handleError)
+      catchError((error: HttpErrorResponse) => {
+        // Se for erro 405 (Method Not Allowed), tentar com PATCH
+        if (error.status === 405) {
+          console.log('PUT blocked by server, trying PATCH instead');
+          return this.http.patch<T>(url, data, { headers: this.getHeaders() });
+        }
+        return this.handleError(error);
+      })
     );
   }
 
