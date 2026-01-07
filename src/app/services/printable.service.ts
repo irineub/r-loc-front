@@ -58,9 +58,8 @@ export class PrintableService {
     `).join('') || '';
 
     const subtotal = orcamento.itens?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
-    const descontoPercentual = subtotal > 0 ? ((orcamento.desconto / subtotal) * 100).toFixed(0) : '0';
-    const descontoValor = this.formatCurrency(orcamento.desconto);
-    const frete = this.formatCurrency(orcamento.frete);
+    const descontoValor = this.formatCurrency(orcamento.desconto || 0);
+    const frete = this.formatCurrency(orcamento.frete || 0);
     const total = this.formatCurrency(orcamento.total_final);
 
     return `
@@ -274,8 +273,9 @@ export class PrintableService {
 
     <!-- Resumo Financeiro -->
     <div class="resumo">
-      <p>Desconto: ${descontoPercentual}%</p>
-      <p>Frete: ${frete}</p>
+      <p>Subtotal: ${this.formatCurrency(subtotal)}</p>
+      ${orcamento.desconto && orcamento.desconto > 0 ? `<p>Desconto: ${descontoValor}</p>` : ''}
+      ${orcamento.frete && orcamento.frete > 0 ? `<p>Frete/Adicional: ${frete}</p>` : ''}
       <p class="total">Total: ${total}</p>
     </div>
 

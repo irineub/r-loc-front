@@ -87,6 +87,51 @@ import { take } from 'rxjs/operators';
               </div>
             </div>
 
+            <!-- Desconto e Frete -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="desconto">💰 Desconto (R$) - Opcional</label>
+                <input type="number" id="desconto" name="desconto" 
+                       [(ngModel)]="formData.desconto" min="0" step="0.01"
+                       (ngModelChange)="onDescontoFreteChange()"
+                       class="form-control" placeholder="0.00">
+                <small class="form-help">Valor do desconto a ser aplicado</small>
+              </div>
+              <div class="form-group">
+                <label for="frete">🚚 Frete/Valor Adicional (R$) - Opcional</label>
+                <input type="number" id="frete" name="frete" 
+                       [(ngModel)]="formData.frete" min="0" step="0.01"
+                       (ngModelChange)="onDescontoFreteChange()"
+                       class="form-control" placeholder="0.00">
+                <small class="form-help">Valor adicional (frete ou outros custos)</small>
+              </div>
+            </div>
+
+            <!-- Resumo Total -->
+            <div class="form-row" *ngIf="formData.itens.length > 0">
+              <div class="form-group total-preview">
+                <label>📊 Resumo Financeiro</label>
+                <div class="total-breakdown">
+                  <div class="total-line">
+                    <span>Subtotal dos Itens:</span>
+                    <strong>{{ getSubtotalItens() | currencyBr }}</strong>
+                  </div>
+                  <div class="total-line" *ngIf="formData.desconto > 0">
+                    <span>Desconto:</span>
+                    <strong class="text-danger">- {{ formData.desconto | currencyBr }}</strong>
+                  </div>
+                  <div class="total-line" *ngIf="formData.frete > 0">
+                    <span>Frete/Adicional:</span>
+                    <strong class="text-success">+ {{ formData.frete | currencyBr }}</strong>
+                  </div>
+                  <div class="total-line total-final">
+                    <span>Total Final:</span>
+                    <strong>{{ calculateTotal() | currencyBr }}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Items Section -->
             <div class="items-section">
               <h4>📦 Itens do Orçamento</h4>
@@ -202,9 +247,7 @@ import { take } from 'rxjs/operators';
               <label for="year">Ano:</label>
               <select id="year" [(ngModel)]="selectedYear" class="form-control">
                 <option value="">Todos os anos</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
-                <option value="2023">2023</option>
+                <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
               </select>
             </div>
             
@@ -262,6 +305,13 @@ import { take } from 'rxjs/operators';
 
                     <button class="action-btn view" (click)="viewOrcamento(orcamento)" title="Visualizar Detalhes">
                       👁️ Ver
+                    </button>
+                    <button class="action-btn edit" 
+                            [class.disabled]="hasLocacaoForOrcamento(orcamento.id)"
+                            [disabled]="hasLocacaoForOrcamento(orcamento.id)"
+                            (click)="editOrcamento(orcamento)" 
+                            [title]="hasLocacaoForOrcamento(orcamento.id) ? 'Não é possível editar orçamento com contrato gerado' : 'Editar Orçamento'">
+                      ✏️ Editar
                     </button>
                   </div>
                 </td>
@@ -588,6 +638,53 @@ import { take } from 'rxjs/operators';
       letter-spacing: 0.5px;
     }
 
+    .total-preview {
+      grid-column: 1 / -1;
+    }
+
+    .total-breakdown {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 2px solid rgba(220, 53, 69, 0.1);
+      box-shadow: 0 4px 20px rgba(220, 53, 69, 0.05);
+      margin-top: 0.5rem;
+    }
+
+    .total-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(220, 53, 69, 0.1);
+      font-size: 0.95rem;
+    }
+
+    .total-line:last-child {
+      border-bottom: none;
+    }
+
+    .total-line.total-final {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #dc3545;
+      margin-top: 0.5rem;
+      padding-top: 1rem;
+      border-top: 2px solid #dc3545;
+    }
+
+    .total-line span {
+      color: #495057;
+    }
+
+    .total-line .text-danger {
+      color: #dc3545;
+    }
+
+    .total-line .text-success {
+      color: #28a745;
+    }
+
     .aprovado-section {
       background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
       border: 2px solid #28a745;
@@ -799,14 +896,90 @@ import { take } from 'rxjs/operators';
     @media (max-width: 768px) {
       .form-row {
         grid-template-columns: 1fr;
+        gap: 1rem;
       }
       
       .form-actions {
         flex-direction: column;
       }
       
+      .form-actions .btn {
+        width: 100%;
+      }
+      
+      .form-control {
+        font-size: 16px; /* Previne zoom no iOS */
+        padding: 0.875rem 1rem;
+      }
+      
+      .form-section {
+        padding: 1.5rem;
+      }
+      
       .table {
         font-size: 0.875rem;
+      }
+      
+      .total-breakdown {
+        padding: 1rem;
+      }
+      
+      .total-line {
+        font-size: 0.875rem;
+      }
+      
+      .total-line.total-final {
+        font-size: 1rem;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .form-section {
+        padding: 1rem;
+      }
+      
+      .card-header {
+        padding: 1.5rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+      
+      .card-title {
+        font-size: 1.4rem;
+      }
+      
+      .form-control {
+        padding: 0.75rem;
+        font-size: 16px;
+      }
+      
+      .items-section h4 {
+        font-size: 1rem;
+      }
+      
+      .item-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+      
+      .item-info {
+        margin-right: 0;
+        width: 100%;
+      }
+      
+      .total-breakdown {
+        padding: 0.875rem;
+      }
+      
+      .total-line {
+        font-size: 0.8rem;
+        padding: 0.5rem 0;
+      }
+      
+      .total-line.total-final {
+        font-size: 0.95rem;
       }
     }
 
@@ -1062,6 +1235,32 @@ import { take } from 'rxjs/operators';
 
     .action-btn.view:hover {
       border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .action-btn.edit {
+      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .action-btn.edit:hover:not(:disabled) {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .action-btn.edit.disabled,
+    .action-btn.edit:disabled {
+      background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+      color: #adb5bd;
+      cursor: not-allowed;
+      opacity: 0.6;
+      transform: none !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .action-btn.edit.disabled:hover,
+    .action-btn.edit:disabled:hover {
+      transform: none !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
     }
 
     .action-btn.create-locacao {
@@ -1660,6 +1859,11 @@ export class OrcamentosComponent implements OnInit {
       this.formData.itens.push({ ...this.newItem });
       this.formData.total_final = this.calculateTotal();
       
+      // Aplicar período calculado ao novo item se disponível
+      if (this.periodoCalculado) {
+        this.aplicarPeriodoCalculado();
+      }
+      
       // Reset do newItem mantendo o período calculado
       this.newItem = {
         equipamento_id: 0,
@@ -1681,9 +1885,18 @@ export class OrcamentosComponent implements OnInit {
     this.formData.total_final = this.calculateTotal();
   }
 
+  getSubtotalItens(): number {
+    return this.formData.itens.reduce((sum, item) => sum + item.subtotal, 0);
+  }
+
   calculateTotal(): number {
-    const subtotal = this.formData.itens.reduce((sum, item) => sum + item.subtotal, 0);
+    const subtotal = this.getSubtotalItens();
     return subtotal - this.formData.desconto + this.formData.frete;
+  }
+
+  onDescontoFreteChange() {
+    // Recalcular o total quando desconto ou frete mudarem
+    this.formData.total_final = this.calculateTotal();
   }
 
   getEquipamentoName(id: number): string {
@@ -1756,8 +1969,18 @@ export class OrcamentosComponent implements OnInit {
     return orcamento.itens.reduce((sum, item) => sum + item.subtotal, 0);
   }
 
+  get availableYears(): number[] {
+    const currentYear = new Date().getFullYear();
+    const years: number[] = [];
+    // Criar lista de anos: ano atual + 1 (futuro) até 5 anos atrás
+    for (let year = currentYear + 1; year >= currentYear - 5; year--) {
+      years.push(year);
+    }
+    return years;
+  }
+
   get filteredOrcamentos(): Orcamento[] {
-    let filtered = this.orcamentos;
+    let filtered = [...this.orcamentos]; // Criar cópia para não modificar o array original
 
     // Filtrar por mês
     if (this.selectedMonth) {
@@ -1782,6 +2005,47 @@ export class OrcamentosComponent implements OnInit {
       });
     }
 
+    // Ordenar: pendentes primeiro, depois aprovados sem contrato, depois os outros
+    filtered.sort((a, b) => {
+      const aHasLocacao = this.hasLocacaoForOrcamento(a.id);
+      const bHasLocacao = this.hasLocacaoForOrcamento(b.id);
+      
+      // Definir ordem de prioridade considerando status e presença de contrato
+      let priorityA = 999;
+      let priorityB = 999;
+      
+      if (a.status === 'pendente') {
+        priorityA = 0;
+      } else if (a.status === 'aprovado' && !aHasLocacao) {
+        priorityA = 1; // Aprovado sem contrato
+      } else if (a.status === 'aprovado' && aHasLocacao) {
+        priorityA = 2; // Aprovado com contrato
+      } else if (a.status === 'rejeitado') {
+        priorityA = 3;
+      }
+      
+      if (b.status === 'pendente') {
+        priorityB = 0;
+      } else if (b.status === 'aprovado' && !bHasLocacao) {
+        priorityB = 1; // Aprovado sem contrato
+      } else if (b.status === 'aprovado' && bHasLocacao) {
+        priorityB = 2; // Aprovado com contrato
+      } else if (b.status === 'rejeitado') {
+        priorityB = 3;
+      }
+
+      const priorityDiff = priorityA - priorityB;
+      
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
+
+      // Se mesma prioridade, ordenar por data de criação (mais recente primeiro)
+      const dateA = new Date(a.data_criacao).getTime();
+      const dateB = new Date(b.data_criacao).getTime();
+      return dateB - dateA;
+    });
+
     return filtered;
   }
 
@@ -1795,6 +2059,7 @@ export class OrcamentosComponent implements OnInit {
     this.formData.total_final = this.calculateTotal();
     
     if (this.editingOrcamento) {
+      // O backend já vai voltar para pendente automaticamente se estava rejeitado
       this.orcamentoService.updateOrcamento(this.editingOrcamento.id, this.formData).subscribe({
         next: (response) => {
           this.loadData();
@@ -1872,6 +2137,47 @@ export class OrcamentosComponent implements OnInit {
       // Recarregar os dados para sincronizar com o servidor
       this.loadData();
     });
+  }
+
+  editOrcamento(orcamento: Orcamento) {
+    // Verificar se já existe locação para este orçamento
+    if (this.hasLocacaoForOrcamento(orcamento.id)) {
+      return; // Não fazer nada se tiver contrato gerado (botão já está desabilitado)
+    }
+
+    // Carregar dados do orçamento no formulário
+    this.editingOrcamento = orcamento;
+    this.formData = {
+      cliente_id: orcamento.cliente_id,
+      data_inicio: orcamento.data_inicio.split('T')[0], // Converter para formato de input date
+      data_fim: orcamento.data_fim.split('T')[0],
+      desconto: orcamento.desconto || 0,
+      frete: orcamento.frete || 0,
+      total_final: orcamento.total_final,
+      observacoes: orcamento.observacoes || '',
+      itens: orcamento.itens?.map(item => ({
+        equipamento_id: item.equipamento_id,
+        quantidade: item.quantidade,
+        preco_unitario: item.preco_unitario,
+        dias: item.dias,
+        tipo_cobranca: item.tipo_cobranca,
+        subtotal: item.subtotal
+      })) || []
+    };
+
+    // Calcular período
+    this.onDateChange();
+
+    // Mostrar formulário
+    this.showForm = true;
+
+    // Scroll para o formulário
+    setTimeout(() => {
+      const formSection = document.querySelector('.form-section');
+      if (formSection) {
+        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   }
 
   viewOrcamento(orcamento: Orcamento) {

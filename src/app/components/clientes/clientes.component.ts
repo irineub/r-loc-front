@@ -575,10 +575,26 @@ import { Cliente, ClienteCreate } from '../../models/index';
 
       .form-row {
         grid-template-columns: 1fr;
+        gap: 1rem;
       }
 
       .form-actions {
         flex-direction: column;
+      }
+
+      .form-actions .btn {
+        width: 100%;
+      }
+
+      .form-control {
+        font-size: 16px; /* Previne zoom no iOS */
+        padding: 0.875rem 1rem;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .form-section {
+        padding: 1.5rem;
       }
 
       .table {
@@ -597,11 +613,25 @@ import { Cliente, ClienteCreate } from '../../models/index';
 
       .action-btn {
         padding: 0.4rem 0.6rem;
+        width: 100%;
         font-size: 0.75rem;
       }
     }
 
     @media (max-width: 480px) {
+      .form-section {
+        padding: 1rem;
+      }
+      
+      .card-header {
+        padding: 1.5rem;
+      }
+      
+      .form-control {
+        padding: 0.75rem;
+        font-size: 16px;
+      }
+      
       .table {
         display: block;
         overflow-x: auto;
