@@ -245,10 +245,8 @@ import { take } from 'rxjs/operators';
             
             <div class="filter-group">
               <label for="year">Ano:</label>
-              <select id="year" [(ngModel)]="selectedYear" class="form-control">
-                <option value="">Todos os anos</option>
-                <option *ngFor="let year of availableYears" [value]="year">{{ year }}</option>
-              </select>
+              <input type="number" id="year" [(ngModel)]="selectedYear" class="form-control">
+              </input>
             </div>
             
             <div class="filter-group">
