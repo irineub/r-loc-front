@@ -546,6 +546,9 @@ import { take } from 'rxjs/operators';
       margin-top: 1.5rem;
       border: 2px solid rgba(220, 53, 69, 0.1);
       box-shadow: 0 8px 32px rgba(220, 53, 69, 0.08);
+      width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
 
     .form-section h3 {
@@ -565,6 +568,8 @@ import { take } from 'rxjs/operators';
     .form-group {
       display: flex;
       flex-direction: column;
+      min-width: 0;
+      width: 100%;
     }
 
     .form-group label {
@@ -587,6 +592,16 @@ import { take } from 'rxjs/operators';
       background: white;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       color: #495057;
+      width: 100%;
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+
+    .form-control select {
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .form-control:focus {
@@ -751,6 +766,9 @@ import { take } from 'rxjs/operators';
       margin-bottom: 1rem;
       border: 2px solid rgba(220, 53, 69, 0.1);
       box-shadow: 0 4px 20px rgba(220, 53, 69, 0.05);
+      width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
     .items-list {
@@ -910,10 +928,31 @@ import { take } from 'rxjs/operators';
       .form-control {
         font-size: 16px; /* Previne zoom no iOS */
         padding: 0.875rem 1rem;
+        width: 100%;
+        box-sizing: border-box;
+        max-width: 100%;
       }
       
       .form-section {
         padding: 1.5rem;
+        overflow-x: hidden;
+      }
+
+      .item-form {
+        padding: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      .form-group {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .form-row {
+        width: 100%;
+        box-sizing: border-box;
       }
       
       .table {
@@ -952,6 +991,21 @@ import { take } from 'rxjs/operators';
       .form-control {
         padding: 0.75rem;
         font-size: 16px;
+        width: 100%;
+        box-sizing: border-box;
+        max-width: 100%;
+      }
+
+      .form-section {
+        padding: 1rem;
+        overflow-x: hidden;
+      }
+
+      .item-form {
+        padding: 0.875rem;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
       }
       
       .items-section h4 {
