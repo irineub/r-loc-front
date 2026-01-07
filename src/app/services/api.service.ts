@@ -57,14 +57,24 @@ export class ApiService {
 
   put<T>(endpoint: string, id: number, data: any): Observable<T> {
     const url = `${this.baseUrl}${endpoint}/${id}/`;
+    const updateUrl = `${this.baseUrl}${endpoint}/${id}/update`;
     console.log('PUT request:', url, data);
-    // Tentar PUT primeiro, se falhar com 405, tentar PATCH
+    // Tentar PUT primeiro, se falhar com 405, tentar PATCH, depois POST
     return this.http.put<T>(url, data, { headers: this.getHeaders() }).pipe(
       catchError((error: HttpErrorResponse) => {
         // Se for erro 405 (Method Not Allowed), tentar com PATCH
         if (error.status === 405) {
           console.log('PUT blocked by server, trying PATCH instead');
-          return this.http.patch<T>(url, data, { headers: this.getHeaders() });
+          return this.http.patch<T>(url, data, { headers: this.getHeaders() }).pipe(
+            catchError((patchError: HttpErrorResponse) => {
+              // Se PATCH também falhar, usar POST no endpoint /update
+              if (patchError.status === 405) {
+                console.log('PATCH also blocked, using POST /update endpoint');
+                return this.http.post<T>(updateUrl, data, { headers: this.getHeaders() });
+              }
+              return this.handleError(patchError);
+            })
+          );
         }
         return this.handleError(error);
       })
