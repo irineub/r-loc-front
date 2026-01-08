@@ -163,6 +163,48 @@ import { Cliente, ClienteCreate } from '../../models/index';
         </div>
       </div>
     </div>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+      <div class="modal-content confirm-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Confirmar Exclusão</h3>
+          <button class="modal-close" (click)="closeDeleteModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="confirm-warning">
+            <p><strong>⚠️ Atenção!</strong></p>
+            <p>Você está prestes a excluir o cliente <strong>{{ clienteToDelete?.nome_razao_social }}</strong>.</p>
+            <p>Esta ação não pode ser desfeita.</p>
+          </div>
+          <div class="confirm-input-section">
+            <label for="confirm-text">Digite <strong>"cancelar"</strong> para confirmar:</label>
+            <input 
+              type="text" 
+              id="confirm-text"
+              [(ngModel)]="confirmText" 
+              (input)="onConfirmTextChange()"
+              placeholder="Digite 'cancelar' aqui"
+              class="form-control confirm-input"
+              autocomplete="off">
+            <p class="confirm-hint" *ngIf="confirmText && !isConfirmTextValid">
+              O texto digitado não corresponde. Digite exatamente "cancelar".
+            </p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeDeleteModal()">
+            Voltar
+          </button>
+          <button 
+            class="btn btn-danger" 
+            (click)="confirmDeleteCliente()"
+            [disabled]="!isConfirmTextValid">
+            Confirmar Exclusão
+          </button>
+        </div>
+      </div>
+    </div>
   `,
   styles: [`
     .clientes {
@@ -410,6 +452,7 @@ import { Cliente, ClienteCreate } from '../../models/index';
       -webkit-overflow-scrolling: touch;
       width: 100%;
       box-sizing: border-box;
+      max-width: 100%;
     }
 
     .table {
@@ -422,6 +465,7 @@ import { Cliente, ClienteCreate } from '../../models/index';
       overflow: hidden;
       box-shadow: 0 8px 32px rgba(220, 53, 69, 0.08);
       border: 2px solid rgba(220, 53, 69, 0.1);
+      table-layout: auto;
     }
 
     .table th {
@@ -485,6 +529,12 @@ import { Cliente, ClienteCreate } from '../../models/index';
       position: relative;
       word-wrap: break-word;
       max-width: 200px;
+      overflow: hidden;
+    }
+
+    .table tbody td:last-child {
+      max-width: none;
+      min-width: 180px;
     }
 
     .table tbody td:first-child {
@@ -523,25 +573,30 @@ import { Cliente, ClienteCreate } from '../../models/index';
       gap: 0.5rem;
       flex-wrap: wrap;
       align-items: center;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     .action-btn {
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      padding: 0.625rem 1rem;
+      padding: 0.625rem 0.875rem;
       border: none;
-      border-radius: 12px;
-      font-weight: 700;
+      border-radius: 10px;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      font-size: 0.85rem;
+      font-size: 0.8125rem;
       text-decoration: none;
       white-space: nowrap;
-      min-width: fit-content;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      min-width: auto;
+      text-transform: none;
+      letter-spacing: 0.01em;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      flex-shrink: 0;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     .action-btn:hover {
@@ -656,28 +711,45 @@ import { Cliente, ClienteCreate } from '../../models/index';
         margin-bottom: 0.75rem;
       }
 
+      .table tbody td:last-child {
+        max-width: 100%;
+        min-width: auto;
+        padding-top: 1rem;
+      }
+
       .action-buttons {
-        flex-direction: row;
-        justify-content: flex-start;
-        margin-top: 1rem;
-        flex-wrap: wrap;
+        flex-direction: column;
+        justify-content: stretch;
+        margin-top: 0.5rem;
+        flex-wrap: nowrap;
         gap: 0.5rem;
+        width: 100%;
+        max-width: 100%;
       }
 
       .action-btn {
-        padding: 0.5rem 1rem;
-        font-size: 0.75rem;
-        width: auto;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        width: 100%;
+        max-width: 100%;
+        justify-content: center;
+        box-sizing: border-box;
+        white-space: normal;
+        word-wrap: break-word;
       }
     }
 
     @media (max-width: 480px) {
+      .clientes {
+        padding: 0.75rem;
+      }
+
       .form-section {
         padding: 1rem;
       }
       
       .card-header {
-        padding: 1.5rem;
+        padding: 1.25rem;
       }
       
       .form-control {
@@ -685,14 +757,189 @@ import { Cliente, ClienteCreate } from '../../models/index';
         font-size: 16px;
       }
 
+      .table-section {
+        padding: 0.75rem;
+      }
+
+      .table tbody tr {
+        padding: 0.875rem;
+      }
+
+      .table tbody td {
+        padding: 0.5rem 0;
+        font-size: 0.8125rem;
+      }
+
       .action-buttons {
         flex-direction: column;
         width: 100%;
+        max-width: 100%;
+        gap: 0.5rem;
       }
 
       .action-btn {
         width: 100%;
+        max-width: 100%;
         justify-content: center;
+        padding: 0.75rem 0.875rem;
+        font-size: 0.875rem;
+        box-sizing: border-box;
+      }
+    }
+
+    /* Modal de Confirmação */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 2rem;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .confirm-modal {
+      max-width: 500px;
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 20px 20px 0 0;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 2rem;
+      cursor: pointer;
+      padding: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .modal-close:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .modal-body {
+      padding: 2rem;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .confirm-warning {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .confirm-warning p {
+      margin: 0.5rem 0;
+      color: #856404;
+      font-size: 0.9375rem;
+    }
+
+    .confirm-warning p:first-child {
+      font-size: 1.0625rem;
+      font-weight: 600;
+    }
+
+    .confirm-input-section {
+      margin-top: 1.5rem;
+    }
+
+    .confirm-input-section label {
+      display: block;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9375rem;
+    }
+
+    .confirm-input {
+      width: 100%;
+      padding: 0.9375rem 1.25rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.25s ease;
+      box-sizing: border-box;
+    }
+
+    .confirm-input:focus {
+      outline: none;
+      border-color: #dc3545;
+      box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
+    }
+
+    .confirm-hint {
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: #dc3545;
+      font-weight: 500;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 1rem;
+      padding: 1.5rem 2rem;
+      border-top: 1px solid #e5e7eb;
+      justify-content: flex-end;
+    }
+
+    .modal-footer .btn {
+      min-width: 120px;
+    }
+
+    @media (max-width: 768px) {
+      .modal-overlay {
+        padding: 1rem;
+      }
+
+      .confirm-modal {
+        max-width: 95vw;
+      }
+
+      .modal-footer {
+        flex-direction: column;
+        padding: 1rem;
+      }
+
+      .modal-footer .btn {
+        width: 100%;
       }
     }
   `]
@@ -701,6 +948,10 @@ export class ClientesComponent implements OnInit {
   clientes: Cliente[] = [];
   showForm = false;
   editingCliente: Cliente | null = null;
+  showDeleteModal = false;
+  clienteToDelete: Cliente | null = null;
+  confirmText = '';
+  isConfirmTextValid = false;
   formData: ClienteCreate = {
     nome_razao_social: '',
     tipo_pessoa: 'fisica',
@@ -751,11 +1002,42 @@ export class ClientesComponent implements OnInit {
   }
 
   deleteCliente(id: number) {
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
-      this.clienteService.deleteCliente(id).subscribe(() => {
-        this.loadClientes();
-      });
+    const cliente = this.clientes.find(c => c.id === id);
+    if (cliente) {
+      this.clienteToDelete = cliente;
+      this.showDeleteModal = true;
+      this.confirmText = '';
+      this.isConfirmTextValid = false;
     }
+  }
+
+  closeDeleteModal() {
+    this.showDeleteModal = false;
+    this.clienteToDelete = null;
+    this.confirmText = '';
+    this.isConfirmTextValid = false;
+  }
+
+  onConfirmTextChange() {
+    this.isConfirmTextValid = this.confirmText.toLowerCase().trim() === 'cancelar';
+  }
+
+  confirmDeleteCliente() {
+    if (!this.isConfirmTextValid || !this.clienteToDelete) {
+      return;
+    }
+
+    this.clienteService.deleteCliente(this.clienteToDelete.id).subscribe({
+      next: () => {
+        this.loadClientes();
+        this.closeDeleteModal();
+        alert('Cliente excluído com sucesso!');
+      },
+      error: (error) => {
+        console.error('Erro ao excluir cliente:', error);
+        alert('Erro ao excluir cliente. Tente novamente.');
+      }
+    });
   }
 
   cancelForm() {

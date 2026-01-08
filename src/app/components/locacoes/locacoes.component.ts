@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { CurrencyBrPipe } from '../../pipes/currency-br.pipe';
 import { LocacaoService } from '../../services/locacao.service';
 import { EquipamentoService } from '../../services/equipamento.service';
@@ -12,7 +13,7 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-locacoes',
   standalone: true,
-  imports: [CommonModule, CurrencyBrPipe],
+  imports: [CommonModule, CurrencyBrPipe, FormsModule],
   template: `
     <div class="locacoes">
       <div class="card">
@@ -69,7 +70,7 @@ import { Router } from '@angular/router';
                             *ngIf="locacao.status === 'ativa'" title="Finalizar Locação">
                       Finalizar
                     </button>
-                    <button class="action-btn view" (click)="irParaRecebimento(locacao.id)" 
+                    <button class="action-btn receive" (click)="irParaRecebimento(locacao.id)" 
                             *ngIf="locacao.status === 'ativa'" title="Receber/Devolver Itens">
                       Receber
                     </button>
@@ -85,6 +86,48 @@ import { Router } from '@angular/router';
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Confirmação de Cancelamento -->
+    <div class="modal-overlay" *ngIf="showCancelModal" (click)="closeCancelModal()">
+      <div class="modal-content confirm-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Confirmar Cancelamento</h3>
+          <button class="modal-close" (click)="closeCancelModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="confirm-warning">
+            <p><strong>⚠️ Atenção!</strong></p>
+            <p>Você está prestes a cancelar a locação <strong>#{{ locacaoToCancel?.id }}</strong>.</p>
+            <p>Esta ação não pode ser desfeita.</p>
+          </div>
+          <div class="confirm-input-section">
+            <label for="confirm-text">Digite <strong>"cancelar"</strong> para confirmar:</label>
+            <input 
+              type="text" 
+              id="confirm-text"
+              [(ngModel)]="confirmText" 
+              (input)="onConfirmTextChange()"
+              placeholder="Digite 'cancelar' aqui"
+              class="form-control confirm-input"
+              autocomplete="off">
+            <p class="confirm-hint" *ngIf="confirmText && !isConfirmTextValid">
+              O texto digitado não corresponde. Digite exatamente "cancelar".
+            </p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeCancelModal()">
+            Voltar
+          </button>
+          <button 
+            class="btn btn-danger" 
+            (click)="confirmCancelLocacao()"
+            [disabled]="!isConfirmTextValid">
+            Confirmar Cancelamento
+          </button>
         </div>
       </div>
     </div>
@@ -357,7 +400,19 @@ import { Router } from '@angular/router';
     }
 
     .action-btn.view:hover {
+      background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%);
       border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .action-btn.receive {
+      background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .action-btn.receive:hover {
+      background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+      border-color: rgba(255, 255, 255, 0.3);
     }
 
     .badge {
@@ -836,6 +891,98 @@ import { Router } from '@angular/router';
         max-width: 200px;
       }
     }
+
+    /* Modal de Confirmação */
+    .confirm-modal {
+      max-width: 500px;
+    }
+
+    .confirm-warning {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .confirm-warning p {
+      margin: 0.5rem 0;
+      color: #856404;
+      font-size: 0.9375rem;
+    }
+
+    .confirm-warning p:first-child {
+      font-size: 1.0625rem;
+      font-weight: 600;
+    }
+
+    .confirm-input-section {
+      margin-top: 1.5rem;
+    }
+
+    .confirm-input-section label {
+      display: block;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9375rem;
+    }
+
+    .confirm-input {
+      width: 100%;
+      padding: 0.9375rem 1.25rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.25s ease;
+      box-sizing: border-box;
+    }
+
+    .confirm-input:focus {
+      outline: none;
+      border-color: #dc3545;
+      box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
+    }
+
+    .confirm-input:invalid,
+    .confirm-input.error {
+      border-color: #dc3545;
+    }
+
+    .confirm-hint {
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: #dc3545;
+      font-weight: 500;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 1rem;
+      padding: 1.5rem 2rem;
+      border-top: 1px solid #e5e7eb;
+      justify-content: flex-end;
+      flex-shrink: 0;
+    }
+
+    .modal-footer .btn {
+      min-width: 120px;
+    }
+
+    @media (max-width: 768px) {
+      .confirm-modal {
+        max-width: 95vw;
+      }
+
+      .modal-footer {
+        flex-direction: column;
+        padding: 1rem;
+      }
+
+      .modal-footer .btn {
+        width: 100%;
+      }
+    }
   `]
 })
 export class LocacoesComponent implements OnInit {
@@ -844,6 +991,10 @@ export class LocacoesComponent implements OnInit {
   filterStatus = '';
   selectedLocacao: Locacao | null = null;
   showViewModal = false;
+  showCancelModal = false;
+  locacaoToCancel: Locacao | null = null;
+  confirmText = '';
+  isConfirmTextValid = false;
 
   constructor(
     private locacaoService: LocacaoService,
@@ -914,11 +1065,42 @@ export class LocacoesComponent implements OnInit {
   }
 
   cancelarLocacao(id: number) {
-    if (confirm('Tem certeza que deseja cancelar esta locação?')) {
-      this.locacaoService.cancelarLocacao(id).subscribe(() => {
-        this.loadData();
-      });
+    const locacao = this.locacoes.find(l => l.id === id);
+    if (locacao) {
+      this.locacaoToCancel = locacao;
+      this.showCancelModal = true;
+      this.confirmText = '';
+      this.isConfirmTextValid = false;
     }
+  }
+
+  closeCancelModal() {
+    this.showCancelModal = false;
+    this.locacaoToCancel = null;
+    this.confirmText = '';
+    this.isConfirmTextValid = false;
+  }
+
+  onConfirmTextChange() {
+    this.isConfirmTextValid = this.confirmText.toLowerCase().trim() === 'cancelar';
+  }
+
+  confirmCancelLocacao() {
+    if (!this.isConfirmTextValid || !this.locacaoToCancel) {
+      return;
+    }
+
+    this.locacaoService.cancelarLocacao(this.locacaoToCancel.id).subscribe({
+      next: () => {
+        this.loadData();
+        this.closeCancelModal();
+        alert('Locação cancelada com sucesso!');
+      },
+      error: (error) => {
+        console.error('Erro ao cancelar locação:', error);
+        alert('Erro ao cancelar locação. Tente novamente.');
+      }
+    });
   }
 
   viewLocacao(locacao: Locacao) {
