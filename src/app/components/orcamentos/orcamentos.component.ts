@@ -221,7 +221,8 @@ import { take } from 'rxjs/operators';
             </div>
 
             <div class="form-actions">
-              <button type="submit" class="btn btn-primary" [disabled]="!form.valid || formData.itens.length === 0">
+              <button type="submit" class="btn btn-primary" 
+                      [disabled]="!isFormValid() || formData.itens.length === 0">
                 {{ editingOrcamento ? 'Atualizar' : 'Salvar' }}
               </button>
               <button type="button" class="btn btn-secondary" (click)="cancelForm()">
@@ -2025,6 +2026,58 @@ export class OrcamentosComponent implements OnInit {
   removeItem(index: number) {
     this.formData.itens.splice(index, 1);
     this.formData.total_final = this.calculateTotal();
+  }
+
+  isFormValid(): boolean {
+    // Verificar campos obrigatórios
+    const clienteId = Number(this.formData.cliente_id) || 0;
+    if (!clienteId || clienteId <= 0) {
+      return false;
+    }
+    
+    if (!this.formData.data_inicio || this.formData.data_inicio.trim() === '') {
+      return false;
+    }
+    
+    if (!this.formData.data_fim || this.formData.data_fim.trim() === '') {
+      return false;
+    }
+    
+    // Verificar se data fim é depois da data início
+    if (this.formData.data_inicio && this.formData.data_fim) {
+      const dataInicio = new Date(this.formData.data_inicio);
+      const dataFim = new Date(this.formData.data_fim);
+      if (isNaN(dataInicio.getTime()) || isNaN(dataFim.getTime())) {
+        return false;
+      }
+      if (dataFim <= dataInicio) {
+        return false;
+      }
+    }
+    
+    // Verificar se há itens
+    if (!this.formData.itens || this.formData.itens.length === 0) {
+      return false;
+    }
+    
+    // Verificar se todos os itens têm dados válidos
+    for (const item of this.formData.itens) {
+      const equipamentoId = Number(item.equipamento_id) || 0;
+      const quantidade = Number(item.quantidade) || 0;
+      const dias = Number(item.dias) || 0;
+      
+      if (!equipamentoId || equipamentoId <= 0) {
+        return false;
+      }
+      if (!quantidade || quantidade <= 0) {
+        return false;
+      }
+      if (!dias || dias <= 0) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   getSubtotalItens(): number {
