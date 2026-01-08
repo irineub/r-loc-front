@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { ClienteService } from '../../services/cliente.service';
 import { Cliente, ClienteCreate } from '../../models/index';
 
 @Component({
   selector: 'app-clientes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="clientes">
       <div class="card">
@@ -119,48 +120,65 @@ import { Cliente, ClienteCreate } from '../../models/index';
           </form>
         </div>
 
-        <!-- Table Section -->
-        <div class="table-section" *ngIf="!showForm">
-          <div class="table-wrapper">
-            <table class="table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nome/Razão Social</th>
-                <th>Tipo</th>
-                <th>Documento</th>
-                <th>Telefone</th>
-                <th>E-mail</th>
-                <th>Data Cadastro</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let cliente of clientes">
-                <td data-label="ID">{{ cliente.id }}</td>
-                <td data-label="Nome/Razão Social">{{ cliente.nome_razao_social }}</td>
-                <td data-label="Tipo">
-                  <span class="badge" [class]="cliente.tipo_pessoa === 'fisica' ? 'badge-primary' : 'badge-secondary'">
-                    {{ cliente.tipo_pessoa === 'fisica' ? 'PF' : 'PJ' }}
-                  </span>
-                </td>
-                <td data-label="Documento">{{ cliente.cpf || cliente.cnpj || '-' }}</td>
-                <td data-label="Telefone">{{ cliente.telefone_comercial || cliente.telefone_celular || '-' }}</td>
-                <td data-label="E-mail">{{ cliente.email || '-' }}</td>
-                <td data-label="Data Cadastro">{{ cliente.data_cadastro | date:'dd/MM/yyyy' }}</td>
-                <td data-label="Ações">
-                  <div class="action-buttons">
-                    <button class="action-btn edit" (click)="editCliente(cliente)" title="Editar Cliente">
-                      ✏️ Editar
-                    </button>
-                    <button class="action-btn delete" (click)="deleteCliente(cliente.id)" title="Excluir Cliente">
-                      🗑️ Excluir
-                    </button>
+        <!-- Search Section -->
+        <div class="search-section" *ngIf="!showForm">
+          <div class="search-container">
+            <input 
+              type="text" 
+              class="search-input" 
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange()"
+              placeholder="Pesquisar por nome ou CPF/CNPJ..."
+              autocomplete="off">
+          </div>
+        </div>
+
+        <!-- Cards Section -->
+        <div class="cards-section" *ngIf="!showForm">
+          <div class="cards-grid">
+            <div class="cliente-card" *ngFor="let cliente of filteredClientes">
+              <div class="card-header-small">
+                <div class="card-id">#{{ cliente.id }}</div>
+                <span class="badge" [class]="cliente.tipo_pessoa === 'fisica' ? 'badge-primary' : 'badge-secondary'">
+                  {{ cliente.tipo_pessoa === 'fisica' ? 'PF' : 'PJ' }}
+                </span>
+              </div>
+              <div class="card-body-small">
+                <h3 class="card-name">{{ cliente.nome_razao_social }}</h3>
+                <div class="card-info">
+                  <div class="info-item">
+                    <span class="info-label">Documento:</span>
+                    <span class="info-value">{{ cliente.cpf || cliente.cnpj || '-' }}</span>
                   </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  <div class="info-item" *ngIf="cliente.telefone_comercial || cliente.telefone_celular">
+                    <span class="info-label">Telefone:</span>
+                    <span class="info-value">{{ cliente.telefone_comercial || cliente.telefone_celular }}</span>
+                  </div>
+                  <div class="info-item" *ngIf="cliente.email">
+                    <span class="info-label">E-mail:</span>
+                    <span class="info-value">{{ cliente.email }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Cadastro:</span>
+                    <span class="info-value">{{ cliente.data_cadastro | date:'dd/MM/yyyy' }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="card-actions">
+                <button class="action-btn view" (click)="verDetalhes(cliente.id)" title="Ver Detalhes">
+                  Ver Detalhes
+                </button>
+                <button class="action-btn edit" (click)="editCliente(cliente)" title="Editar Cliente">
+                  Editar
+                </button>
+                <button class="action-btn delete" (click)="deleteCliente(cliente.id)" title="Excluir Cliente">
+                  Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="no-results" *ngIf="filteredClientes.length === 0">
+            <p>Nenhum cliente encontrado.</p>
           </div>
         </div>
       </div>
@@ -448,25 +466,155 @@ import { Cliente, ClienteCreate } from '../../models/index';
       color: #374151;
     }
 
-    .table-section {
+    /* Search Section */
+    .search-section {
+      padding: 1.5rem 2rem;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-bottom: 2px solid rgba(220, 53, 69, 0.1);
+    }
+
+    .search-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.9375rem 1.25rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 0.9375rem;
+      font-weight: 400;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      background: white;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      color: #1f2937;
+      font-family: 'Inter', sans-serif;
+      line-height: 1.5;
+      letter-spacing: -0.01em;
+      box-sizing: border-box;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #dc3545;
+      box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
+    }
+
+    .search-input::placeholder {
+      color: #9ca3af;
+      font-weight: 400;
+      opacity: 0.7;
+    }
+
+    /* Cards Section */
+    .cards-section {
       padding: 2rem;
     }
 
-    .table-wrapper {
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
     }
 
-    .table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
+    .cliente-card {
       background: white;
       border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 8px 32px rgba(220, 53, 69, 0.08);
+      box-shadow: 0 4px 16px rgba(220, 53, 69, 0.1);
       border: 2px solid rgba(220, 53, 69, 0.1);
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cliente-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(220, 53, 69, 0.2);
+      border-color: rgba(220, 53, 69, 0.3);
+    }
+
+    .card-header-small {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-id {
+      font-weight: 700;
+      font-size: 0.875rem;
+      opacity: 0.9;
+    }
+
+    .card-body-small {
+      padding: 1.5rem;
+      flex: 1;
+    }
+
+    .card-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 0 0 1rem 0;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    .card-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .info-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .info-value {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .card-actions {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      background: #f9fafb;
+    }
+
+    .action-btn.view {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .action-btn.view:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: #6b7280;
+      font-size: 1rem;
     }
 
     .table th {
@@ -661,70 +809,26 @@ import { Cliente, ClienteCreate } from '../../models/index';
         padding: 1.5rem;
       }
 
-      .table-section {
+      .search-section {
         padding: 1rem;
       }
 
-      .table {
-        font-size: 0.9rem;
-      }
-
-      .table th,
-      .table td {
-        padding: 0.75rem 0.5rem;
-      }
-
-      .table thead {
-        display: none;
-      }
-      
-      .table tbody tr {
-        display: block;
-        margin-bottom: 1rem;
+      .cards-section {
         padding: 1rem;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e5e7eb;
-        min-width: auto;
-      }
-      
-      .table tbody td {
-        display: block;
-        padding: 0.5rem 0;
-        border: none;
-        text-align: left;
-        max-width: 100%;
-        word-wrap: break-word;
-      }
-      
-      .table tbody td:before {
-        content: attr(data-label) ": ";
-        font-weight: 700;
-        color: #dc2626;
-        margin-right: 0.5rem;
-      }
-      
-      .table tbody td:first-child {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #dc2626;
-        border-bottom: 1px solid #e5e7eb;
-        padding-bottom: 0.75rem;
-        margin-bottom: 0.75rem;
       }
 
-      .action-buttons {
-        flex-direction: row;
-        justify-content: flex-start;
-        margin-top: 1rem;
-        flex-wrap: wrap;
+      .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
       }
 
-      .action-btn {
-        padding: 0.5rem 1rem;
-        font-size: 0.75rem;
-        width: auto;
+      .card-actions {
+        flex-direction: column;
+      }
+
+      .card-actions .action-btn {
+        width: 100%;
+        justify-content: center;
       }
     }
 
@@ -924,6 +1028,8 @@ import { Cliente, ClienteCreate } from '../../models/index';
 })
 export class ClientesComponent implements OnInit {
   clientes: Cliente[] = [];
+  filteredClientes: Cliente[] = [];
+  searchTerm = '';
   showForm = false;
   editingCliente: Cliente | null = null;
   showDeleteModal = false;
@@ -947,7 +1053,10 @@ export class ClientesComponent implements OnInit {
     observacoes: ''
   };
 
-  constructor(private clienteService: ClienteService) {}
+  constructor(
+    private clienteService: ClienteService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     this.loadClientes();
@@ -956,7 +1065,27 @@ export class ClientesComponent implements OnInit {
   loadClientes() {
     this.clienteService.getClientes().subscribe(data => {
       this.clientes = data;
+      this.filteredClientes = data;
     });
+  }
+
+  onSearchChange() {
+    if (!this.searchTerm || this.searchTerm.trim() === '') {
+      this.filteredClientes = this.clientes;
+      return;
+    }
+
+    const term = this.searchTerm.toLowerCase().trim();
+    this.filteredClientes = this.clientes.filter(cliente => {
+      const nome = cliente.nome_razao_social?.toLowerCase() || '';
+      const cpf = cliente.cpf?.toLowerCase() || '';
+      const cnpj = cliente.cnpj?.toLowerCase() || '';
+      return nome.includes(term) || cpf.includes(term) || cnpj.includes(term);
+    });
+  }
+
+  verDetalhes(clienteId: number) {
+    this.router.navigate(['/clientes', clienteId]);
   }
 
   saveCliente() {
