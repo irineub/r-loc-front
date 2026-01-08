@@ -35,7 +35,7 @@ export class ApiService {
   }
 
   getById<T>(endpoint: string, id: number): Observable<T> {
-    const url = `${this.baseUrl}${endpoint}/${id}/`;
+    const url = `${this.baseUrl}${endpoint}/${id}`;
     console.log('GET by ID request:', url);
     console.log('Base URL:', this.baseUrl);
     console.log('Endpoint:', endpoint);
