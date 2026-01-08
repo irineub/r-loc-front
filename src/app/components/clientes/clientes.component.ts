@@ -165,8 +165,8 @@ import { Cliente, ClienteCreate } from '../../models/index';
                 </div>
               </div>
               <div class="card-actions">
-                <button class="action-btn view" (click)="verDetalhes(cliente.id)" title="Ver Detalhes">
-                  Ver Detalhes
+                 <button class="action-btn view" (click)="verDetalhes(cliente.id)" title="Ver Detalhes">
+                 Ver Detalhes
                 </button>
                 <button class="action-btn edit" (click)="editCliente(cliente)" title="Editar Cliente">
                   Editar
