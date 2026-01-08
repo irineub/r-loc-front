@@ -23,9 +23,9 @@ import { take } from 'rxjs/operators';
     <div class="orcamentos">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">📋 Gestão de Orçamentos</h2>
+          <h2 class="card-title">Gestão de Orçamentos</h2>
           <button class="btn btn-primary" (click)="showForm = true" *ngIf="!showForm">
-            <span>➕</span> Novo Orçamento
+            Novo Orçamento
           </button>
         </div>
 
@@ -57,7 +57,7 @@ import { take } from 'rxjs/operators';
 
             <div class="form-row">
               <div class="form-group">
- <label for="data_inicio">📅 Data de Início *</label>
+                <label for="data_inicio">Data de Início *</label>
                 <input type="date" id="data_inicio" name="data_inicio" 
                        [(ngModel)]="formData.data_inicio" required
                        (ngModelChange)="onDateChange()"
@@ -66,7 +66,7 @@ import { take } from 'rxjs/operators';
                 
               </div>
               <div class="form-group">
-                <label for="data_fim">📅 Data de Fim *</label>
+                <label for="data_fim">Data de Fim *</label>
                 <input type="date" id="data_fim" name="data_fim" 
                        [(ngModel)]="formData.data_fim" required
                        (ngModelChange)="onDateChange()"
@@ -78,7 +78,7 @@ import { take } from 'rxjs/operators';
             
             <div class="form-row" *ngIf="periodoCalculado">
               <div class="form-group">
-                <label>📊 Período Calculado</label>
+                <label>Período Calculado</label>
                 <div class="periodo-info">
                   <span class="periodo-dias">{{ periodoCalculado.dias }} dias</span>
                   <span class="periodo-tipo">({{ getTipoCobrancaLabel(periodoCalculado.tipoCobranca).toLowerCase() }})</span>
@@ -90,7 +90,7 @@ import { take } from 'rxjs/operators';
             <!-- Desconto e Frete -->
             <div class="form-row">
               <div class="form-group">
-                <label for="desconto">💰 Desconto (R$) - Opcional</label>
+                <label for="desconto">Desconto (R$) - Opcional</label>
                 <input type="number" id="desconto" name="desconto" 
                        [(ngModel)]="formData.desconto" min="0" step="0.01"
                        (ngModelChange)="onDescontoFreteChange()"
@@ -110,7 +110,7 @@ import { take } from 'rxjs/operators';
             <!-- Resumo Total -->
             <div class="form-row" *ngIf="formData.itens.length > 0">
               <div class="form-group total-preview">
-                <label>📊 Resumo Financeiro</label>
+                <label>Resumo Financeiro</label>
                 <div class="total-breakdown">
                   <div class="total-line">
                     <span>Subtotal dos Itens:</span>
@@ -134,7 +134,7 @@ import { take } from 'rxjs/operators';
 
             <!-- Items Section -->
             <div class="items-section">
-              <h4>📦 Itens do Orçamento</h4>
+              <h4>Itens do Orçamento</h4>
               
               <div class="item-form">
                 <div class="form-row">
@@ -166,7 +166,7 @@ import { take } from 'rxjs/operators';
                       Máximo disponível: {{ getMaxQuantidadeDisponivel() }}
                     </small>
                     <small class="form-help error" *ngIf="hasQuantidadeExcedida()">
-                      ⚠️ Quantidade excede o estoque disponível! Máximo: {{ getMaxQuantidadeDisponivel() }}
+                      Quantidade excede o estoque disponível! Máximo: {{ getMaxQuantidadeDisponivel() }}
                     </small>
                   </div>
                 </div>
@@ -195,7 +195,7 @@ import { take } from 'rxjs/operators';
                   <div class="form-group">
                     <label>&nbsp;</label>
                     <button type="button" class="btn btn-success" (click)="addItem()">
-                      <span>➕</span> Adicionar Item
+                      Adicionar Item
                     </button>
                   </div>
                 </div>
@@ -214,7 +214,7 @@ import { take } from 'rxjs/operators';
                     </span>
                   </div>
                   <button type="button" class="btn btn-danger btn-sm" (click)="removeItem(i)">
-                    <span>🗑️</span>
+                    Remover
                   </button>
                 </div>
               </div>
@@ -275,7 +275,7 @@ import { take } from 'rxjs/operators';
             
             <div class="filter-group">
               <button class="btn btn-warning" (click)="clearFilters()">
-                🔄 Limpar Filtros
+                Limpar Filtros
               </button>
             </div>
           </div>
@@ -308,22 +308,22 @@ import { take } from 'rxjs/operators';
                   <div class="action-buttons">
                     <button class="action-btn approve" (click)="aprovarOrcamento(orcamento.id)" 
                             *ngIf="orcamento.status === 'pendente'" title="Aprovar Orçamento">
-                      ✅ Aprovar
+                      Aprovar
                     </button>
                     <button class="action-btn reject" (click)="rejeitarOrcamento(orcamento.id)" 
                             *ngIf="orcamento.status === 'pendente'" title="Rejeitar Orçamento">
-                      ❌ Rejeitar
+                      Rejeitar
                     </button>
 
                     <button class="action-btn view" (click)="viewOrcamento(orcamento)" title="Visualizar Detalhes">
-                      👁️ Ver
+                      Ver
                     </button>
                     <button class="action-btn edit" 
                             [class.disabled]="hasLocacaoForOrcamento(orcamento.id)"
                             [disabled]="hasLocacaoForOrcamento(orcamento.id)"
                             (click)="editOrcamento(orcamento)" 
                             [title]="hasLocacaoForOrcamento(orcamento.id) ? 'Não é possível editar orçamento com contrato gerado' : 'Editar Orçamento'">
-                      ✏️ Editar
+                      Editar
                     </button>
                   </div>
                 </td>
@@ -338,7 +338,7 @@ import { take } from 'rxjs/operators';
     <div class="modal-overlay" *ngIf="showEnderecoDialog" (click)="closeEnderecoDialog()" style="z-index: 2000;">
       <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 600px;">
         <div class="modal-header">
-          <h3>📍 Endereço de Entrega</h3>
+          <h3>Endereço de Entrega</h3>
           <button class="modal-close" (click)="closeEnderecoDialog()">×</button>
         </div>
         <div class="modal-body">
@@ -375,7 +375,7 @@ import { take } from 'rxjs/operators';
     <div class="modal-overlay" *ngIf="showViewModal" (click)="closeViewModal()">
       <div class="modal-content" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h3>📋 Orçamento #{{ selectedOrcamento?.id }}</h3>
+          <h3>Orçamento #{{ selectedOrcamento?.id }}</h3>
           <button class="modal-close" (click)="closeViewModal()">×</button>
         </div>
         
@@ -418,12 +418,12 @@ import { take } from 'rxjs/operators';
           <!-- Seção especial para orçamentos aprovados -->
           <div class="aprovado-section" *ngIf="selectedOrcamento?.status === 'aprovado' && !hasLocacaoForOrcamento(selectedOrcamento?.id)">
             <div class="aprovado-header">
-              <h4>🎉 Orçamento Aprovado!</h4>
+              <h4>Orçamento Aprovado!</h4>
               <p>Este orçamento foi aprovado e está pronto para gerar o contrato de locação.</p>
             </div>
             <div class="aprovado-actions">
               <button class="btn btn-primary btn-lg" (click)="openEnderecoDialog(selectedOrcamento?.id)">
-                📋 Gerar Contrato de Locação
+                Gerar Contrato de Locação
               </button>
             </div>
           </div>
@@ -431,18 +431,18 @@ import { take } from 'rxjs/operators';
           <!-- Mensagem quando já existe locação -->
           <div class="aprovado-section" *ngIf="selectedOrcamento?.status === 'aprovado' && hasLocacaoForOrcamento(selectedOrcamento?.id)">
             <div class="aprovado-header">
-              <h4>✅ Locação Já Criada</h4>
+              <h4>Locação Já Criada</h4>
               <p>Este orçamento já possui uma locação criada. Verifique a lista de locações para mais detalhes.</p>
             </div>
             <div class="aprovado-actions">
               <button class="btn btn-secondary btn-lg" (click)="irParaLocacoes()">
-                📋 Ver Locações
+                Ver Locações
               </button>
             </div>
           </div>
 
           <div class="itens-section">
-            <h4>📦 Itens do Orçamento</h4>
+            <h4>Itens do Orçamento</h4>
             <table class="items-table">
               <thead>
                 <tr>
@@ -471,11 +471,11 @@ import { take } from 'rxjs/operators';
             <div class="total-row">
               <strong>Subtotal:</strong> {{ getOrcamentoSubtotal(selectedOrcamento) | currencyBr }}
             </div>
-            <div class="total-row">
+            <div class="total-row" *ngIf="selectedOrcamento?.desconto && selectedOrcamento?.desconto > 0">
               <strong>Desconto:</strong> {{ selectedOrcamento?.desconto | currencyBr }}
             </div>
-            <div class="total-row">
-              <strong>Frete:</strong> {{ selectedOrcamento?.frete | currencyBr }}
+            <div class="total-row" *ngIf="selectedOrcamento?.frete && selectedOrcamento?.frete > 0">
+              <strong>Frete/Adicional:</strong> {{ selectedOrcamento?.frete | currencyBr }}
             </div>
             <div class="total-row final-total">
               <strong>Total Final:</strong> {{ selectedOrcamento?.total_final | currencyBr }}
@@ -485,10 +485,10 @@ import { take } from 'rxjs/operators';
 
         <div class="modal-footer">
           <button class="btn btn-success" (click)="exportToXLSX()">
-            📊 Exportar XLSX
+            Exportar XLSX
           </button>
           <button class="btn btn-primary" (click)="exportToOrcamentoPDF()">
-            📋 Orçamento PDF
+            Orçamento PDF
           </button>
 
           <button class="btn btn-secondary" (click)="closeViewModal()">
@@ -1962,7 +1962,7 @@ export class OrcamentosComponent implements OnInit {
     
     // Verificar se há estoque disponível
     if (maxDisponivel <= 0) {
-      alert(`❌ Não é possível adicionar "${equipamento.descricao}".\n\n` +
+      alert(`Não é possível adicionar "${equipamento.descricao}".\n\n` +
             `Estoque disponível: 0 unidades.\n\n` +
             `Este equipamento não possui estoque disponível no momento.`);
       return;
@@ -1976,7 +1976,7 @@ export class OrcamentosComponent implements OnInit {
       
       const estoqueTotal = equipamento.estoque_disponivel || 0;
       
-      alert(`❌ Quantidade excede o estoque disponível!\n\n` +
+      alert(`Quantidade excede o estoque disponível!\n\n` +
             `Equipamento: ${equipamento.descricao}\n` +
             `Quantidade solicitada: ${quantidadeSolicitada}\n` +
             `Estoque total disponível: ${estoqueTotal} unidades\n` +
@@ -2323,7 +2323,7 @@ export class OrcamentosComponent implements OnInit {
     }
     
     if (itensSemEstoque.length > 0) {
-      alert('❌ Não é possível salvar o orçamento!\n\n' +
+      alert('Não é possível salvar o orçamento!\n\n' +
             'Os seguintes itens não possuem estoque disponível:\n\n' +
             itensSemEstoque.map(item => `• ${item}`).join('\n') +
             '\n\nPor favor, remova ou ajuste os itens antes de salvar.');
@@ -2501,7 +2501,7 @@ export class OrcamentosComponent implements OnInit {
 
       // Avisar o usuário sobre itens removidos ou ajustados
       if (itensRemovidos.length > 0) {
-        const mensagem = `⚠️ Orçamento rejeitado editado\n\n` +
+        const mensagem = `Orçamento rejeitado editado\n\n` +
           `Alguns itens foram ajustados ou removidos devido à falta de estoque:\n\n` +
           itensRemovidos.map(item => `• ${item}`).join('\n') +
           `\n\nPor favor, revise os itens antes de salvar.`;
@@ -2510,7 +2510,7 @@ export class OrcamentosComponent implements OnInit {
 
       // Se não sobrou nenhum item válido, avisar e não permitir editar
       if (itensValidos.length === 0) {
-        alert('❌ Não é possível editar este orçamento!\n\nTodos os itens foram removidos porque não há estoque disponível.\n\nPor favor, adicione novos itens com estoque disponível.');
+        alert('Não é possível editar este orçamento!\n\nTodos os itens foram removidos porque não há estoque disponível.\n\nPor favor, adicione novos itens com estoque disponível.');
         return;
       }
     } else {

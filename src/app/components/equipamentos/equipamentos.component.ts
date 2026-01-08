@@ -13,9 +13,9 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
     <div class="equipamentos">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">🏗️ Gestão de Equipamentos</h2>
+          <h2 class="card-title">Gestão de Equipamentos</h2>
           <button class="btn btn-primary" (click)="showForm = true" *ngIf="!showForm">
-            <span>➕</span> Novo Equipamento
+            Novo Equipamento
           </button>
         </div>
 

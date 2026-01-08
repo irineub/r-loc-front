@@ -12,9 +12,9 @@ import { Cliente, ClienteCreate } from '../../models/index';
     <div class="clientes">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">👥 Gestão de Clientes</h2>
+          <h2 class="card-title">Gestão de Clientes</h2>
           <button class="btn btn-primary" (click)="showForm = true" *ngIf="!showForm">
-            <span>➕</span> Novo Cliente
+            Novo Cliente
           </button>
         </div>
 

@@ -11,9 +11,9 @@ import { FuncionarioService, Funcionario, FuncionarioCreate, FuncionarioUpdate }
     <div class="funcionarios">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">👨‍💼 Gestão de Funcionários</h2>
+          <h2 class="card-title">Gestão de Funcionários</h2>
           <button class="btn btn-primary" (click)="showForm = true" *ngIf="!showForm">
-            <span>➕</span> Novo Funcionário
+            Novo Funcionário
           </button>
         </div>
 

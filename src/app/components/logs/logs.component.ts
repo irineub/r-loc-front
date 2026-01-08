@@ -12,7 +12,7 @@ import { FuncionarioService, Funcionario } from '../../services/funcionario.serv
     <div class="logs">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">📋 Logs de Auditoria</h2>
+          <h2 class="card-title">Logs de Auditoria</h2>
           <div class="filters">
             <select [(ngModel)]="selectedFuncionario" (change)="onFilterChange()" class="form-control">
               <option [ngValue]="null">Todos os funcionários</option>

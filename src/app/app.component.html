@@ -16,30 +16,30 @@
       <nav class="nav" [class.mobile-open]="isMobileMenuOpen">
         <div class="nav-content">
           <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeMobileMenu()">
-            📊 Dashboard
+            Dashboard
           </a>
           <a routerLink="/clientes" routerLinkActive="active" (click)="closeMobileMenu()">
-            👥 Clientes
+            Clientes
           </a>
           <a routerLink="/equipamentos" routerLinkActive="active" (click)="closeMobileMenu()">
-            🔧 Equipamentos
+            Equipamentos
           </a>
           <a routerLink="/orcamentos" routerLinkActive="active" (click)="closeMobileMenu()">
-            📋 Orçamentos
+            Orçamentos
           </a>
           <a routerLink="/locacoes" routerLinkActive="active" (click)="closeMobileMenu()">
-            📦 Locações
+            Locações
           </a>
           <a *ngIf="isMasterUser()" routerLink="/funcionarios" routerLinkActive="active" (click)="closeMobileMenu()">
-            👨‍💼 Funcionários
+            Funcionários
           </a>
           <a *ngIf="isMasterUser()" routerLink="/logs" routerLinkActive="active" (click)="closeMobileMenu()">
-            📋 Logs
+            Logs
           </a>
           <div class="user-section">
             <span class="user-info">👤 {{ currentUser }}</span>
             <button class="btn btn-secondary btn-sm logout-btn" (click)="logout()">
-              🚪 Sair
+              Sair
             </button>
           </div>
         </div>

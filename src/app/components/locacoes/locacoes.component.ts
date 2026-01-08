@@ -17,7 +17,7 @@ import { Router } from '@angular/router';
     <div class="locacoes">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">🏢 Gestão de Locações</h2>
+          <h2 class="card-title">Gestão de Locações</h2>
         </div>
 
         <!-- Locações List -->
@@ -25,16 +25,16 @@ import { Router } from '@angular/router';
           <div class="filters-container">
             <div class="filters">
               <button class="filter-btn" (click)="filterStatus = ''" [class.active]="filterStatus === ''">
-                📊 Todas
+                Todas
               </button>
               <button class="filter-btn" (click)="filterStatus = 'ativa'" [class.active]="filterStatus === 'ativa'">
-                ✅ Ativas
+                Ativas
               </button>
               <button class="filter-btn" (click)="filterStatus = 'finalizada'" [class.active]="filterStatus === 'finalizada'">
-                🏁 Finalizadas
+                Finalizadas
               </button>
               <button class="filter-btn" (click)="filterStatus = 'atrasada'" [class.active]="filterStatus === 'atrasada'">
-                ⚠️ Atrasadas
+                Atrasadas
               </button>
             </div>
           </div>
@@ -67,18 +67,18 @@ import { Router } from '@angular/router';
                   <div class="action-buttons">
                     <button class="action-btn approve" (click)="finalizarLocacao(locacao.id)" 
                             *ngIf="locacao.status === 'ativa'" title="Finalizar Locação">
-                      ✅ Finalizar
+                      Finalizar
                     </button>
                     <button class="action-btn view" (click)="irParaRecebimento(locacao.id)" 
                             *ngIf="locacao.status === 'ativa'" title="Receber/Devolver Itens">
-                      ↩️ Receber
+                      Receber
                     </button>
                     <button class="action-btn reject" (click)="cancelarLocacao(locacao.id)" 
                             *ngIf="locacao.status === 'ativa'" title="Cancelar Locação">
-                      ❌ Cancelar
+                      Cancelar
                     </button>
                     <button class="action-btn view" (click)="viewLocacao(locacao)" title="Visualizar Detalhes">
-                      👁️ Ver
+                      Ver
                     </button>
                   </div>
                 </td>
@@ -93,7 +93,7 @@ import { Router } from '@angular/router';
     <div class="modal-overlay" *ngIf="showViewModal" (click)="closeViewModal()">
       <div class="modal-content" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h3>📋 Locação #{{ selectedLocacao?.id }}</h3>
+          <h3>Locação #{{ selectedLocacao?.id }}</h3>
           <button class="modal-close" (click)="closeViewModal()">×</button>
         </div>
         
@@ -134,7 +134,7 @@ import { Router } from '@angular/router';
           </div>
 
           <div class="itens-section">
-            <h4>📦 Itens da Locação</h4>
+            <h4>Itens da Locação</h4>
             <table class="items-table">
               <thead>
                 <tr>
@@ -158,6 +158,15 @@ import { Router } from '@angular/router';
           </div>
 
           <div class="totals-section">
+            <div class="total-row">
+              <strong>Subtotal:</strong> {{ getLocacaoSubtotal(selectedLocacao) | currencyBr }}
+            </div>
+            <div class="total-row" *ngIf="selectedLocacao?.orcamento?.desconto && selectedLocacao?.orcamento?.desconto > 0">
+              <strong>Desconto:</strong> {{ selectedLocacao?.orcamento?.desconto | currencyBr }}
+            </div>
+            <div class="total-row" *ngIf="selectedLocacao?.orcamento?.frete && selectedLocacao?.orcamento?.frete > 0">
+              <strong>Frete/Adicional:</strong> {{ selectedLocacao?.orcamento?.frete | currencyBr }}
+            </div>
             <div class="total-row final-total">
               <strong>Total Final:</strong> {{ selectedLocacao?.total_final | currencyBr }}
             </div>
@@ -166,10 +175,10 @@ import { Router } from '@angular/router';
 
         <div class="modal-footer">
           <button class="btn btn-primary" (click)="exportToReciboPDF()">
-            📄 Recibo PDF
+            Recibo PDF
           </button>
           <button class="btn btn-warning" (click)="exportToContratoPDF()">
-            📜 Contrato PDF
+            Contrato PDF
           </button>
           <button class="btn btn-secondary" (click)="closeViewModal()">
             Fechar
@@ -929,6 +938,13 @@ export class LocacoesComponent implements OnInit {
       return item?.equipamento?.descricao || 'Equipamento não encontrado';
     }
     return 'Equipamento não encontrado';
+  }
+
+  getLocacaoSubtotal(locacao: Locacao | null): number {
+    if (!locacao || !locacao.itens) {
+      return 0;
+    }
+    return locacao.itens.reduce((sum, item) => sum + item.subtotal, 0);
   }
 
 

@@ -24,7 +24,7 @@ interface ItemRecebimento extends ItemLocacao {
     <div class="recebimento">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">📦 Recebimento de Equipamentos</h2>
+          <h2 class="card-title">Recebimento de Equipamentos</h2>
           <button class="btn btn-secondary" (click)="voltar()">
             ← Voltar
           </button>
@@ -33,7 +33,7 @@ interface ItemRecebimento extends ItemLocacao {
         <div class="content" *ngIf="locacao">
           <!-- Informações da Locação -->
           <div class="locacao-info">
-            <h3>📋 Informações da Locação</h3>
+            <h3>Informações da Locação</h3>
             <div class="info-grid">
               <div class="info-item">
                 <strong>ID da Locação:</strong> {{ locacao.id }}
@@ -56,7 +56,7 @@ interface ItemRecebimento extends ItemLocacao {
 
           <!-- Checklist de Equipamentos -->
           <div class="checklist-section">
-            <h3>✅ Checklist de Recebimento</h3>
+            <h3>Checklist de Recebimento</h3>
             <p class="instructions">
               Marque os equipamentos que foram devolvidos e adicione observações se necessário.
             </p>
@@ -143,11 +143,11 @@ interface ItemRecebimento extends ItemLocacao {
 
           <!-- Resumo do Recebimento -->
           <div class="resumo-section" [class.todos-devolvidos]="getTotalNaoDevolvidos() === 0">
-            <h3>📊 Resumo do Recebimento</h3>
+            <h3>Resumo do Recebimento</h3>
             
             <!-- Indicação de todos devolvidos -->
             <div class="status-completo" *ngIf="getTotalNaoDevolvidos() === 0">
-              <div class="status-icon">🎉</div>
+              <div class="status-icon">✓</div>
               <div class="status-text">
                 <h4>Todos os equipamentos foram devolvidos!</h4>
                 <p>A locação pode ser finalizada.</p>
@@ -177,7 +177,7 @@ interface ItemRecebimento extends ItemLocacao {
           <!-- Ações -->
           <div class="actions-section">
             <div class="warning" *ngIf="getTotalNaoDevolvidos() > 0">
-              ⚠️ Atenção: {{ getTotalNaoDevolvidos() }} item(ns) não foi(ram) devolvido(s).
+              Atenção: {{ getTotalNaoDevolvidos() }} item(ns) não foi(ram) devolvido(s).
             </div>
             
             <div class="actions">
@@ -185,8 +185,8 @@ interface ItemRecebimento extends ItemLocacao {
                       [class.btn-success]="getTotalNaoDevolvidos() === 0"
                       (click)="finalizarRecebimento()"
                       [disabled]="getTotalDevolvidos() === 0">
-                <span *ngIf="getTotalNaoDevolvidos() === 0">🎉 Finalizar Locação</span>
-                <span *ngIf="getTotalNaoDevolvidos() > 0">✅ Finalizar Recebimento</span>
+                <span *ngIf="getTotalNaoDevolvidos() === 0">Finalizar Locação</span>
+                <span *ngIf="getTotalNaoDevolvidos() > 0">Finalizar Recebimento</span>
               </button>
               <button class="btn btn-secondary" (click)="voltar()">
                 Cancelar

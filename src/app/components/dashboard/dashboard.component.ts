@@ -23,7 +23,7 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
         <!-- Statistics Cards -->
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon">👥</div>
+            <div class="stat-icon">👤</div>
             <div class="stat-content">
               <h3>{{ clientes.length }}</h3>
               <p>Clientes Cadastrados</p>
@@ -31,7 +31,7 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
           </div>
           
           <div class="stat-card">
-            <div class="stat-icon">🔧</div>
+            <div class="stat-icon">⚙️</div>
             <div class="stat-content">
               <h3>{{ equipamentos.length }}</h3>
               <p>Equipamentos</p>
@@ -39,7 +39,7 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
           </div>
           
           <div class="stat-card">
-            <div class="stat-icon">📋</div>
+            <div class="stat-icon">📄</div>
             <div class="stat-content">
               <h3>{{ orcamentos.length }}</h3>
               <p>Orçamentos</p>
