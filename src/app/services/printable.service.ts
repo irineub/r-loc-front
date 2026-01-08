@@ -564,6 +564,7 @@ export class PrintableService {
         <p><strong>Locatário:</strong> ${locacao.cliente?.nome_razao_social || 'Cliente não encontrado'}</p>
         <p><strong>Endereço:</strong> ${locacao.cliente?.endereco || 'Endereço não informado'}</p>
         <p><strong>${documentoCliente.tipo}:</strong> ${documentoCliente.documento}</p>
+        <br/>
         <p><strong>Locadora:</strong> ${this.empresaData.nome}</p>
         <p><strong>Endereço:</strong> ${this.empresaData.endereco}</p>
         <p><strong>CNPJ:</strong> ${this.empresaData.cnpj}</p>
@@ -850,6 +851,7 @@ export class PrintableService {
       <p><strong>Locatário:</strong> ${locacao.cliente?.nome_razao_social || 'Cliente não encontrado'}</p>
       <p><strong>Endereço:</strong> ${locacao.cliente?.endereco || 'Endereço não informado'}</p>
       <p><strong>${documentoCliente.tipo}:</strong> ${documentoCliente.documento}</p>
+      <br/>
       <p><strong>Locadora:</strong> ${this.empresaData.nome}</p>
       <p><strong>Endereço:</strong> ${this.empresaData.endereco}</p>
       <p><strong>CNPJ:</strong> ${this.empresaData.cnpj}</p>
