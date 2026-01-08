@@ -169,6 +169,8 @@ import { Cliente, ClienteCreate } from '../../models/index';
       padding: 2rem;
       max-width: 1400px;
       margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .card {
@@ -404,10 +406,15 @@ import { Cliente, ClienteCreate } from '../../models/index';
 
     .table-section {
       padding: 2rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .table {
       width: 100%;
+      min-width: 800px;
       border-collapse: separate;
       border-spacing: 0;
       background: white;
@@ -566,6 +573,8 @@ import { Cliente, ClienteCreate } from '../../models/index';
     @media (max-width: 768px) {
       .clientes {
         padding: 1rem;
+        width: 100%;
+        box-sizing: border-box;
       }
 
       .card-header {
@@ -597,6 +606,16 @@ import { Cliente, ClienteCreate } from '../../models/index';
         padding: 1.5rem;
       }
 
+      .table-section {
+        padding: 1rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .table {
+        min-width: 600px;
+      }
+
       .table thead {
         display: none;
       }
@@ -609,6 +628,7 @@ import { Cliente, ClienteCreate } from '../../models/index';
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         border: 1px solid #e5e7eb;
+        min-width: auto;
       }
       
       .table tbody td {
@@ -616,6 +636,8 @@ import { Cliente, ClienteCreate } from '../../models/index';
         padding: 0.5rem 0;
         border: none;
         text-align: left;
+        max-width: 100%;
+        word-wrap: break-word;
       }
       
       .table tbody td:before {
