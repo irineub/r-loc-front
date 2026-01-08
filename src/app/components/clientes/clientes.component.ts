@@ -121,7 +121,8 @@ import { Cliente, ClienteCreate } from '../../models/index';
 
         <!-- Table Section -->
         <div class="table-section" *ngIf="!showForm">
-          <table class="table">
+          <div class="table-wrapper">
+            <table class="table">
             <thead>
               <tr>
                 <th>ID</th>
@@ -160,6 +161,7 @@ import { Cliente, ClienteCreate } from '../../models/index';
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>
@@ -450,6 +452,12 @@ import { Cliente, ClienteCreate } from '../../models/index';
       padding: 2rem;
     }
 
+    .table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
     .table {
       width: 100%;
       border-collapse: separate;
@@ -527,7 +535,6 @@ import { Cliente, ClienteCreate } from '../../models/index';
 
     .table tbody td:last-child {
       max-width: none;
-      min-width: 180px;
     }
 
     .table tbody td:first-child {
@@ -707,31 +714,17 @@ import { Cliente, ClienteCreate } from '../../models/index';
         margin-bottom: 0.75rem;
       }
 
-      .table tbody td:last-child {
-        max-width: 100%;
-        min-width: auto;
-        padding-top: 1rem;
-      }
-
       .action-buttons {
-        flex-direction: column;
-        justify-content: stretch;
-        margin-top: 0.5rem;
-        flex-wrap: nowrap;
-        gap: 0.5rem;
-        width: 100%;
-        max-width: 100%;
+        flex-direction: row;
+        justify-content: flex-start;
+        margin-top: 1rem;
+        flex-wrap: wrap;
       }
 
       .action-btn {
-        padding: 0.75rem 1rem;
-        font-size: 0.875rem;
-        width: 100%;
-        max-width: 100%;
-        justify-content: center;
-        box-sizing: border-box;
-        white-space: normal;
-        word-wrap: break-word;
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+        width: auto;
       }
     }
 
@@ -761,25 +754,14 @@ import { Cliente, ClienteCreate } from '../../models/index';
         padding: 0.875rem;
       }
 
-      .table tbody td {
-        padding: 0.5rem 0;
-        font-size: 0.8125rem;
-      }
-
       .action-buttons {
         flex-direction: column;
         width: 100%;
-        max-width: 100%;
-        gap: 0.5rem;
       }
 
       .action-btn {
         width: 100%;
-        max-width: 100%;
         justify-content: center;
-        padding: 0.75rem 0.875rem;
-        font-size: 0.875rem;
-        box-sizing: border-box;
       }
     }
 

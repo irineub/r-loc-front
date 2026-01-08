@@ -531,18 +531,6 @@ export class PrintableService {
       text-align: center;
     }
 
-    .page-number {
-      position: absolute;
-      bottom: 10mm;
-      right: 15mm;
-      font-size: 9pt;
-      color: #999;
-      z-index: 100;
-      pointer-events: none;
-      font-weight: normal;
-      background: white;
-      padding: 2px 4px;
-    }
 
     /* Evitar quebra de página em elementos importantes */
     p {
@@ -602,10 +590,6 @@ export class PrintableService {
         ${frete > 0 ? `<p style="margin: 3px 0; font-size: 10pt; color: #2e7d32;"><strong>Frete/Adicional:</strong> ${freteFormatado}</p>` : ''}
         <p style="margin: 8px 0 0 0; font-size: 12pt; font-weight: bold; padding-top: 5px; border-top: 2px solid #000;"><strong>Total:</strong> ${total}</p>
       </div>
-
-      
-
-      <div class="page-number">1</div>
     </div>
   </div>
 
@@ -677,7 +661,6 @@ export class PrintableService {
         </div>
       </div>
     </div>
-    <div class="page-number">2</div>
   </div>
 </body>
 </html>`
