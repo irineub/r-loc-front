@@ -161,11 +161,11 @@ import { Router } from '@angular/router';
             <div class="total-row">
               <strong>Subtotal:</strong> {{ getLocacaoSubtotal(selectedLocacao) | currencyBr }}
             </div>
-            <div class="total-row" *ngIf="selectedLocacao?.orcamento && selectedLocacao.orcamento.desconto && selectedLocacao.orcamento.desconto > 0">
-              <strong>Desconto:</strong> {{ selectedLocacao.orcamento.desconto | currencyBr }}
+            <div class="total-row" *ngIf="selectedLocacao?.orcamento?.desconto && selectedLocacao?.orcamento?.desconto > 0">
+              <strong>Desconto:</strong> {{ selectedLocacao?.orcamento?.desconto | currencyBr }}
             </div>
-            <div class="total-row" *ngIf="selectedLocacao?.orcamento && selectedLocacao.orcamento.frete && selectedLocacao.orcamento.frete > 0">
-              <strong>Frete/Adicional:</strong> {{ selectedLocacao.orcamento.frete | currencyBr }}
+            <div class="total-row" *ngIf="selectedLocacao?.orcamento?.frete && selectedLocacao?.orcamento?.frete > 0">
+              <strong>Frete/Adicional:</strong> {{ selectedLocacao?.orcamento?.frete | currencyBr }}
             </div>
             <div class="total-row final-total">
               <strong>Total Final:</strong> {{ selectedLocacao?.total_final | currencyBr }}
