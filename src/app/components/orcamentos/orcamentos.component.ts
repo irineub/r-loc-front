@@ -2265,6 +2265,34 @@ export class OrcamentosComponent implements OnInit {
     // Validação final: verificar se todos os itens têm estoque disponível
     const itensSemEstoque: string[] = [];
     
+    // Se estamos editando um orçamento pendente, precisamos considerar que os itens antigos já estão reservados
+    let itensAntigos: any[] = [];
+    if (this.editingOrcamento && this.editingOrcamento.status !== 'rejeitado') {
+      // Orçamento pendente ou aprovado sem contrato - itens antigos estão reservados
+      itensAntigos = this.editingOrcamento.itens || [];
+    }
+    
+    // Calcular quantidades antigas por equipamento
+    const equipamentosAntigosQuantidades: { [key: number]: number } = {};
+    for (const itemAntigo of itensAntigos) {
+      const equipamentoId = Number(itemAntigo.equipamento_id);
+      if (!equipamentosAntigosQuantidades[equipamentoId]) {
+        equipamentosAntigosQuantidades[equipamentoId] = 0;
+      }
+      equipamentosAntigosQuantidades[equipamentoId] += Number(itemAntigo.quantidade) || 0;
+    }
+    
+    // Calcular quantidades novas por equipamento
+    const equipamentosNovosQuantidades: { [key: number]: number } = {};
+    for (const item of this.formData.itens) {
+      const equipamentoId = Number(item.equipamento_id);
+      if (!equipamentosNovosQuantidades[equipamentoId]) {
+        equipamentosNovosQuantidades[equipamentoId] = 0;
+      }
+      equipamentosNovosQuantidades[equipamentoId] += Number(item.quantidade) || 0;
+    }
+    
+    // Validar estoque considerando que os itens antigos serão liberados
     for (const item of this.formData.itens) {
       const equipamento = this.equipamentos.find(e => e.id === item.equipamento_id);
       if (!equipamento) {
@@ -2272,15 +2300,25 @@ export class OrcamentosComponent implements OnInit {
         continue;
       }
       
+      const equipamentoId = Number(item.equipamento_id);
       const estoqueTotal = equipamento.estoque || 0;
       const estoqueAlugado = equipamento.estoque_alugado || 0;
-      const estoqueDisponivel = estoqueTotal - estoqueAlugado;
-      const quantidadeSolicitada = Number(item.quantidade) || 0;
+      const estoqueDisponivelAtual = estoqueTotal - estoqueAlugado;
       
-      if (estoqueDisponivel <= 0) {
-        itensSemEstoque.push(`${equipamento.descricao}: sem estoque disponível`);
-      } else if (quantidadeSolicitada > estoqueDisponivel) {
-        itensSemEstoque.push(`${equipamento.descricao}: estoque insuficiente (disponível: ${estoqueDisponivel}, solicitado: ${quantidadeSolicitada})`);
+      // Quantidade que será liberada dos itens antigos deste equipamento
+      const quantidadeAntiga = equipamentosAntigosQuantidades[equipamentoId] || 0;
+      // Estoque disponível após liberar os itens antigos
+      const estoqueDisponivelAposLiberacao = estoqueDisponivelAtual + quantidadeAntiga;
+      
+      const quantidadeTotalNova = equipamentosNovosQuantidades[equipamentoId] || 0;
+      
+      // Validar apenas uma vez por equipamento (usar a primeira ocorrência)
+      if (this.formData.itens.findIndex(i => Number(i.equipamento_id) === equipamentoId) === this.formData.itens.indexOf(item)) {
+        if (estoqueDisponivelAposLiberacao <= 0) {
+          itensSemEstoque.push(`${equipamento.descricao}: sem estoque disponível (após liberar itens antigos: ${estoqueDisponivelAposLiberacao})`);
+        } else if (quantidadeTotalNova > estoqueDisponivelAposLiberacao) {
+          itensSemEstoque.push(`${equipamento.descricao}: estoque insuficiente (disponível após liberar itens antigos: ${estoqueDisponivelAposLiberacao}, solicitado: ${quantidadeTotalNova})`);
+        }
       }
     }
     
