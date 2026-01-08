@@ -329,7 +329,6 @@ export class PrintableService {
         <td style="text-align: center; vertical-align: middle;">${dataInicio}</td>
         <td style="text-align: center; vertical-align: middle; white-space: nowrap;">
           <div style="display: block; line-height: 1.3;">${dataFim}</div>
-          <div style="display: block; font-size: 8pt; color: #666; margin-top: 1px;">${item.dias} dia${item.dias !== 1 ? 's' : ''}</div>
         </td>
         <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.subtotal)}</td>
       </tr>
@@ -597,7 +596,7 @@ export class PrintableService {
   <div class="page page-2">
     <div class="container">
       <p class="section-title">PRAZO E ENTREGA</p>
-      <p>O prazo de locação é de ${dataInicio} a ${dataFim}, podendo ser prorrogado mediante acordo entre as partes.</p>
+      <p>O prazo de locação é de ${dataInicio} a ${dataFim}${locacao.itens?.[0]?.dias ? ` (${locacao.itens[0].dias} dias)` : ''}, podendo ser prorrogado mediante acordo entre as partes.</p>
       <p>A entrega dos equipamentos será realizada no endereço: ${locacao.endereco_entrega || locacao.cliente?.endereco || 'A ser definido'}.</p>
       <p>A devolução dos equipamentos deverá ser realizada no endereço da LOCADORA: ${this.empresaData.endereco}.</p>
 
