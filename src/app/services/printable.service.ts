@@ -533,10 +533,15 @@ export class PrintableService {
 
     .page-number {
       position: absolute;
-      bottom: 20mm;
-      right: 20mm;
-      font-size: 10px;
-      color: #666;
+      bottom: 10mm;
+      right: 15mm;
+      font-size: 9pt;
+      color: #999;
+      z-index: 100;
+      pointer-events: none;
+      font-weight: normal;
+      background: white;
+      padding: 2px 4px;
     }
 
     /* Evitar quebra de página em elementos importantes */
@@ -671,12 +676,11 @@ export class PrintableService {
           </div>
         </div>
       </div>
-
-      <div class="page-number">2</div>
     </div>
+    <div class="page-number">2</div>
   </div>
 </body>
-</html>`;
+</html>`
   }
 
   // Gerar HTML do recibo usando o template personalizado

@@ -448,16 +448,10 @@ import { Cliente, ClienteCreate } from '../../models/index';
 
     .table-section {
       padding: 2rem;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      width: 100%;
-      box-sizing: border-box;
-      max-width: 100%;
     }
 
     .table {
       width: 100%;
-      min-width: 800px;
       border-collapse: separate;
       border-spacing: 0;
       background: white;
@@ -465,7 +459,6 @@ import { Cliente, ClienteCreate } from '../../models/index';
       overflow: hidden;
       box-shadow: 0 8px 32px rgba(220, 53, 69, 0.08);
       border: 2px solid rgba(220, 53, 69, 0.1);
-      table-layout: auto;
     }
 
     .table th {
@@ -663,12 +656,15 @@ import { Cliente, ClienteCreate } from '../../models/index';
 
       .table-section {
         padding: 1rem;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
       }
 
       .table {
-        min-width: 600px;
+        font-size: 0.9rem;
+      }
+
+      .table th,
+      .table td {
+        padding: 0.75rem 0.5rem;
       }
 
       .table thead {
