@@ -2351,6 +2351,78 @@ export class OrcamentosComponent implements OnInit {
       return; // Não fazer nada se tiver contrato gerado (botão já está desabilitado)
     }
 
+    // Se o orçamento foi rejeitado, verificar disponibilidade dos itens
+    const isRejeitado = orcamento.status === 'rejeitado';
+    const itensValidos: any[] = [];
+    const itensRemovidos: string[] = [];
+
+    if (isRejeitado && orcamento.itens) {
+      // Verificar disponibilidade de cada item
+      for (const item of orcamento.itens) {
+        const equipamento = this.equipamentos.find(e => e.id === item.equipamento_id);
+        
+        if (!equipamento) {
+          // Equipamento não encontrado - remover
+          itensRemovidos.push(`Equipamento ID ${item.equipamento_id} (não encontrado)`);
+          continue;
+        }
+
+        // Verificar estoque disponível
+        const estoqueDisponivel = equipamento.estoque_disponivel || 0;
+        const quantidadeSolicitada = item.quantidade || 0;
+
+        if (estoqueDisponivel < quantidadeSolicitada) {
+          // Estoque insuficiente - remover ou ajustar quantidade
+          if (estoqueDisponivel > 0) {
+            // Ajustar para o máximo disponível
+            itensValidos.push({
+              equipamento_id: item.equipamento_id,
+              quantidade: estoqueDisponivel, // Ajustar para o máximo disponível
+              preco_unitario: item.preco_unitario,
+              dias: item.dias,
+              tipo_cobranca: item.tipo_cobranca,
+              subtotal: item.subtotal * (estoqueDisponivel / quantidadeSolicitada) // Ajustar subtotal proporcionalmente
+            });
+            itensRemovidos.push(
+              `${equipamento.descricao}: quantidade ajustada de ${quantidadeSolicitada} para ${estoqueDisponivel} (máximo disponível)`
+            );
+          } else {
+            // Sem estoque - remover completamente
+            itensRemovidos.push(`${equipamento.descricao}: sem estoque disponível (removido)`);
+          }
+        } else {
+          // Item disponível - manter
+          itensValidos.push({
+            equipamento_id: item.equipamento_id,
+            quantidade: item.quantidade,
+            preco_unitario: item.preco_unitario,
+            dias: item.dias,
+            tipo_cobranca: item.tipo_cobranca,
+            subtotal: item.subtotal
+          });
+        }
+      }
+
+      // Avisar o usuário sobre itens removidos ou ajustados
+      if (itensRemovidos.length > 0) {
+        const mensagem = `⚠️ Orçamento rejeitado editado\n\n` +
+          `Alguns itens foram ajustados ou removidos devido à falta de estoque:\n\n` +
+          itensRemovidos.map(item => `• ${item}`).join('\n') +
+          `\n\nPor favor, revise os itens antes de salvar.`;
+        alert(mensagem);
+      }
+    } else {
+      // Se não foi rejeitado, manter todos os itens
+      itensValidos.push(...(orcamento.itens?.map(item => ({
+        equipamento_id: item.equipamento_id,
+        quantidade: item.quantidade,
+        preco_unitario: item.preco_unitario,
+        dias: item.dias,
+        tipo_cobranca: item.tipo_cobranca,
+        subtotal: item.subtotal
+      })) || []));
+    }
+
     // Carregar dados do orçamento no formulário
     this.editingOrcamento = orcamento;
     this.formData = {
@@ -2361,15 +2433,11 @@ export class OrcamentosComponent implements OnInit {
       frete: orcamento.frete || 0,
       total_final: orcamento.total_final,
       observacoes: orcamento.observacoes || '',
-      itens: orcamento.itens?.map(item => ({
-        equipamento_id: item.equipamento_id,
-        quantidade: item.quantidade,
-        preco_unitario: item.preco_unitario,
-        dias: item.dias,
-        tipo_cobranca: item.tipo_cobranca,
-        subtotal: item.subtotal
-      })) || []
+      itens: itensValidos
     };
+
+    // Recalcular total com os itens ajustados
+    this.formData.total_final = this.calculateTotal();
 
     // Calcular período
     this.onDateChange();
