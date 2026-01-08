@@ -44,16 +44,16 @@ export class PrintableService {
     const documentoCliente = this.getDocumentoInfo(orcamento.cliente?.cnpj || orcamento.cliente?.cpf);
     const documentoFormatado = documentoCliente.documento.replace(/\D/g, '');
 
-    // Gerar linhas da tabela de itens
+    // Gerar linhas da tabela de itens com formatação otimizada para impressão
     const itensHTML = orcamento.itens?.map(item => `
       <tr>
-        <td>${this.getEquipamentoDescricao(item.equipamento_id)}</td>
-        <td style="text-align: right;">${this.formatCurrency(item.preco_unitario)}</td>
-        <td style="text-align: center;">${item.quantidade}</td>
-        <td style="text-align: center;">${dataInicio}</td>
-        <td style="text-align: center;">${dataFim}</td>
-        <td style="text-align: center;">${item.dias}</td>
-        <td style="text-align: right;">${this.formatCurrency(item.subtotal)}</td>
+        <td style="text-align: left; vertical-align: middle;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
+        <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.preco_unitario)}</td>
+        <td style="text-align: center; vertical-align: middle;">${item.quantidade}</td>
+        <td style="text-align: center; vertical-align: middle;">${dataInicio}</td>
+        <td style="text-align: center; vertical-align: middle;">${dataFim}</td>
+        <td style="text-align: center; vertical-align: middle;">${item.dias}</td>
+        <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.subtotal)}</td>
       </tr>
     `).join('') || '';
 
@@ -163,13 +163,30 @@ export class PrintableService {
     .tabela-materiais th,
     .tabela-materiais td {
       border: 1px solid #000;
-      padding: 6px;
+      padding: 8px 6px;
       font-size: 10pt;
+      vertical-align: middle;
     }
 
     .tabela-materiais th {
       background-color: #f0f0f0;
       font-weight: bold;
+      text-align: center;
+    }
+    
+    .tabela-materiais td {
+      text-align: left;
+    }
+    
+    .tabela-materiais td:nth-child(2),
+    .tabela-materiais td:nth-child(7) {
+      text-align: right;
+    }
+    
+    .tabela-materiais td:nth-child(3),
+    .tabela-materiais td:nth-child(4),
+    .tabela-materiais td:nth-child(5),
+    .tabela-materiais td:nth-child(6) {
       text-align: center;
     }
 
@@ -306,12 +323,15 @@ export class PrintableService {
     // Gerar linhas da tabela de itens com formatação melhorada
     const itensHTML = locacao.itens?.map(item => `
       <tr>
-        <td style="text-align: left;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
-        <td style="text-align: right;">${this.formatCurrency(item.preco_unitario)}</td>
-        <td style="text-align: center;">${item.quantidade}</td>
-        <td style="text-align: center;">${dataInicio}</td>
-        <td style="text-align: center;">${dataFim} <span style="font-size: 9pt; color: #666;">(${item.dias} dias)</span></td>
-        <td style="text-align: right;">${this.formatCurrency(item.subtotal)}</td>
+        <td style="text-align: left; vertical-align: middle;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
+        <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.preco_unitario)}</td>
+        <td style="text-align: center; vertical-align: middle;">${item.quantidade}</td>
+        <td style="text-align: center; vertical-align: middle;">${dataInicio}</td>
+        <td style="text-align: center; vertical-align: middle; white-space: nowrap;">
+          <div style="display: block; line-height: 1.3;">${dataFim}</div>
+          <div style="display: block; font-size: 8pt; color: #666; margin-top: 1px;">${item.dias} dia${item.dias !== 1 ? 's' : ''}</div>
+        </td>
+        <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.subtotal)}</td>
       </tr>
     `).join('') || '';
 
@@ -449,19 +469,21 @@ export class PrintableService {
     }
 
     th {
-      padding: 6px 4px;
+      padding: 8px 6px;
       text-align: center;
       font-size: 9pt;
       font-weight: bold;
       background-color: #f0f0f0;
       page-break-inside: avoid;
+      vertical-align: middle;
     }
 
     td {
-      padding: 5px 4px;
+      padding: 6px 6px;
       text-align: left;
       font-size: 9pt;
       page-break-inside: avoid;
+      vertical-align: middle;
     }
 
     tr {
@@ -673,12 +695,15 @@ export class PrintableService {
     // Gerar linhas da tabela de itens com formatação melhorada
     const itensHTML = locacao.itens?.map(item => `
       <tr>
-        <td style="text-align: left;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
-        <td style="text-align: right;">${this.formatCurrency(item.preco_unitario)}</td>
-        <td style="text-align: center;">${item.quantidade}</td>
-        <td style="text-align: center;">${dataInicio}</td>
-        <td style="text-align: center;">${dataFim} <span style="font-size: 9pt; color: #666;">(${item.dias} dias)</span></td>
-        <td style="text-align: right;">${this.formatCurrency(item.subtotal)}</td>
+        <td style="text-align: left; vertical-align: middle;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
+        <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.preco_unitario)}</td>
+        <td style="text-align: center; vertical-align: middle;">${item.quantidade}</td>
+        <td style="text-align: center; vertical-align: middle;">${dataInicio}</td>
+        <td style="text-align: center; vertical-align: middle; white-space: nowrap;">
+          <div style="display: block; line-height: 1.3;">${dataFim}</div>
+          <div style="display: block; font-size: 8pt; color: #666; margin-top: 1px;">${item.dias} dia${item.dias !== 1 ? 's' : ''}</div>
+        </td>
+        <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.subtotal)}</td>
       </tr>
     `).join('') || '';
 
@@ -758,19 +783,21 @@ export class PrintableService {
     }
 
     th {
-      padding: 6px 4px;
+      padding: 8px 6px;
       text-align: center;
       font-size: 9pt;
       font-weight: bold;
       background-color: #f0f0f0;
       page-break-inside: avoid;
+      vertical-align: middle;
     }
 
     td {
-      padding: 5px 4px;
+      padding: 6px 6px;
       text-align: left;
       font-size: 9pt;
       page-break-inside: avoid;
+      vertical-align: middle;
     }
 
     tr {

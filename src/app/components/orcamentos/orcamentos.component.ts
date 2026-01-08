@@ -471,11 +471,11 @@ import { take } from 'rxjs/operators';
             <div class="total-row">
               <strong>Subtotal:</strong> {{ getOrcamentoSubtotal(selectedOrcamento) | currencyBr }}
             </div>
-            <div class="total-row" *ngIf="selectedOrcamento?.desconto && selectedOrcamento?.desconto > 0">
-              <strong>Desconto:</strong> {{ selectedOrcamento?.desconto | currencyBr }}
+            <div class="total-row" *ngIf="selectedOrcamento && selectedOrcamento.desconto && selectedOrcamento.desconto > 0">
+              <strong>Desconto:</strong> {{ selectedOrcamento.desconto | currencyBr }}
             </div>
-            <div class="total-row" *ngIf="selectedOrcamento?.frete && selectedOrcamento?.frete > 0">
-              <strong>Frete/Adicional:</strong> {{ selectedOrcamento?.frete | currencyBr }}
+            <div class="total-row" *ngIf="selectedOrcamento && selectedOrcamento.frete && selectedOrcamento.frete > 0">
+              <strong>Frete/Adicional:</strong> {{ selectedOrcamento.frete | currencyBr }}
             </div>
             <div class="total-row final-total">
               <strong>Total Final:</strong> {{ selectedOrcamento?.total_final | currencyBr }}
