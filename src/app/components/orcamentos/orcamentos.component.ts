@@ -1889,13 +1889,21 @@ export class OrcamentosComponent implements OnInit {
       return 0;
     }
     
+    // Obter estoque disponível do equipamento (garantir que é um número)
+    const estoqueDisponivel = Number(equipamento.estoque_disponivel) || 0;
+    
     // Calcular quantidade já usada no mesmo orçamento para este equipamento
+    // Converter todos os IDs e quantidades para números para garantir comparação correta
     const quantidadeJaUsada = this.formData.itens
-      .filter(item => item.equipamento_id === equipamentoId)
-      .reduce((sum, item) => sum + item.quantidade, 0);
+      .filter(item => Number(item.equipamento_id) === equipamentoId)
+      .reduce((sum, item) => sum + (Number(item.quantidade) || 0), 0);
     
     // Retornar o estoque disponível menos o que já foi usado
-    return Math.max(0, equipamento.estoque_disponivel - quantidadeJaUsada);
+    const maxDisponivel = Math.max(0, estoqueDisponivel - quantidadeJaUsada);
+    
+    console.log(`getMaxQuantidadeDisponivel() - Equipamento ID: ${equipamentoId}, Estoque: ${estoqueDisponivel}, Já usado: ${quantidadeJaUsada}, Max disponível: ${maxDisponivel}`);
+    
+    return maxDisponivel;
   }
 
   hasQuantidadeExcedida(): boolean {
@@ -1926,21 +1934,8 @@ export class OrcamentosComponent implements OnInit {
       return;
     }
     
-    if (!this.newItem.quantidade || this.newItem.quantidade <= 0) {
-      alert('Quantidade deve ser maior que 0');
-      return;
-    }
-    
     if (!this.newItem.dias || this.newItem.dias <= 0) {
       alert('Dias deve ser maior que 0');
-      return;
-    }
-    
-    // Validação de estoque
-    const maxDisponivel = this.getMaxQuantidadeDisponivel();
-    if (this.newItem.quantidade > maxDisponivel) {
-      alert(`Quantidade excede o estoque disponível! Máximo disponível: ${maxDisponivel}`);
-      this.newItem.quantidade = maxDisponivel;
       return;
     }
     
@@ -1950,41 +1945,81 @@ export class OrcamentosComponent implements OnInit {
     const equipamento = this.equipamentos.find(e => e.id === equipamentoId);
     console.log('equipamento found:', equipamento);
     
-    if (equipamento) {
-      const precoUnitario = this.getPrecoPorTipoCobranca(equipamento, this.newItem.tipo_cobranca);
-      this.newItem.preco_unitario = precoUnitario;
-      
-      // Calcular subtotal baseado no tipo de cobrança do item
-      this.newItem.subtotal = this.calcularSubtotalPorTipoCobranca(
-        this.newItem.quantidade,
-        equipamento,
-        this.newItem.dias,
-        this.newItem.tipo_cobranca
-      );
-      
-      console.log('Adding item to formData:', this.newItem);
-      this.formData.itens.push({ ...this.newItem });
-      this.formData.total_final = this.calculateTotal();
-      
-      // Aplicar período calculado ao novo item se disponível
-      if (this.periodoCalculado) {
-        this.aplicarPeriodoCalculado();
-      }
-      
-      // Reset do newItem mantendo o período calculado
-      this.newItem = {
-        equipamento_id: 0,
-        quantidade: 1,
-        preco_unitario: 0,
-        dias: this.periodoCalculado ? this.periodoCalculado.dias : 1,
-        tipo_cobranca: this.periodoCalculado ? (this.periodoCalculado.tipoCobranca as 'diaria' | 'semanal' | 'quinzenal' | 'mensal') : 'diaria',
-        subtotal: 0
-      };
-      console.log('Item added successfully');
-    } else {
-      console.log('Equipamento não encontrado. Available equipamentos:', this.equipamentos.map(e => ({ id: e.id, descricao: e.descricao })));
+    if (!equipamento) {
       alert('Equipamento não encontrado');
+      return;
     }
+    
+    // Validação de estoque ANTES de adicionar
+    const maxDisponivel = this.getMaxQuantidadeDisponivel();
+    const quantidadeSolicitada = Number(this.newItem.quantidade) || 0;
+    
+    if (quantidadeSolicitada <= 0) {
+      alert('Quantidade deve ser maior que 0');
+      return;
+    }
+    
+    // Verificar se há estoque disponível
+    if (maxDisponivel <= 0) {
+      alert(`❌ Não é possível adicionar "${equipamento.descricao}".\n\n` +
+            `Estoque disponível: 0 unidades.\n\n` +
+            `Este equipamento não possui estoque disponível no momento.`);
+      return;
+    }
+    
+    // Verificar se a quantidade solicitada excede o disponível
+    if (quantidadeSolicitada > maxDisponivel) {
+      const quantidadeJaUsada = this.formData.itens
+        .filter(item => Number(item.equipamento_id) === equipamentoId)
+        .reduce((sum, item) => sum + (Number(item.quantidade) || 0), 0);
+      
+      const estoqueTotal = equipamento.estoque_disponivel || 0;
+      
+      alert(`❌ Quantidade excede o estoque disponível!\n\n` +
+            `Equipamento: ${equipamento.descricao}\n` +
+            `Quantidade solicitada: ${quantidadeSolicitada}\n` +
+            `Estoque total disponível: ${estoqueTotal} unidades\n` +
+            `Já usado neste orçamento: ${quantidadeJaUsada} unidades\n` +
+            `Máximo que pode adicionar: ${maxDisponivel} unidades\n\n` +
+            `Por favor, ajuste a quantidade para ${maxDisponivel} ou menos.`);
+      
+      // Ajustar automaticamente para o máximo disponível
+      this.newItem.quantidade = maxDisponivel;
+      // NÃO adicionar o item - o usuário deve ajustar manualmente ou clicar novamente
+      return;
+    }
+    
+    // Se chegou aqui, a validação passou - pode adicionar o item
+    const precoUnitario = this.getPrecoPorTipoCobranca(equipamento, this.newItem.tipo_cobranca);
+    this.newItem.preco_unitario = precoUnitario;
+    
+    // Calcular subtotal baseado no tipo de cobrança do item
+    this.newItem.subtotal = this.calcularSubtotalPorTipoCobranca(
+      this.newItem.quantidade,
+      equipamento,
+      this.newItem.dias,
+      this.newItem.tipo_cobranca
+    );
+    
+    console.log('Adding item to formData:', this.newItem);
+    this.formData.itens.push({ ...this.newItem });
+    this.formData.total_final = this.calculateTotal();
+    
+    // Aplicar período calculado ao novo item se disponível
+    if (this.periodoCalculado) {
+      this.aplicarPeriodoCalculado();
+    }
+    
+    // Reset do newItem mantendo o período calculado
+    this.newItem = {
+      equipamento_id: 0,
+      quantidade: 1,
+      preco_unitario: 0,
+      dias: this.periodoCalculado ? this.periodoCalculado.dias : 1,
+      tipo_cobranca: this.periodoCalculado ? (this.periodoCalculado.tipoCobranca as 'diaria' | 'semanal' | 'quinzenal' | 'mensal') : 'diaria',
+      subtotal: 0
+    };
+    console.log('Item added successfully');
   }
 
   removeItem(index: number) {
