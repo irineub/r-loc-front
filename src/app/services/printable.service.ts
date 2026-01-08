@@ -303,20 +303,26 @@ export class PrintableService {
     // Obter informações do documento do cliente
     const documentoCliente = this.getDocumentoInfo(locacao.cliente?.cnpj || locacao.cliente?.cpf);
 
-    // Gerar linhas da tabela de itens
+    // Gerar linhas da tabela de itens com formatação melhorada
     const itensHTML = locacao.itens?.map(item => `
       <tr>
-        <td>${this.getEquipamentoDescricao(item.equipamento_id)}</td>
-        <td>${this.formatCurrency(item.preco_unitario)}</td>
-        <td>${item.quantidade}</td>
-        <td>${dataInicio}</td>
-        <td>${dataFim}</td>
-        <td>${item.dias}</td>
-        <td>${this.formatCurrency(item.subtotal)}</td>
+        <td style="text-align: left;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
+        <td style="text-align: right;">${this.formatCurrency(item.preco_unitario)}</td>
+        <td style="text-align: center;">${item.quantidade}</td>
+        <td style="text-align: center;">${dataInicio}</td>
+        <td style="text-align: center;">${dataFim} <span style="font-size: 9pt; color: #666;">(${item.dias} dias)</span></td>
+        <td style="text-align: right;">${this.formatCurrency(item.subtotal)}</td>
       </tr>
     `).join('') || '';
 
+    // Calcular subtotal, desconto e frete do orçamento
+    const subtotal = locacao.itens?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
+    const desconto = locacao.orcamento?.desconto || 0;
+    const frete = locacao.orcamento?.frete || 0;
     const total = this.formatCurrency(locacao.total_final);
+    const subtotalFormatado = this.formatCurrency(subtotal);
+    const descontoFormatado = this.formatCurrency(desconto);
+    const freteFormatado = this.formatCurrency(frete);
 
     return `
 <!DOCTYPE html>
@@ -442,10 +448,19 @@ export class PrintableService {
       border: 1px solid #000;
     }
 
-    th, td {
-      padding: 5px 6px;
+    th {
+      padding: 6px 4px;
+      text-align: center;
+      font-size: 9pt;
+      font-weight: bold;
+      background-color: #f0f0f0;
+      page-break-inside: avoid;
+    }
+
+    td {
+      padding: 5px 4px;
       text-align: left;
-      font-size: 10pt;
+      font-size: 9pt;
       page-break-inside: avoid;
     }
 
@@ -539,13 +554,12 @@ export class PrintableService {
       <table>
         <thead>
           <tr>
-            <th>Material</th>
-            <th>Valor Base</th>
-            <th>Qtd</th>
-            <th>Data Início</th>
-            <th>Data Fim</th>
-            <th>Dias</th>
-            <th>Subtotal</th>
+            <th style="width: 30%;">Material</th>
+            <th style="width: 12%;">Valor Base</th>
+            <th style="width: 8%;">Qtd</th>
+            <th style="width: 15%;">Data Início</th>
+            <th style="width: 20%;">Data Fim</th>
+            <th style="width: 15%;">Subtotal</th>
           </tr>
         </thead>
         <tbody>
@@ -553,7 +567,13 @@ export class PrintableService {
         </tbody>
       </table>
 
-      <p><strong>Total:</strong> ${total}</p>
+      <!-- Resumo Financeiro -->
+      <div style="margin-top: 15px; text-align: right; page-break-inside: avoid;">
+        <p style="margin: 3px 0; font-size: 10pt;"><strong>Subtotal:</strong> ${subtotalFormatado}</p>
+        ${desconto > 0 ? `<p style="margin: 3px 0; font-size: 10pt; color: #d32f2f;"><strong>Desconto:</strong> ${descontoFormatado}</p>` : ''}
+        ${frete > 0 ? `<p style="margin: 3px 0; font-size: 10pt; color: #2e7d32;"><strong>Frete/Adicional:</strong> ${freteFormatado}</p>` : ''}
+        <p style="margin: 8px 0 0 0; font-size: 12pt; font-weight: bold; padding-top: 5px; border-top: 2px solid #000;"><strong>Total:</strong> ${total}</p>
+      </div>
 
       
 
@@ -650,20 +670,26 @@ export class PrintableService {
     // Obter informações do documento do cliente
     const documentoCliente = this.getDocumentoInfo(locacao.cliente?.cnpj || locacao.cliente?.cpf);
 
-    // Gerar linhas da tabela de itens
+    // Gerar linhas da tabela de itens com formatação melhorada
     const itensHTML = locacao.itens?.map(item => `
       <tr>
-        <td>${this.getEquipamentoDescricao(item.equipamento_id)}</td>
-        <td>${this.formatCurrency(item.preco_unitario)}</td>
-        <td>${item.quantidade}</td>
-        <td>${dataInicio}</td>
-        <td>${dataFim}</td>
-        <td>${item.dias}</td>
-        <td>${this.formatCurrency(item.subtotal)}</td>
+        <td style="text-align: left;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
+        <td style="text-align: right;">${this.formatCurrency(item.preco_unitario)}</td>
+        <td style="text-align: center;">${item.quantidade}</td>
+        <td style="text-align: center;">${dataInicio}</td>
+        <td style="text-align: center;">${dataFim} <span style="font-size: 9pt; color: #666;">(${item.dias} dias)</span></td>
+        <td style="text-align: right;">${this.formatCurrency(item.subtotal)}</td>
       </tr>
     `).join('') || '';
 
+    // Calcular subtotal, desconto e frete do orçamento
+    const subtotal = locacao.itens?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
+    const desconto = locacao.orcamento?.desconto || 0;
+    const frete = locacao.orcamento?.frete || 0;
     const total = this.formatCurrency(locacao.total_final);
+    const subtotalFormatado = this.formatCurrency(subtotal);
+    const descontoFormatado = this.formatCurrency(desconto);
+    const freteFormatado = this.formatCurrency(frete);
 
     return `
 <!DOCTYPE html>
@@ -731,10 +757,19 @@ export class PrintableService {
       border: 1px solid #000;
     }
 
-    th, td {
-      padding: 6px;
+    th {
+      padding: 6px 4px;
+      text-align: center;
+      font-size: 9pt;
+      font-weight: bold;
+      background-color: #f0f0f0;
+      page-break-inside: avoid;
+    }
+
+    td {
+      padding: 5px 4px;
       text-align: left;
-      font-size: 10pt;
+      font-size: 9pt;
       page-break-inside: avoid;
     }
 
@@ -742,10 +777,23 @@ export class PrintableService {
       page-break-inside: avoid;
     }
 
-    .total {
+    .resumo-financeiro {
       margin-top: 15px;
-      font-weight: bold;
+      text-align: right;
       page-break-inside: avoid;
+    }
+
+    .resumo-financeiro p {
+      margin: 3px 0;
+      font-size: 10pt;
+    }
+
+    .resumo-financeiro .total {
+      margin-top: 8px;
+      padding-top: 5px;
+      border-top: 2px solid #000;
+      font-size: 12pt;
+      font-weight: bold;
     }
 
     .observacao {
@@ -784,13 +832,12 @@ export class PrintableService {
     <table>
       <thead>
         <tr>
-          <th>Material</th>
-          <th>Valor Base</th>
-          <th>Qtd</th>
-          <th>Data Início</th>
-          <th>Data Fim</th>
-          <th>Dias</th>
-          <th>Subtotal</th>
+          <th style="width: 30%;">Material</th>
+          <th style="width: 12%;">Valor Base</th>
+          <th style="width: 8%;">Qtd</th>
+          <th style="width: 15%;">Data Início</th>
+          <th style="width: 20%;">Data Fim</th>
+          <th style="width: 15%;">Subtotal</th>
         </tr>
       </thead>
       <tbody>
@@ -798,8 +845,12 @@ export class PrintableService {
       </tbody>
     </table>
 
-    <div class="total">
-      <p><strong>Total:</strong> ${total}</p>
+    <!-- Resumo Financeiro -->
+    <div class="resumo-financeiro">
+      <p><strong>Subtotal:</strong> ${subtotalFormatado}</p>
+      ${desconto > 0 ? `<p style="color: #d32f2f;"><strong>Desconto:</strong> ${descontoFormatado}</p>` : ''}
+      ${frete > 0 ? `<p style="color: #2e7d32;"><strong>Frete/Adicional:</strong> ${freteFormatado}</p>` : ''}
+      <p class="total"><strong>Total:</strong> ${total}</p>
     </div>
 
     <div class="observacao">
