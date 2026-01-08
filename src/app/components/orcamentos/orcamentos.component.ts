@@ -141,7 +141,7 @@ import { take } from 'rxjs/operators';
                   <div class="form-group">
                     <label for="equipamento_id">Equipamento *</label>
                     <select id="equipamento_id" name="equipamento_id" 
-                            [ngModel]="newItem.equipamento_id" (ngModelChange)="newItem.equipamento_id = convertToNumber($event)" required
+                            [ngModel]="newItem.equipamento_id" (ngModelChange)="onEquipamentoChange($event)" required
                             class="form-control">
                       <option value="">Selecione um equipamento...</option>
                       <option *ngFor="let equipamento of equipamentos" [value]="equipamento.id"
@@ -155,8 +155,19 @@ import { take } from 'rxjs/operators';
                   <div class="form-group">
                     <label for="quantidade">Quantidade *</label>
                     <input type="number" id="quantidade" name="quantidade" 
-                           [(ngModel)]="newItem.quantidade" required min="1"
-                           class="form-control" placeholder="1">
+                           [(ngModel)]="newItem.quantidade" 
+                           [max]="getMaxQuantidadeDisponivel()"
+                           (ngModelChange)="onQuantidadeChange()"
+                           required min="1"
+                           class="form-control" 
+                           [class.error]="hasQuantidadeExcedida()"
+                           placeholder="1">
+                    <small class="form-help" *ngIf="getMaxQuantidadeDisponivel() > 0">
+                      Máximo disponível: {{ getMaxQuantidadeDisponivel() }}
+                    </small>
+                    <small class="form-help error" *ngIf="hasQuantidadeExcedida()">
+                      ⚠️ Quantidade excede o estoque disponível! Máximo: {{ getMaxQuantidadeDisponivel() }}
+                    </small>
                   </div>
                 </div>
 
@@ -626,6 +637,17 @@ import { take } from 'rxjs/operators';
       color: #6c757d;
       margin-top: 0.25rem;
       font-style: italic;
+    }
+
+    .form-help.error {
+      color: #dc3545;
+      font-weight: 600;
+      font-style: normal;
+    }
+
+    .form-control.error {
+      border-color: #dc3545;
+      box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.25);
     }
 
     .periodo-info {
@@ -1855,6 +1877,45 @@ export class OrcamentosComponent implements OnInit {
     });
   }
 
+  getMaxQuantidadeDisponivel(): number {
+    if (!this.newItem.equipamento_id) {
+      return 0;
+    }
+    
+    const equipamentoId = Number(this.newItem.equipamento_id);
+    const equipamento = this.equipamentos.find(e => e.id === equipamentoId);
+    
+    if (!equipamento) {
+      return 0;
+    }
+    
+    // Calcular quantidade já usada no mesmo orçamento para este equipamento
+    const quantidadeJaUsada = this.formData.itens
+      .filter(item => item.equipamento_id === equipamentoId)
+      .reduce((sum, item) => sum + item.quantidade, 0);
+    
+    // Retornar o estoque disponível menos o que já foi usado
+    return Math.max(0, equipamento.estoque_disponivel - quantidadeJaUsada);
+  }
+
+  hasQuantidadeExcedida(): boolean {
+    if (!this.newItem.equipamento_id || !this.newItem.quantidade) {
+      return false;
+    }
+    
+    const maxDisponivel = this.getMaxQuantidadeDisponivel();
+    return this.newItem.quantidade > maxDisponivel;
+  }
+
+  onQuantidadeChange() {
+    const maxDisponivel = this.getMaxQuantidadeDisponivel();
+    if (this.newItem.quantidade && this.newItem.quantidade > maxDisponivel) {
+      // Ajustar automaticamente para o máximo disponível
+      this.newItem.quantidade = maxDisponivel;
+      alert(`Quantidade ajustada para o máximo disponível: ${maxDisponivel}`);
+    }
+  }
+
   addItem() {
     console.log('addItem() called', this.newItem);
     console.log('equipamentos available:', this.equipamentos);
@@ -1872,6 +1933,14 @@ export class OrcamentosComponent implements OnInit {
     
     if (!this.newItem.dias || this.newItem.dias <= 0) {
       alert('Dias deve ser maior que 0');
+      return;
+    }
+    
+    // Validação de estoque
+    const maxDisponivel = this.getMaxQuantidadeDisponivel();
+    if (this.newItem.quantidade > maxDisponivel) {
+      alert(`Quantidade excede o estoque disponível! Máximo disponível: ${maxDisponivel}`);
+      this.newItem.quantidade = maxDisponivel;
       return;
     }
     
@@ -1935,6 +2004,17 @@ export class OrcamentosComponent implements OnInit {
   onDescontoFreteChange() {
     // Recalcular o total quando desconto ou frete mudarem
     this.formData.total_final = this.calculateTotal();
+  }
+
+  onEquipamentoChange(equipamentoId: any) {
+    this.newItem.equipamento_id = this.convertToNumber(equipamentoId);
+    // Ajustar quantidade se necessário quando trocar equipamento
+    if (this.newItem.equipamento_id) {
+      const maxDisponivel = this.getMaxQuantidadeDisponivel();
+      if (this.newItem.quantidade > maxDisponivel) {
+        this.newItem.quantidade = maxDisponivel;
+      }
+    }
   }
 
   getEquipamentoName(id: number): string {
