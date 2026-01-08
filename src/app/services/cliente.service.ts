@@ -14,7 +14,7 @@ export class ClienteService {
   }
 
   getCliente(id: number): Observable<Cliente> {
-    return this.apiService.getById<Cliente>('api/clientes', id);
+    return this.apiService.getById<Cliente>('/clientes', id);
   }
 
   createCliente(cliente: ClienteCreate): Observable<Cliente> {
