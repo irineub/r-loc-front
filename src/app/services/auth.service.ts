@@ -12,6 +12,7 @@ export class AuthService {
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   private currentUserSubject = new BehaviorSubject<string>('');
   private readonly TOKEN_EXPIRY_KEY = 'tokenExpiry';
+  private readonly DISCOUNT_PASSWORD_KEY = 'discountPassword';
   private readonly SESSION_DURATION = 30 * 60 * 1000; // 30 minutos em millisegundos
 
   public isAuthenticated$: Observable<boolean> = this.isAuthenticatedSubject.asObservable();
@@ -25,19 +26,19 @@ export class AuthService {
     const isAuth = localStorage.getItem('isAuthenticated') === 'true';
     const user = localStorage.getItem('currentUser') || '';
     const tokenExpiry = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
-    
+
     // Verificar se a sessão expirou
     if (isAuth && tokenExpiry) {
       const expiryTime = parseInt(tokenExpiry);
       const currentTime = Date.now();
-      
+
       if (currentTime > expiryTime) {
         // Sessão expirou, fazer logout
         this.logout();
         return;
       }
     }
-    
+
     this.isAuthenticatedSubject.next(isAuth);
     this.currentUserSubject.next(user);
   }
@@ -47,32 +48,32 @@ export class AuthService {
       // Verificar se é o usuário admin principal
       if (username === 'rloc' && password === 'admin0609') {
         const expiryTime = Date.now() + this.SESSION_DURATION;
-        
+
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('currentUser', username);
         localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiryTime.toString());
-        
+
         this.isAuthenticatedSubject.next(true);
         this.currentUserSubject.next(username);
-        
+
         resolve(true);
         return;
       }
-      
+
       // Tentar autenticar como funcionário
       this.http.post<any>(`${environment.apiUrl}/funcionarios/login`, { username, senha: password })
         .pipe(
           map((funcionario) => {
             if (funcionario && funcionario.ativo) {
               const expiryTime = Date.now() + this.SESSION_DURATION;
-              
+
               localStorage.setItem('isAuthenticated', 'true');
               localStorage.setItem('currentUser', funcionario.username);
               localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiryTime.toString());
-              
+
               this.isAuthenticatedSubject.next(true);
               this.currentUserSubject.next(funcionario.username);
-              
+
               return true;
             }
             return false;
@@ -91,7 +92,7 @@ export class AuthService {
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('currentUser');
     localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
-    
+
     this.isAuthenticatedSubject.next(false);
     this.currentUserSubject.next('');
   }
@@ -107,14 +108,14 @@ export class AuthService {
   isSessionValid(): boolean {
     const isAuth = localStorage.getItem('isAuthenticated') === 'true';
     const tokenExpiry = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
-    
+
     if (!isAuth || !tokenExpiry) {
       return false;
     }
-    
+
     const expiryTime = parseInt(tokenExpiry);
     const currentTime = Date.now();
-    
+
     return currentTime <= expiryTime;
   }
 
@@ -124,5 +125,16 @@ export class AuthService {
       return false;
     }
     return user === 'rloc' || user.includes('.master');
+  }
+
+  verifyDiscountPassword(password: string): boolean {
+    const storedPassword = localStorage.getItem(this.DISCOUNT_PASSWORD_KEY);
+    // Se não houver senha salva, usar a padrão '0609'
+    const correctPassword = storedPassword || '0609';
+    return password === correctPassword;
+  }
+
+  changeDiscountPassword(newPassword: string): void {
+    localStorage.setItem(this.DISCOUNT_PASSWORD_KEY, newPassword);
   }
 } 

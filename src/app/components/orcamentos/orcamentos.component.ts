@@ -9,6 +9,7 @@ import { EquipamentoService } from '../../services/equipamento.service';
 import { LocacaoService } from '../../services/locacao.service';
 import { PrintableService } from '../../services/printable.service';
 import { NavigationService } from '../../services/navigation.service';
+import { AuthService } from '../../services/auth.service';
 import { Orcamento, Cliente, Equipamento, OrcamentoCreate, ItemOrcamentoCreate, Locacao } from '../../models/index';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
@@ -24,9 +25,15 @@ import { take } from 'rxjs/operators';
       <div class="card">
         <div class="card-header">
           <h2 class="card-title">Gestão de Orçamentos</h2>
-          <button class="btn btn-primary" (click)="showForm = true" *ngIf="!showForm">
-            Novo Orçamento
-          </button>
+
+          <div class="actions-header" style="display: flex; gap: 10px;">
+             <button class="btn btn-warning btn-sm" (click)="openChangePasswordModal()" *ngIf="authService.isMasterUser()">
+              <small>🔑 Senha Desconto</small>
+            </button>
+            <button class="btn btn-primary" (click)="showForm = true" *ngIf="!showForm">
+              Novo Orçamento
+            </button>
+          </div>
         </div>
 
         <!-- Form Section -->
@@ -60,7 +67,7 @@ import { take } from 'rxjs/operators';
                 <label for="data_inicio">Data de Início *</label>
                 <input type="date" id="data_inicio" name="data_inicio" 
                        [(ngModel)]="formData.data_inicio" required
-                       (ngModelChange)="onDateChange()"
+                       (ngModelChange)="onDataInicioChange()"
                        class="form-control">
                 <small class="form-help">Data em que a locação deve começar</small>
                 
@@ -69,7 +76,7 @@ import { take } from 'rxjs/operators';
                 <label for="data_fim">Data de Fim *</label>
                 <input type="date" id="data_fim" name="data_fim" 
                        [(ngModel)]="formData.data_fim" required
-                       (ngModelChange)="onDateChange()"
+                       (ngModelChange)="onDataFimChange()"
                        class="form-control">
                 <small class="form-help">Data em que a locação deve terminar</small>
               
@@ -90,12 +97,14 @@ import { take } from 'rxjs/operators';
             <!-- Desconto e Frete -->
             <div class="form-row">
               <div class="form-group">
-                <label for="desconto">Desconto (R$) - Opcional</label>
+                <label for="desconto">Desconto (%) - Opcional</label>
                 <input type="number" id="desconto" name="desconto" 
-                       [(ngModel)]="formData.desconto" min="0" step="0.01"
-                       (ngModelChange)="onDescontoFreteChange()"
-                       class="form-control" placeholder="0.00">
-                <small class="form-help">Valor do desconto a ser aplicado</small>
+                       [(ngModel)]="descontoPorcentagem" min="0" max="100" step="0.1"
+                       (ngModelChange)="onDescontoPercentualChange()"
+                       class="form-control" placeholder="0.0%">
+                <small class="form-help" *ngIf="formData.desconto > 0">
+                  Valor calculado: {{ formData.desconto | currencyBr }}
+                </small>
               </div>
               <div class="form-group">
                 <label for="frete">🚚 Frete/Valor Adicional (R$) - Opcional</label>
@@ -175,8 +184,18 @@ import { take } from 'rxjs/operators';
                   <div class="form-group">
                     <label for="dias">Dias *</label>
                     <input type="number" id="dias" name="dias" 
-                           [(ngModel)]="newItem.dias" required min="1"
+                           [(ngModel)]="newItem.dias" 
+                           (ngModelChange)="updateNewItemDataFim()"
+                           required min="1"
                            class="form-control" placeholder="1">
+                  </div>
+                  <div class="form-group">
+                    <label for="itemDataFim">Data Final do Item</label>
+                    <input type="date" id="itemDataFim" name="itemDataFim"
+                           [(ngModel)]="newItemDataFim"
+                           (ngModelChange)="onNewItemDataFimChange()"
+                           class="form-control"
+                           [disabled]="!formData.data_inicio">
                   </div>
                   <div class="form-group">
                     <label for="tipo_cobranca">Tipo de Cobrança *</label>
@@ -207,11 +226,15 @@ import { take } from 'rxjs/operators';
                 <div class="item-card" *ngFor="let item of formData.itens; let i = index">
                   <div class="item-info">
                     <strong>{{ getEquipamentoDescricao(item.equipamento_id) }}</strong>
-                    <span class="item-details">
-                      {{ item.quantidade }} x {{ item.dias }} dias 
-                      ({{ getTipoCobrancaLabel(item.tipo_cobranca).toLowerCase() }}) = 
-                      {{ item.subtotal | currencyBr }}
-                    </span>
+                    <div class="item-details-row">
+                       <span class="item-details">
+                         {{ item.quantidade }} un. x {{ item.dias }} dias 
+                         <span class="text-muted">(até {{ getItemEndDate(item.dias) }})</span>
+                       </span>
+                       <span class="item-price">
+                         {{ getTipoCobrancaLabel(item.tipo_cobranca) }}: {{ item.subtotal | currencyBr }}
+                       </span>
+                    </div>
                   </div>
                   <button type="button" class="btn btn-danger btn-sm" (click)="removeItem(i)">
                     Remover
@@ -371,6 +394,60 @@ import { take } from 'rxjs/operators';
       </div>
     </div>
 
+
+    <!-- Modal de Senha para Desconto -->
+    <div class="modal-overlay" *ngIf="showPasswordModal" (click)="closePasswordModal()">
+      <div class="modal-content confirm-modal" (click)="$event.stopPropagation()" style="max-width: 400px;">
+        <div class="modal-header">
+          <h3>Autorizar Desconto</h3>
+          <button class="modal-close" (click)="closePasswordModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <p>O desconto solicitado é maior que 10%. Digite a senha para autorizar.</p>
+          <div class="form-group">
+            <label for="password">Senha</label>
+            <input type="password" id="password" [(ngModel)]="passwordInput" 
+                   (keyup.enter)="confirmPassword()"
+                   class="form-control" autofocus>
+            <small class="text-danger" *ngIf="passwordError">{{ passwordError }}</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closePasswordModal()">Cancelar</button>
+          <button class="btn btn-primary" (click)="confirmPassword()">Autorizar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Alterar Senha -->
+    <div class="modal-overlay" *ngIf="showChangePasswordModal" (click)="closeChangePasswordModal()">
+      <div class="modal-content confirm-modal" (click)="$event.stopPropagation()" style="max-width: 400px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);">
+          <h3>Alterar Senha de Desconto</h3>
+          <button class="modal-close" (click)="closeChangePasswordModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group margin-bottom">
+            <label>Senha Atual</label>
+            <input type="password" [(ngModel)]="passwordInput" class="form-control">
+          </div>
+          <div class="form-group margin-bottom">
+            <label>Nova Senha</label>
+            <input type="password" [(ngModel)]="newPasswordInput" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Confirmar Nova Senha</label>
+            <input type="password" [(ngModel)]="confirmNewPasswordInput" class="form-control">
+          </div>
+          <small class="text-danger" *ngIf="passwordError">{{ passwordError }}</small>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeChangePasswordModal()">Cancelar</button>
+          <button class="btn btn-primary" (click)="confirmChangePassword()">Salvar</button>
+        </div>
+      </div>
+    </div>
+    
     <!-- Modal de Visualização de Orçamento -->
     <div class="modal-overlay" *ngIf="showViewModal" (click)="closeViewModal()">
       <div class="modal-content" (click)="$event.stopPropagation()">
@@ -1756,6 +1833,16 @@ export class OrcamentosComponent implements OnInit {
     subtotal: 0
   };
 
+  // Variáveis para controle de desconto
+  descontoPorcentagem: number = 0;
+  showPasswordModal = false;
+  showChangePasswordModal = false;
+  passwordInput = '';
+  newPasswordInput = '';
+  confirmNewPasswordInput = '';
+  pendingDiscountPercentage: number | null = null;
+  passwordError = '';
+
   constructor(
     private orcamentoService: OrcamentoService,
     private clienteService: ClienteService,
@@ -1763,19 +1850,20 @@ export class OrcamentosComponent implements OnInit {
     private locacaoService: LocacaoService,
     private printableService: PrintableService,
     private router: Router,
-    private navigationService: NavigationService
-  ) {}
+    private navigationService: NavigationService,
+    public authService: AuthService
+  ) { }
 
   ngOnInit() {
     this.loadData();
-    
+
     // Verificar se deve abrir modal de orçamento
     this.navigationService.getNavigationState().pipe(take(1)).subscribe(state => {
       if (state.shouldOpenOrcamentoModal && state.orcamentoId !== undefined) {
         const orcamentoId = state.orcamentoId;
         // Limpar estado imediatamente para evitar múltiplas execuções
         this.navigationService.clearNavigationState();
-        
+
         // Aguardar um pouco para garantir que os dados foram carregados
         setTimeout(() => {
           const orcamento = this.orcamentos.find(o => o.id === orcamentoId);
@@ -1796,15 +1884,27 @@ export class OrcamentosComponent implements OnInit {
     return Number(value);
   }
 
+  onDataInicioChange() {
+    if (this.formData.itens.length > 0) {
+      this.updateOrcamentoEndDate();
+    } else {
+      this.onDateChange();
+    }
+  }
+
+  onDataFimChange() {
+    this.onDateChange();
+  }
+
   onDateChange() {
     if (this.formData.data_inicio && this.formData.data_fim) {
       const dataInicio = new Date(this.formData.data_inicio);
       const dataFim = new Date(this.formData.data_fim);
-      
+
       if (dataFim > dataInicio) {
         const diffTime = dataFim.getTime() - dataInicio.getTime();
         const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-        
+
         let tipoCobranca = 'diaria';
         if (diffDays >= 60) { // 2 meses ou mais
           tipoCobranca = 'mensal';
@@ -1815,14 +1915,21 @@ export class OrcamentosComponent implements OnInit {
         } else if (diffDays >= 7) { // 7 dias ou mais (semanal)
           tipoCobranca = 'semanal';
         }
-        
+
         this.periodoCalculado = {
           dias: diffDays,
           tipoCobranca: tipoCobranca
         };
-        
-        // Aplicar automaticamente aos itens existentes
-        this.aplicarPeriodoCalculado();
+
+        // NÃO aplicar automaticamente aos itens existentes para permitir datas diferentes
+        // this.aplicarPeriodoCalculado();
+
+        // Apenas atualizar o newItem se ele ainda não foi adicionado
+        this.newItem.dias = diffDays;
+        this.newItem.tipo_cobranca = tipoCobranca as 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
+        this.updateNewItemDataFim();
+
+        this.recalculateTotalWithDiscount();
       } else {
         this.periodoCalculado = null;
       }
@@ -1831,26 +1938,46 @@ export class OrcamentosComponent implements OnInit {
     }
   }
 
+  updateOrcamentoEndDate() {
+    if (!this.formData.data_inicio || this.formData.itens.length === 0) return;
+
+    // Encontrar o maior número de dias entre os itens
+    let maxDias = 0;
+    this.formData.itens.forEach(item => {
+      if (item.dias > maxDias) {
+        maxDias = item.dias;
+      }
+    });
+
+    // Se não tiver itens ou dias zerados, não faz nada
+    if (maxDias === 0) return;
+
+    // Calcular nova data fim
+    const dataInicio = new Date(this.formData.data_inicio); // assumindo que string 'YYYY-MM-DD' funciona no construtor ou ajustar
+    // Ajuste para fuso horário se necessário, mas 'YYYY-MM-DD' costuma ser UTC ou local dependendo do browser. 
+    // Melhor usar split para garantir 'YYYY-MM-DD'
+    const parts = this.formData.data_inicio.split('-');
+    const dtInicio = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+
+    const dtFim = new Date(dtInicio);
+    dtFim.setDate(dtInicio.getDate() + maxDias);
+
+    // Formatar para YYYY-MM-DD
+    const ano = dtFim.getFullYear();
+    const mes = String(dtFim.getMonth() + 1).padStart(2, '0');
+    const dia = String(dtFim.getDate()).padStart(2, '0');
+
+    this.formData.data_fim = `${ano}-${mes}-${dia}`;
+
+    // É bom chamar onDateChange para atualizar o periodoCalculado (que serve de default),
+    // mas sem overwrite nos itens
+    this.onDateChange();
+  }
+
   aplicarPeriodoCalculado() {
     if (this.periodoCalculado) {
-      // Aplicar aos itens existentes
-      this.formData.itens.forEach(item => {
-        item.dias = this.periodoCalculado!.dias;
-        item.tipo_cobranca = this.periodoCalculado!.tipoCobranca as 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
-        
-        // Recalcular subtotal
-        const equipamento = this.equipamentos.find(e => e.id === item.equipamento_id);
-        if (equipamento) {
-          item.preco_unitario = this.getPrecoPorTipoCobranca(equipamento, item.tipo_cobranca);
-          item.subtotal = this.calcularSubtotalPorTipoCobranca(
-            item.quantidade,
-            equipamento,
-            item.dias,
-            item.tipo_cobranca
-          );
-        }
-      });
-      
+      // NÃO aplicar aos itens existentes
+
       // Aplicar ao novo item
       this.newItem.dias = this.periodoCalculado!.dias;
       this.newItem.tipo_cobranca = this.periodoCalculado!.tipoCobranca as 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
@@ -1882,28 +2009,28 @@ export class OrcamentosComponent implements OnInit {
     if (!this.newItem.equipamento_id) {
       return 0;
     }
-    
+
     const equipamentoId = Number(this.newItem.equipamento_id);
     const equipamento = this.equipamentos.find(e => e.id === equipamentoId);
-    
+
     if (!equipamento) {
       return 0;
     }
-    
+
     // Obter estoque disponível do equipamento (garantir que é um número)
     const estoqueDisponivel = Number(equipamento.estoque_disponivel) || 0;
-    
+
     // Calcular quantidade já usada no mesmo orçamento para este equipamento
     // Converter todos os IDs e quantidades para números para garantir comparação correta
     const quantidadeJaUsada = this.formData.itens
       .filter(item => Number(item.equipamento_id) === equipamentoId)
       .reduce((sum, item) => sum + (Number(item.quantidade) || 0), 0);
-    
+
     // Retornar o estoque disponível menos o que já foi usado
     const maxDisponivel = Math.max(0, estoqueDisponivel - quantidadeJaUsada);
-    
+
     console.log(`getMaxQuantidadeDisponivel() - Equipamento ID: ${equipamentoId}, Estoque: ${estoqueDisponivel}, Já usado: ${quantidadeJaUsada}, Max disponível: ${maxDisponivel}`);
-    
+
     return maxDisponivel;
   }
 
@@ -1911,7 +2038,7 @@ export class OrcamentosComponent implements OnInit {
     if (!this.newItem.equipamento_id || !this.newItem.quantidade) {
       return false;
     }
-    
+
     const maxDisponivel = this.getMaxQuantidadeDisponivel();
     return this.newItem.quantidade > maxDisponivel;
   }
@@ -1928,72 +2055,72 @@ export class OrcamentosComponent implements OnInit {
   addItem() {
     console.log('addItem() called', this.newItem);
     console.log('equipamentos available:', this.equipamentos);
-    
+
     // Validação básica
     if (!this.newItem.equipamento_id) {
       alert('Selecione um equipamento');
       return;
     }
-    
+
     if (!this.newItem.dias || this.newItem.dias <= 0) {
       alert('Dias deve ser maior que 0');
       return;
     }
-    
+
     // Converter equipamento_id para número se for string
     const equipamentoId = Number(this.newItem.equipamento_id);
     console.log('Looking for equipamento with id:', equipamentoId, 'type:', typeof equipamentoId);
     const equipamento = this.equipamentos.find(e => e.id === equipamentoId);
     console.log('equipamento found:', equipamento);
-    
+
     if (!equipamento) {
       alert('Equipamento não encontrado');
       return;
     }
-    
+
     // Validação de estoque ANTES de adicionar
     const maxDisponivel = this.getMaxQuantidadeDisponivel();
     const quantidadeSolicitada = Number(this.newItem.quantidade) || 0;
-    
+
     if (quantidadeSolicitada <= 0) {
       alert('Quantidade deve ser maior que 0');
       return;
     }
-    
+
     // Verificar se há estoque disponível
     if (maxDisponivel <= 0) {
       alert(`Não é possível adicionar "${equipamento.descricao}".\n\n` +
-            `Estoque disponível: 0 unidades.\n\n` +
-            `Este equipamento não possui estoque disponível no momento.`);
+        `Estoque disponível: 0 unidades.\n\n` +
+        `Este equipamento não possui estoque disponível no momento.`);
       return;
     }
-    
+
     // Verificar se a quantidade solicitada excede o disponível
     if (quantidadeSolicitada > maxDisponivel) {
       const quantidadeJaUsada = this.formData.itens
         .filter(item => Number(item.equipamento_id) === equipamentoId)
         .reduce((sum, item) => sum + (Number(item.quantidade) || 0), 0);
-      
+
       const estoqueTotal = equipamento.estoque_disponivel || 0;
-      
+
       alert(`Quantidade excede o estoque disponível!\n\n` +
-            `Equipamento: ${equipamento.descricao}\n` +
-            `Quantidade solicitada: ${quantidadeSolicitada}\n` +
-            `Estoque total disponível: ${estoqueTotal} unidades\n` +
-            `Já usado neste orçamento: ${quantidadeJaUsada} unidades\n` +
-            `Máximo que pode adicionar: ${maxDisponivel} unidades\n\n` +
-            `Por favor, ajuste a quantidade para ${maxDisponivel} ou menos.`);
-      
+        `Equipamento: ${equipamento.descricao}\n` +
+        `Quantidade solicitada: ${quantidadeSolicitada}\n` +
+        `Estoque total disponível: ${estoqueTotal} unidades\n` +
+        `Já usado neste orçamento: ${quantidadeJaUsada} unidades\n` +
+        `Máximo que pode adicionar: ${maxDisponivel} unidades\n\n` +
+        `Por favor, ajuste a quantidade para ${maxDisponivel} ou menos.`);
+
       // Ajustar automaticamente para o máximo disponível
       this.newItem.quantidade = maxDisponivel;
       // NÃO adicionar o item - o usuário deve ajustar manualmente ou clicar novamente
       return;
     }
-    
+
     // Se chegou aqui, a validação passou - pode adicionar o item
     const precoUnitario = this.getPrecoPorTipoCobranca(equipamento, this.newItem.tipo_cobranca);
     this.newItem.preco_unitario = precoUnitario;
-    
+
     // Calcular subtotal baseado no tipo de cobrança do item
     this.newItem.subtotal = this.calcularSubtotalPorTipoCobranca(
       this.newItem.quantidade,
@@ -2001,17 +2128,17 @@ export class OrcamentosComponent implements OnInit {
       this.newItem.dias,
       this.newItem.tipo_cobranca
     );
-    
+
     console.log('Adding item to formData:', this.newItem);
     this.formData.itens.push({ ...this.newItem });
-    this.formData.total_final = this.calculateTotal();
-    
-    // Aplicar período calculado ao novo item se disponível
-    if (this.periodoCalculado) {
-      this.aplicarPeriodoCalculado();
-    }
-    
-    // Reset do newItem mantendo o período calculado
+
+    // Atualizar data final do orçamento com base nos itens
+    this.updateOrcamentoEndDate();
+
+    // Recalcular total e desconto
+    this.recalculateTotalWithDiscount();
+
+    // Reset do newItem mantendo o período calculado (default)
     this.newItem = {
       equipamento_id: 0,
       quantidade: 1,
@@ -2020,11 +2147,106 @@ export class OrcamentosComponent implements OnInit {
       tipo_cobranca: this.periodoCalculado ? (this.periodoCalculado.tipoCobranca as 'diaria' | 'semanal' | 'quinzenal' | 'mensal') : 'diaria',
       subtotal: 0
     };
+    this.updateNewItemDataFim();
     console.log('Item added successfully');
   }
 
   removeItem(index: number) {
     this.formData.itens.splice(index, 1);
+    this.updateOrcamentoEndDate();
+    this.recalculateTotalWithDiscount();
+  }
+
+  newItemDataFim: string = '';
+
+  updateNewItemDataFim() {
+    if (this.formData.data_inicio && this.newItem.dias) {
+      // 1. Calcular Data Fim baseada nos dias
+      const parts = this.formData.data_inicio.split('-');
+      const dtInicio = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+
+      const dtFim = new Date(dtInicio);
+      dtFim.setDate(dtInicio.getDate() + this.newItem.dias);
+
+      const ano = dtFim.getFullYear();
+      const mes = String(dtFim.getMonth() + 1).padStart(2, '0');
+      const dia = String(dtFim.getDate()).padStart(2, '0');
+
+      this.newItemDataFim = `${ano}-${mes}-${dia}`;
+
+      // 2. Atualizar tipo de cobrança sugerido
+      const diffDays = this.newItem.dias;
+      if (diffDays >= 30) {
+        this.newItem.tipo_cobranca = 'mensal';
+      } else if (diffDays >= 15) {
+        this.newItem.tipo_cobranca = 'quinzenal';
+      } else if (diffDays >= 7) {
+        this.newItem.tipo_cobranca = 'semanal';
+      } else {
+        this.newItem.tipo_cobranca = 'diaria';
+      }
+
+      // 3. Recalcular subtotal (se já tiver equipamento selecionado)
+      if (this.newItem.equipamento_id) {
+        const equipamento = this.equipamentos.find(e => e.id === Number(this.newItem.equipamento_id));
+        if (equipamento) {
+          this.newItem.preco_unitario = this.getPrecoPorTipoCobranca(equipamento, this.newItem.tipo_cobranca);
+          this.newItem.subtotal = this.calcularSubtotalPorTipoCobranca(
+            this.newItem.quantidade,
+            equipamento,
+            this.newItem.dias,
+            this.newItem.tipo_cobranca
+          );
+        }
+      }
+    }
+  }
+
+  onNewItemDataFimChange() {
+    if (this.formData.data_inicio && this.newItemDataFim) {
+      const partsStart = this.formData.data_inicio.split('-');
+      const dtInicio = new Date(Number(partsStart[0]), Number(partsStart[1]) - 1, Number(partsStart[2]));
+
+      const partsEnd = this.newItemDataFim.split('-');
+      const dtFim = new Date(Number(partsEnd[0]), Number(partsEnd[1]) - 1, Number(partsEnd[2]));
+
+      const diffTime = dtFim.getTime() - dtInicio.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays > 0) {
+        this.newItem.dias = diffDays;
+        // Reutilizar a lógica centralizada (que vai recalcular data fim string, mas ok, importante é o resto)
+        this.updateNewItemDataFim();
+      }
+    }
+  }
+
+  getItemEndDate(dias: number): string {
+    if (!this.formData.data_inicio || !dias) return '';
+
+    const parts = this.formData.data_inicio.split('-');
+    const dtInicio = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+
+    const dtFim = new Date(dtInicio);
+    dtFim.setDate(dtInicio.getDate() + dias);
+
+    const ano = dtFim.getFullYear();
+    const mes = String(dtFim.getMonth() + 1).padStart(2, '0');
+    const dia = String(dtFim.getDate()).padStart(2, '0');
+
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  recalculateTotalWithDiscount() {
+    const subtotal = this.getSubtotalItens();
+
+    // Se temos uma porcentagem definida e válida (> 10% requer autorização, mas se já está definido, assumimos ok)
+    // Mas devemos respeitar o limite de autorização? Se o usuário já autorizou 15%, e adicionamos itens, 
+    // o valor aumenta e continua sendo 15%. Não precisa pedir senha de novo pois a porcentagem é a mesma.
+    if (this.descontoPorcentagem > 0) {
+      this.formData.desconto = (subtotal * this.descontoPorcentagem) / 100;
+    }
+
     this.formData.total_final = this.calculateTotal();
   }
 
@@ -2034,15 +2256,15 @@ export class OrcamentosComponent implements OnInit {
     if (!clienteId || clienteId <= 0) {
       return false;
     }
-    
+
     if (!this.formData.data_inicio || this.formData.data_inicio.trim() === '') {
       return false;
     }
-    
+
     if (!this.formData.data_fim || this.formData.data_fim.trim() === '') {
       return false;
     }
-    
+
     // Verificar se data fim é depois da data início
     if (this.formData.data_inicio && this.formData.data_fim) {
       const dataInicio = new Date(this.formData.data_inicio);
@@ -2054,18 +2276,18 @@ export class OrcamentosComponent implements OnInit {
         return false;
       }
     }
-    
+
     // Verificar se há itens
     if (!this.formData.itens || this.formData.itens.length === 0) {
       return false;
     }
-    
+
     // Verificar se todos os itens têm dados válidos
     for (const item of this.formData.itens) {
       const equipamentoId = Number(item.equipamento_id) || 0;
       const quantidade = Number(item.quantidade) || 0;
       const dias = Number(item.dias) || 0;
-      
+
       if (!equipamentoId || equipamentoId <= 0) {
         return false;
       }
@@ -2076,7 +2298,7 @@ export class OrcamentosComponent implements OnInit {
         return false;
       }
     }
-    
+
     return true;
   }
 
@@ -2089,9 +2311,119 @@ export class OrcamentosComponent implements OnInit {
     return subtotal - this.formData.desconto + this.formData.frete;
   }
 
+  onDescontoPercentualChange() {
+    // Calcular o valor do desconto baseado na porcentagem
+    const subtotal = this.getSubtotalItens();
+
+    // Se não há itens, não há o que calcular
+    if (subtotal === 0) {
+      this.formData.desconto = 0;
+      return;
+    }
+
+    const proposedValue = (subtotal * this.descontoPorcentagem) / 100;
+
+    // Verificar se a porcentagem é maior que 10%
+    if (this.descontoPorcentagem > 10) {
+      this.pendingDiscountPercentage = this.descontoPorcentagem;
+      // Reverter visualmente enquanto não aprova (opcional, ou manter e pedir senha)
+      // Aqui vamos abrir o modal. Se cancelar, voltamos o valor anterior.
+      this.passwordInput = '';
+      this.passwordError = '';
+      this.showPasswordModal = true;
+    } else {
+      // Se <= 10%, aplica direto
+      this.formData.desconto = proposedValue;
+      this.onDescontoFreteChange();
+    }
+  }
+
+  confirmPassword() {
+    if (this.authService.verifyDiscountPassword(this.passwordInput)) {
+      // Senha correta
+      this.showPasswordModal = false;
+      this.passwordError = '';
+
+      if (this.pendingDiscountPercentage !== null) {
+        const subtotal = this.getSubtotalItens();
+        this.formData.desconto = (subtotal * this.pendingDiscountPercentage) / 100;
+        this.onDescontoFreteChange();
+        this.pendingDiscountPercentage = null;
+      }
+    } else {
+      this.passwordError = 'Senha incorreta!';
+    }
+  }
+
+  closePasswordModal() {
+    this.showPasswordModal = false;
+    this.passwordError = '';
+    this.pendingDiscountPercentage = null;
+
+    // Reverter o desconto para o valor correspondente ao atual formData.desconto
+    // Se o usuário cancelou, o desconto não foi aplicado, então devemos 
+    // voltar a porcentagem para o que representa o valor atual
+    const subtotal = this.getSubtotalItens();
+    if (subtotal > 0) {
+      this.descontoPorcentagem = (this.formData.desconto / subtotal) * 100;
+      // Arredondar para 2 casas decimais para ficar bonito
+      this.descontoPorcentagem = Math.round(this.descontoPorcentagem * 100) / 100;
+    } else {
+      this.descontoPorcentagem = 0;
+    }
+  }
+
+  openChangePasswordModal() {
+    this.passwordInput = '';
+    this.newPasswordInput = '';
+    this.confirmNewPasswordInput = '';
+    this.passwordError = '';
+    this.showChangePasswordModal = true;
+  }
+
+  closeChangePasswordModal() {
+    this.showChangePasswordModal = false;
+    this.passwordError = '';
+  }
+
+  confirmChangePassword() {
+    if (!this.passwordInput || !this.newPasswordInput || !this.confirmNewPasswordInput) {
+      this.passwordError = 'Preencha todos os campos';
+      return;
+    }
+
+    if (this.newPasswordInput !== this.confirmNewPasswordInput) {
+      this.passwordError = 'As novas senhas não coincidem';
+      return;
+    }
+
+    // Verificar senha atual (usando a senha de LOGIN do usuário logado? Não, a senha de DESCONTO atual)
+    // O requisito diz "alteravel pelo usuario rloc". 
+    // Vamos assumir que para alterar, precisa saber a senha de desconto atual.
+    if (!this.authService.verifyDiscountPassword(this.passwordInput)) {
+      this.passwordError = 'Senha atual incorreta';
+      return;
+    }
+
+    this.authService.changeDiscountPassword(this.newPasswordInput);
+    alert('Senha de desconto alterada com sucesso!');
+    this.closeChangePasswordModal();
+  }
+
   onDescontoFreteChange() {
     // Recalcular o total quando desconto ou frete mudarem
     this.formData.total_final = this.calculateTotal();
+  }
+
+  updateDescontoPercentageFromValue() {
+    const subtotal = this.getSubtotalItens();
+    if (subtotal > 0 && this.formData.desconto > 0) {
+      this.descontoPorcentagem = (this.formData.desconto / subtotal) * 100;
+      // Arredondar
+      this.descontoPorcentagem = Math.round(this.descontoPorcentagem * 10) / 10;
+    } else {
+      this.descontoPorcentagem = 0;
+    }
   }
 
   onEquipamentoChange(equipamentoId: any) {
@@ -2122,7 +2454,7 @@ export class OrcamentosComponent implements OnInit {
   }
 
   getTipoCobrancaLabel(tipoCobranca: string): string {
-    switch(tipoCobranca) {
+    switch (tipoCobranca) {
       case 'diaria':
         return 'Diária';
       case 'semanal':
@@ -2137,7 +2469,7 @@ export class OrcamentosComponent implements OnInit {
   }
 
   getPrecoPorTipoCobranca(equipamento: Equipamento, tipoCobranca: string): number {
-    switch(tipoCobranca) {
+    switch (tipoCobranca) {
       case 'diaria':
         return equipamento.preco_diaria;
       case 'semanal':
@@ -2153,7 +2485,7 @@ export class OrcamentosComponent implements OnInit {
 
   calcularSubtotalPorTipoCobranca(quantidade: number, equipamento: Equipamento, dias: number, tipoCobranca: string): number {
     const precoUnitario = this.getPrecoPorTipoCobranca(equipamento, tipoCobranca);
-    
+
     if (tipoCobranca === 'mensal') {
       const meses = Math.ceil(dias / 30);
       return quantidade * precoUnitario * meses;
@@ -2215,11 +2547,11 @@ export class OrcamentosComponent implements OnInit {
     filtered.sort((a, b) => {
       const aHasLocacao = this.hasLocacaoForOrcamento(a.id);
       const bHasLocacao = this.hasLocacaoForOrcamento(b.id);
-      
+
       // Definir ordem de prioridade considerando status e presença de contrato
       let priorityA = 999;
       let priorityB = 999;
-      
+
       if (a.status === 'pendente') {
         priorityA = 0;
       } else if (a.status === 'aprovado' && !aHasLocacao) {
@@ -2229,7 +2561,7 @@ export class OrcamentosComponent implements OnInit {
       } else if (a.status === 'rejeitado') {
         priorityA = 3;
       }
-      
+
       if (b.status === 'pendente') {
         priorityB = 0;
       } else if (b.status === 'aprovado' && !bHasLocacao) {
@@ -2241,7 +2573,7 @@ export class OrcamentosComponent implements OnInit {
       }
 
       const priorityDiff = priorityA - priorityB;
-      
+
       if (priorityDiff !== 0) {
         return priorityDiff;
       }
@@ -2264,14 +2596,14 @@ export class OrcamentosComponent implements OnInit {
   saveOrcamento() {
     // Validação final: verificar se todos os itens têm estoque disponível
     const itensSemEstoque: string[] = [];
-    
+
     // Se estamos editando um orçamento pendente, precisamos considerar que os itens antigos já estão reservados
     let itensAntigos: any[] = [];
     if (this.editingOrcamento && this.editingOrcamento.status !== 'rejeitado') {
       // Orçamento pendente ou aprovado sem contrato - itens antigos estão reservados
       itensAntigos = this.editingOrcamento.itens || [];
     }
-    
+
     // Calcular quantidades antigas por equipamento
     const equipamentosAntigosQuantidades: { [key: number]: number } = {};
     for (const itemAntigo of itensAntigos) {
@@ -2281,7 +2613,7 @@ export class OrcamentosComponent implements OnInit {
       }
       equipamentosAntigosQuantidades[equipamentoId] += Number(itemAntigo.quantidade) || 0;
     }
-    
+
     // Calcular quantidades novas por equipamento
     const equipamentosNovosQuantidades: { [key: number]: number } = {};
     for (const item of this.formData.itens) {
@@ -2291,7 +2623,7 @@ export class OrcamentosComponent implements OnInit {
       }
       equipamentosNovosQuantidades[equipamentoId] += Number(item.quantidade) || 0;
     }
-    
+
     // Validar estoque considerando que os itens antigos serão liberados
     for (const item of this.formData.itens) {
       const equipamento = this.equipamentos.find(e => e.id === item.equipamento_id);
@@ -2299,19 +2631,19 @@ export class OrcamentosComponent implements OnInit {
         itensSemEstoque.push(`Equipamento ID ${item.equipamento_id} (não encontrado)`);
         continue;
       }
-      
+
       const equipamentoId = Number(item.equipamento_id);
       const estoqueTotal = equipamento.estoque || 0;
       const estoqueAlugado = equipamento.estoque_alugado || 0;
       const estoqueDisponivelAtual = estoqueTotal - estoqueAlugado;
-      
+
       // Quantidade que será liberada dos itens antigos deste equipamento
       const quantidadeAntiga = equipamentosAntigosQuantidades[equipamentoId] || 0;
       // Estoque disponível após liberar os itens antigos
       const estoqueDisponivelAposLiberacao = estoqueDisponivelAtual + quantidadeAntiga;
-      
+
       const quantidadeTotalNova = equipamentosNovosQuantidades[equipamentoId] || 0;
-      
+
       // Validar apenas uma vez por equipamento (usar a primeira ocorrência)
       if (this.formData.itens.findIndex(i => Number(i.equipamento_id) === equipamentoId) === this.formData.itens.indexOf(item)) {
         if (estoqueDisponivelAposLiberacao <= 0) {
@@ -2321,27 +2653,33 @@ export class OrcamentosComponent implements OnInit {
         }
       }
     }
-    
+
     if (itensSemEstoque.length > 0) {
       alert('Não é possível salvar o orçamento!\n\n' +
-            'Os seguintes itens não possuem estoque disponível:\n\n' +
-            itensSemEstoque.map(item => `• ${item}`).join('\n') +
-            '\n\nPor favor, remova ou ajuste os itens antes de salvar.');
+        'Os seguintes itens não possuem estoque disponível:\n\n' +
+        itensSemEstoque.map(item => `• ${item}`).join('\n') +
+        '\n\nPor favor, remova ou ajuste os itens antes de salvar.');
       return;
     }
-    
+
     // Recalcular subtotais dos itens antes de salvar
     for (const item of this.formData.itens) {
       const equipamento = this.equipamentos.find(e => e.id === item.equipamento_id);
       if (equipamento) {
         const precoUnitario = this.getPrecoPorTipoCobranca(equipamento, item.tipo_cobranca);
         item.preco_unitario = precoUnitario;
-        item.subtotal = item.quantidade * precoUnitario * item.dias;
+        // Usar a função correta de cálculo que considera tipo de cobrança (semanal, quinzenal, mensal)
+        item.subtotal = this.calcularSubtotalPorTipoCobranca(
+          item.quantidade,
+          equipamento,
+          item.dias,
+          item.tipo_cobranca
+        );
       }
     }
-    
+
     this.formData.total_final = this.calculateTotal();
-    
+
     if (this.editingOrcamento) {
       // O backend já vai voltar para pendente automaticamente se estava rejeitado
       this.orcamentoService.updateOrcamento(this.editingOrcamento.id, this.formData).subscribe({
@@ -2404,10 +2742,10 @@ export class OrcamentosComponent implements OnInit {
         this.selectedOrcamento = this.orcamentos[orcamentoIndex];
         this.showViewModal = true;
       }
-      
+
       // Depois recarregar os dados para sincronizar com o servidor
       this.loadData();
-      
+
       alert('Orçamento aprovado com sucesso!');
     });
   }
@@ -2419,7 +2757,7 @@ export class OrcamentosComponent implements OnInit {
       if (orcamentoIndex !== -1) {
         this.orcamentos[orcamentoIndex].status = 'rejeitado';
       }
-      
+
       // Recarregar os dados para sincronizar com o servidor
       this.loadData();
     });
@@ -2452,7 +2790,7 @@ export class OrcamentosComponent implements OnInit {
       // Verificar disponibilidade de cada item
       for (const item of orcamento.itens) {
         const equipamento = this.equipamentos.find(e => e.id === item.equipamento_id);
-        
+
         if (!equipamento) {
           // Equipamento não encontrado - remover
           itensRemovidos.push(`Equipamento ID ${item.equipamento_id} (não encontrado)`);
@@ -2474,7 +2812,7 @@ export class OrcamentosComponent implements OnInit {
           // Estoque insuficiente - ajustar para o máximo disponível
           const precoUnitario = this.getPrecoPorTipoCobranca(equipamento, item.tipo_cobranca);
           const novoSubtotal = estoqueDisponivel * precoUnitario * item.dias;
-          
+
           itensValidos.push({
             equipamento_id: item.equipamento_id,
             quantidade: estoqueDisponivel, // Ajustar para o máximo disponível
@@ -2541,8 +2879,12 @@ export class OrcamentosComponent implements OnInit {
     // Recalcular total com os itens ajustados
     this.formData.total_final = this.calculateTotal();
 
+    // Atualizar porcentagem de desconto
+    this.updateDescontoPercentageFromValue();
+
     // Calcular período
     this.onDateChange();
+    this.updateNewItemDataFim();
 
     // Mostrar formulário
     this.showForm = true;
@@ -2572,7 +2914,7 @@ export class OrcamentosComponent implements OnInit {
       console.log('Validação falhou', { orcamentoId, selectedOrcamento: this.selectedOrcamento });
       return;
     }
-    
+
     // Preencher com o endereço do cliente como padrão
     this.enderecoEntrega = this.selectedOrcamento.cliente?.endereco || '';
     this.orcamentoIdParaLocacao = orcamentoId;
@@ -2591,48 +2933,48 @@ export class OrcamentosComponent implements OnInit {
       orcamentoIdParaLocacao: this.orcamentoIdParaLocacao,
       enderecoEntrega: this.enderecoEntrega
     });
-    
+
     if (!this.orcamentoIdParaLocacao || !this.enderecoEntrega || this.enderecoEntrega.trim() === '') {
       alert('Por favor, informe o endereço de entrega.');
       return;
     }
-    
+
     // Salvar os valores antes de fechar o dialog
     const orcamentoId = this.orcamentoIdParaLocacao;
     const endereco = this.enderecoEntrega.trim();
-    
+
     // Fechar o dialog
     this.showEnderecoDialog = false;
-    
+
     // Criar a locação com os valores salvos
     this.createLocacaoFromOrcamento(orcamentoId, endereco);
   }
 
   async createLocacaoFromOrcamento(orcamentoId: number | undefined, enderecoEntrega?: string) {
     console.log('createLocacaoFromOrcamento chamado', { orcamentoId, enderecoEntrega, selectedOrcamento: this.selectedOrcamento });
-    
+
     if (!orcamentoId || !this.selectedOrcamento) {
       console.error('Validação falhou em createLocacaoFromOrcamento', { orcamentoId, selectedOrcamento: this.selectedOrcamento });
       alert('Erro: Orçamento não selecionado. Por favor, tente novamente.');
       return;
     }
-    
+
     console.log('Criando locação via API...', { orcamentoId, enderecoEntrega });
     this.locacaoService.createLocacaoFromOrcamento(orcamentoId, enderecoEntrega).subscribe({
       next: async (response) => {
         console.log('Locação criada com sucesso:', response);
-        
+
         // Recarregar dados
         this.loadData();
-        
+
         // Fechar modal do orçamento
         this.closeViewModal();
-        
+
         // Aguardar um pouco para os dados serem carregados
         setTimeout(async () => {
           // Buscar a locação criada
           const locacaoCriada = this.locacoes.find(l => l.orcamento_id === orcamentoId);
-          
+
           if (locacaoCriada) {
             // Gerar contrato e recibo automaticamente
             try {
@@ -2647,13 +2989,13 @@ export class OrcamentosComponent implements OnInit {
               this.printableService.exportToPDF(reciboHtml, reciboFilename);
 
               alert('Locação criada com sucesso! Contrato e recibo foram gerados automaticamente. Redirecionando para a página de locações...');
-              
+
               // Definir estado para abrir modal da locação
               this.navigationService.setNavigationState({
                 shouldOpenLocacaoModal: true,
                 locacaoId: locacaoCriada.id
               });
-              
+
               // Redirecionar para a página de locações
               this.router.navigate(['/locacoes']);
             } catch (error) {
@@ -2674,21 +3016,21 @@ export class OrcamentosComponent implements OnInit {
           message: error?.message,
           error: error?.error
         });
-        
+
         // Reabrir o dialog em caso de erro
         if (orcamentoId) {
           this.orcamentoIdParaLocacao = orcamentoId;
           this.enderecoEntrega = enderecoEntrega || '';
           this.showEnderecoDialog = true;
         }
-        
+
         let errorMessage = 'Erro ao criar locação, tente novamente';
         if (error?.error?.detail) {
           errorMessage = error.error.detail;
         } else if (error?.message) {
           errorMessage = error.message;
         }
-        
+
         // Mensagens mais amigáveis
         if (errorMessage.includes('Já existe uma locação')) {
           errorMessage = 'Este orçamento já possui uma locação criada. Verifique a lista de locações.';
@@ -2698,7 +3040,7 @@ export class OrcamentosComponent implements OnInit {
         } else if (errorMessage.includes('Apenas orçamentos aprovados')) {
           errorMessage = 'Apenas orçamentos aprovados podem gerar locações. Aprove o orçamento primeiro.';
         }
-        
+
         alert(errorMessage);
       }
     });
@@ -2745,7 +3087,7 @@ export class OrcamentosComponent implements OnInit {
     const ws: XLSX.WorkSheet = XLSX.utils.aoa_to_sheet(data);
     const wb: XLSX.WorkBook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Orçamento');
-    
+
     XLSX.writeFile(wb, `orcamento_${this.selectedOrcamento.id}.xlsx`);
   }
 
@@ -2814,16 +3156,16 @@ export class OrcamentosComponent implements OnInit {
         unit: 'mm',
         format: 'a4'
       });
-      
+
       // Configurações de página
       const pageWidth = 210;
       const pageHeight = 297;
       const margin = 25;
       const contentWidth = pageWidth - (2 * margin);
-      
+
       // Posição inicial
       let yPosition = margin;
-      
+
       // Função para adicionar texto
       const addText = (text: string, x: number, y: number, fontSize: number = 12, isBold: boolean = false, align: string = 'left') => {
         pdf.setFontSize(fontSize);
@@ -2832,33 +3174,33 @@ export class OrcamentosComponent implements OnInit {
         } else {
           pdf.setFont('helvetica', 'normal');
         }
-        
+
         if (align === 'center') {
           pdf.text(text, x, y, { align: 'center' });
         } else {
           pdf.text(text, x, y);
         }
       };
-      
+
       // Função para adicionar linha
       const addLine = (x1: number, y1: number, x2: number, y2: number) => {
         pdf.line(x1, y1, x2, y2);
       };
-      
+
       // Função para adicionar logo
       const addLogo = async () => {
         try {
           const img = new Image();
           img.crossOrigin = 'anonymous';
           img.src = '/logo-r-loc.jpg';
-          
+
           return new Promise((resolve) => {
             img.onload = () => {
               const logoWidth = 30;
               const logoHeight = 30;
               const logoX = margin;
               const logoY = yPosition;
-              
+
               pdf.addImage(img, 'JPEG', logoX, logoY, logoWidth, logoHeight);
               resolve(true);
             };
@@ -2872,79 +3214,79 @@ export class OrcamentosComponent implements OnInit {
           return false;
         }
       };
-      
+
       // Adicionar logo
       await addLogo();
-      
+
       // Cabeçalho (após o logo)
       addText('Sistema de Locação de Equipamentos', pageWidth / 2, yPosition + 15, 16, true, 'center');
       yPosition += 25;
-      
+
       addText(`ORÇAMENTO #${this.selectedOrcamento.id}`, pageWidth / 2, yPosition, 14, true, 'center');
       yPosition += 8;
-      
+
       addText(`Data: ${new Date(this.selectedOrcamento.data_criacao).toLocaleDateString('pt-BR')}`, pageWidth / 2, yPosition, 10, false, 'center');
       yPosition += 20;
-      
+
       // Informações do orçamento
       addText('INFORMAÇÕES DO ORÇAMENTO', margin, yPosition, 12, true);
       yPosition += 8;
-      
+
       addLine(margin, yPosition, pageWidth - margin, yPosition);
       yPosition += 8;
-      
+
       // Cliente
       addText('Cliente:', margin, yPosition, 10, true);
       const clienteText = this.selectedOrcamento.cliente?.nome_razao_social || 'Cliente não encontrado';
       addText(clienteText, margin + 25, yPosition, 10);
       yPosition += 6;
-      
+
       // Datas
       addText('Data Início:', margin, yPosition, 10, true);
       addText(new Date(this.selectedOrcamento.data_inicio).toLocaleDateString('pt-BR'), margin + 25, yPosition, 10);
       yPosition += 6;
-      
+
       addText('Data Fim:', margin, yPosition, 10, true);
       addText(new Date(this.selectedOrcamento.data_fim).toLocaleDateString('pt-BR'), margin + 25, yPosition, 10);
       yPosition += 6;
-      
+
       // Status
       addText('Status:', margin, yPosition, 10, true);
       addText(this.selectedOrcamento.status.toUpperCase(), margin + 25, yPosition, 10);
       yPosition += 6;
-      
+
       // Observações (se houver)
       if (this.selectedOrcamento.observacoes) {
         addText('Observações:', margin, yPosition, 10, true);
         addText(this.selectedOrcamento.observacoes, margin + 25, yPosition, 10);
         yPosition += 6;
       }
-      
+
       yPosition += 12;
-      
+
       // Tabela de itens
       addText('ITENS DO ORÇAMENTO', margin, yPosition, 12, true);
       yPosition += 8;
-      
+
       addLine(margin, yPosition, pageWidth - margin, yPosition);
       yPosition += 6;
-      
+
       // Cabeçalho da tabela
       const colWidths = [50, 15, 15, 20, 25, 25];
       const colPositions = [margin];
       for (let i = 1; i < colWidths.length; i++) {
-        colPositions[i] = colPositions[i-1] + colWidths[i-1];
+        colPositions[i] = colPositions[i - 1] + colWidths[i - 1];
       }
-      
+
       const headers = ['Equipamento', 'Qtd', 'Dias', 'Tipo', 'Preço', 'Subtotal'];
       headers.forEach((header, index) => {
         addText(header, colPositions[index], yPosition, 8, true);
       });
       yPosition += 6;
-      
+
       addLine(margin, yPosition, pageWidth - margin, yPosition);
       yPosition += 6;
-      
+
       // Itens da tabela
       if (this.selectedOrcamento.itens && this.selectedOrcamento.itens.length > 0) {
         this.selectedOrcamento.itens.forEach(item => {
@@ -2953,7 +3295,7 @@ export class OrcamentosComponent implements OnInit {
             pdf.addPage();
             yPosition = margin;
           }
-          
+
           addText(this.getEquipamentoDescricao(item.equipamento_id), colPositions[0], yPosition, 8);
           addText(item.quantidade.toString(), colPositions[1], yPosition, 8);
           addText(item.dias.toString(), colPositions[2], yPosition, 8);
@@ -2963,41 +3305,41 @@ export class OrcamentosComponent implements OnInit {
           yPosition += 5;
         });
       }
-      
+
       yPosition += 8;
-      
+
       // Totais
       addLine(margin, yPosition, pageWidth - margin, yPosition);
       yPosition += 8;
-      
+
       const subtotal = this.getOrcamentoSubtotal(this.selectedOrcamento);
       addText('Subtotal:', pageWidth - margin - 50, yPosition, 10, true);
       addText(`R$ ${subtotal.toFixed(2)}`, pageWidth - margin - 10, yPosition, 10);
       yPosition += 6;
-      
+
       if (this.selectedOrcamento.desconto) {
         addText('Desconto:', pageWidth - margin - 50, yPosition, 10, true);
         addText(`R$ ${this.selectedOrcamento.desconto.toFixed(2)}`, pageWidth - margin - 10, yPosition, 10);
         yPosition += 6;
       }
-      
+
       if (this.selectedOrcamento.frete) {
         addText('Frete:', pageWidth - margin - 50, yPosition, 10, true);
         addText(`R$ ${this.selectedOrcamento.frete.toFixed(2)}`, pageWidth - margin - 10, yPosition, 10);
         yPosition += 6;
       }
-      
+
       addLine(margin, yPosition, pageWidth - margin, yPosition);
       yPosition += 8;
-      
+
       // Total final
       addText('TOTAL FINAL:', pageWidth - margin - 50, yPosition, 12, true);
       addText(`R$ ${this.selectedOrcamento.total_final.toFixed(2)}`, pageWidth - margin - 10, yPosition, 12, true);
-      
+
       // Salvar o PDF
       pdf.save(`orcamento_${this.selectedOrcamento.id}.pdf`);
       console.log('PDF gerado com sucesso usando jsPDF diretamente');
-      
+
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       alert('Erro ao gerar PDF. Tente novamente.');
@@ -3017,5 +3359,7 @@ export class OrcamentosComponent implements OnInit {
       observacoes: '',
       itens: []
     };
+    this.descontoPorcentagem = 0;
+    this.pendingDiscountPercentage = null;
   }
 } 
