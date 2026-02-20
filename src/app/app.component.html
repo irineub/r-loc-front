@@ -62,45 +62,86 @@
     <router-outlet></router-outlet>
   </main>
 
-  <!-- Modal de Configuração Uazapi -->
+  <!-- Modal de Configuração -->
   <div class="modal" [class.show]="showConfigModal" [style.display]="showConfigModal ? 'flex' : 'none'">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Configuração Uazapi</h5>
+          <h5 class="modal-title">⚙️ Configurações do Sistema</h5>
           <button type="button" class="close" (click)="closeConfigModal()">
             <span>&times;</span>
           </button>
         </div>
         <div class="modal-body">
-          <div *ngIf="isLoadingConfig" class="text-center">
-            <p>Carregando...</p>
+          <div *ngIf="isLoadingConfig" class="text-center" style="padding: 30px;">
+            <p>Carregando configurações...</p>
           </div>
           <form *ngIf="!isLoadingConfig">
-            <div class="form-group">
-              <label for="uazapiUrl">API URL</label>
-              <input type="text" class="form-control" id="uazapiUrl" [(ngModel)]="uazapiConfig.url" name="url"
-                placeholder="https://api.uazapi.com">
-            </div>
-            <div class="form-group">
-              <input type="text" class="form-control" id="uazapiToken" [(ngModel)]="uazapiConfig.token" name="token"
-                placeholder="Seu Token">
+
+            <!-- Seção WhatsApp -->
+            <div style="margin-bottom: 20px;">
+              <h6
+                style="font-weight: bold; color: #25d366; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                📱 WhatsApp (UazAPI)
+              </h6>
+              <div style="background: #f8f9fa; border-radius: 8px; padding: 12px; border: 1px solid #e9ecef;">
+
+                <!-- Status indicator -->
+                <div style="margin-bottom: 12px; font-size: 12px; color: #6c757d;">
+                  <span *ngIf="uazapiConfig.url && uazapiConfig.token">
+                    ✅ Credenciais configuradas
+                  </span>
+                  <span *ngIf="!uazapiConfig.url || !uazapiConfig.token" style="color: #dc3545;">
+                    ⚠️ Credenciais não configuradas
+                  </span>
+                </div>
+
+                <div class="form-group">
+                  <label for="uazapiUrl" style="font-size: 13px; font-weight: 600;">URL do Servidor</label>
+                  <input type="text" class="form-control" id="uazapiUrl" [(ngModel)]="uazapiConfig.url" name="url"
+                    placeholder="https://free.uazapi.com">
+                  <small class="form-text text-muted">Endereço base da API UazAPI</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="uazapiToken" style="font-size: 13px; font-weight: 600;">Token da Instância</label>
+                  <div style="position: relative;">
+                    <input [type]="showToken ? 'text' : 'password'" class="form-control" id="uazapiToken"
+                      [(ngModel)]="uazapiConfig.token" name="token" placeholder="Token UUID da instância WhatsApp"
+                      style="padding-right: 80px;">
+                    <button type="button" (click)="showToken = !showToken" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+                             background: none; border: none; cursor: pointer; color: #6c757d; font-size: 12px;">
+                      {{ showToken ? '🙈 Ocultar' : '👁️ Ver' }}
+                    </button>
+                  </div>
+                  <small class="form-text text-muted">Token UUID da instância (não o Admin Token)</small>
+                </div>
+              </div>
             </div>
 
-            <div class="form-group" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
-              <h6 style="font-weight: bold; margin-bottom: 15px;">Configuração de Fuso Horário</h6>
-              <label for="timezone">Fuso Horário do Sistema</label>
-              <select class="form-control" id="timezone" [(ngModel)]="timezone" name="timezone">
-                <option *ngFor="let tz of timezones" [value]="tz">{{ tz }}</option>
-              </select>
-              <small class="form-text text-muted">Isso afetará todas as datas geradas pelo sistema.</small>
+            <!-- Seção Fuso Horário -->
+            <div>
+              <h6
+                style="font-weight: bold; color: #0d6efd; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                🕐 Fuso Horário do Sistema
+              </h6>
+              <div style="background: #f8f9fa; border-radius: 8px; padding: 12px; border: 1px solid #e9ecef;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <select class="form-control" id="timezone" [(ngModel)]="timezone" name="timezone">
+                    <option *ngFor="let tz of timezones" [value]="tz">{{ tz }}</option>
+                  </select>
+                  <small class="form-text text-muted">Afeta datas em PDFs, contratos e recibos</small>
+                </div>
+              </div>
             </div>
+
           </form>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" (click)="closeConfigModal()">Cancelar</button>
-          <button type="button" class="btn btn-primary" (click)="saveConfig()"
-            [disabled]="isLoadingConfig">Salvar</button>
+          <button type="button" class="btn btn-primary" (click)="saveConfig()" [disabled]="isLoadingConfig">
+            {{ isLoadingConfig ? 'Salvando...' : '💾 Salvar' }}
+          </button>
         </div>
       </div>
     </div>

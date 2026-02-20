@@ -26,6 +26,7 @@ export class AppComponent implements OnInit, OnDestroy {
   showConfigModal = false;
   uazapiConfig = { url: '', token: '' };
   isLoadingConfig = false;
+  showToken = false;
 
   constructor(
     private authService: AuthService,
@@ -118,6 +119,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   closeConfigModal() {
     this.showConfigModal = false;
+    this.showToken = false;
   }
 
   saveConfig() {
