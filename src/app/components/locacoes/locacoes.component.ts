@@ -1222,7 +1222,14 @@ export class LocacoesComponent implements OnInit {
       ? this.printableService.generateReciboHTML(this.selectedLocacao)
       : this.printableService.generateContratoHTML(this.selectedLocacao);
 
-    const filename = `${type}_${this.selectedLocacao.id}_${new Date().toISOString().split('T')[0]}.pdf`;
+    // Formatar data como DD-MM-AAAA para nome amigável
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    const dataFormatada = `${dd}-${mm}-${yyyy}`;
+
+    const filename = `${type}-${dataFormatada}.pdf`;
     const caption = `${isRecibo ? 'Recibo' : 'Contrato'} da Locação #${this.selectedLocacao.id}`;
 
     // Limpar telefone (apenas números)

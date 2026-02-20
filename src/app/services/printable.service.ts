@@ -1020,14 +1020,15 @@ export class PrintableService {
 </body>
 </html>`;
 
-      // Abrir em nova janela
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(fullHtml);
-        printWindow.document.close();
-      } else {
+      // Abrir em nova aba usando Blob URL (evita interferência com o roteador Angular)
+      const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+      const blobUrl = URL.createObjectURL(blob);
+      const printWindow = window.open(blobUrl, '_blank');
+      if (!printWindow) {
         alert('Por favor, permita pop-ups para visualizar o documento.');
       }
+      // Liberar o objeto URL após um tempo
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
 
     } catch (error) {
       console.error('Erro ao abrir documento:', error);
