@@ -45,11 +45,7 @@ export const routes: Routes = [
     loadComponent: () => import('./components/funcionarios/funcionarios.component').then(m => m.FuncionariosComponent),
     canActivate: [AuthGuard, MasterGuard]
   },
-  {
-    path: 'logs',
-    loadComponent: () => import('./components/logs/logs.component').then(m => m.LogsComponent),
-    canActivate: [AuthGuard, MasterGuard]
-  },
+
   {
     path: 'relatorios',
     loadComponent: () => import('./components/relatorios/relatorios.component').then(m => m.RelatoriosComponent),
