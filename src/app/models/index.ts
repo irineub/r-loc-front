@@ -39,6 +39,8 @@ export interface ItemOrcamento {
   quantidade: number;
   preco_unitario: number;
   dias: number;
+  data_inicio?: string;
+  data_fim?: string;
   tipo_cobranca: 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
   subtotal: number;
   equipamento: Equipamento;
@@ -67,6 +69,8 @@ export interface ItemLocacao {
   quantidade_devolvida?: number;
   preco_unitario: number;
   dias: number;
+  data_inicio?: string;
+  data_fim?: string;
   subtotal: number;
   equipamento: Equipamento;
 }
@@ -123,6 +127,8 @@ export interface ItemOrcamentoCreate {
   quantidade: number;
   preco_unitario: number;
   dias: number;
+  data_inicio?: string;
+  data_fim?: string;
   tipo_cobranca: 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
   subtotal: number;
 }

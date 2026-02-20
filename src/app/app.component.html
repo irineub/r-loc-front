@@ -4,18 +4,19 @@
       <div class="logo-section">
         <img src="/logo-r-loc.jpg" alt="R-Loc Logo" class="logo">
       </div>
-      
+
       <!-- Menu hambúrguer (apenas mobile) -->
       <button class="menu-toggle" (click)="toggleMobileMenu()" [class.active]="isMobileMenuOpen">
         <span></span>
         <span></span>
         <span></span>
       </button>
-      
+
       <!-- Navegação principal -->
       <nav class="nav" [class.mobile-open]="isMobileMenuOpen">
         <div class="nav-content">
-          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeMobileMenu()">
+          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
+            (click)="closeMobileMenu()">
             Dashboard
           </a>
           <a routerLink="/clientes" routerLinkActive="active" (click)="closeMobileMenu()">
@@ -33,9 +34,16 @@
           <a *ngIf="isMasterUser()" routerLink="/funcionarios" routerLinkActive="active" (click)="closeMobileMenu()">
             Funcionários
           </a>
-          <a *ngIf="isMasterUser()" routerLink="/logs" routerLinkActive="active" (click)="closeMobileMenu()">
+          <!-- <a *ngIf="isMasterUser()" routerLink="/logs" routerLinkActive="active" (click)="closeMobileMenu()">
             Logs
+          </a> -->
+          <a *ngIf="isMasterUser()" routerLink="/relatorios" routerLinkActive="active" (click)="closeMobileMenu()">
+            Relatórios
           </a>
+          <a *ngIf="isMasterUser()" (click)="openConfigModal(); closeMobileMenu()" style="cursor: pointer;">
+            Config
+          </a>
+
           <div class="user-section">
             <span class="user-info">👤 {{ currentUser }}</span>
             <button class="btn btn-secondary btn-sm logout-btn" (click)="logout()">
@@ -44,7 +52,7 @@
           </div>
         </div>
       </nav>
-      
+
       <!-- Overlay separado para mobile -->
       <div class="nav-overlay" (click)="closeMobileMenu()" *ngIf="isMobileMenuOpen"></div>
     </div>
@@ -53,4 +61,48 @@
   <main class="main-content" [class.no-header]="!isAuthenticated">
     <router-outlet></router-outlet>
   </main>
+
+  <!-- Modal de Configuração Uazapi -->
+  <div class="modal" [class.show]="showConfigModal" [style.display]="showConfigModal ? 'flex' : 'none'">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Configuração Uazapi</h5>
+          <button type="button" class="close" (click)="closeConfigModal()">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="isLoadingConfig" class="text-center">
+            <p>Carregando...</p>
+          </div>
+          <form *ngIf="!isLoadingConfig">
+            <div class="form-group">
+              <label for="uazapiUrl">API URL</label>
+              <input type="text" class="form-control" id="uazapiUrl" [(ngModel)]="uazapiConfig.url" name="url"
+                placeholder="https://api.uazapi.com">
+            </div>
+            <div class="form-group">
+              <input type="text" class="form-control" id="uazapiToken" [(ngModel)]="uazapiConfig.token" name="token"
+                placeholder="Seu Token">
+            </div>
+
+            <div class="form-group" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+              <h6 style="font-weight: bold; margin-bottom: 15px;">Configuração de Fuso Horário</h6>
+              <label for="timezone">Fuso Horário do Sistema</label>
+              <select class="form-control" id="timezone" [(ngModel)]="timezone" name="timezone">
+                <option *ngFor="let tz of timezones" [value]="tz">{{ tz }}</option>
+              </select>
+              <small class="form-text text-muted">Isso afetará todas as datas geradas pelo sistema.</small>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeConfigModal()">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="saveConfig()"
+            [disabled]="isLoadingConfig">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

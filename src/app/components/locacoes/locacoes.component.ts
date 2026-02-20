@@ -9,6 +9,7 @@ import { NavigationService } from '../../services/navigation.service';
 import { Locacao, Equipamento } from '../../models/index';
 
 import { Router } from '@angular/router';
+import { WhatsappService } from '../../services/whatsapp.service';
 
 @Component({
   selector: 'app-locacoes',
@@ -184,6 +185,8 @@ import { Router } from '@angular/router';
                   <th>Equipamento</th>
                   <th>Quantidade</th>
                   <th>Dias</th>
+                  <th>Dt. Início</th>
+                  <th>Dt. Fim</th>
                   <th>Preço Unitário</th>
                   <th>Subtotal</th>
                 </tr>
@@ -193,6 +196,8 @@ import { Router } from '@angular/router';
                   <td>{{ getEquipamentoDescricao(item.equipamento_id) }}</td>
                   <td>{{ item.quantidade }}</td>
                   <td>{{ item.dias }}</td>
+                  <td>{{ item.data_inicio ? (item.data_inicio | date:'dd/MM/yyyy') : '-' }}</td>
+                  <td>{{ item.data_fim ? (item.data_fim | date:'dd/MM/yyyy') : '-' }}</td>
                   <td>{{ item.preco_unitario | currencyBr }}</td>
                   <td>{{ item.subtotal | currencyBr }}</td>
                 </tr>
@@ -213,6 +218,16 @@ import { Router } from '@angular/router';
             <div class="total-row final-total">
               <strong>Total Final:</strong> {{ selectedLocacao?.total_final | currencyBr }}
             </div>
+          </div>
+
+
+          <div class="whatsapp-buttons" style="margin-top: 10px; display: flex; gap: 10px; justify-content: flex-end; width: 100%;">
+            <button class="btn btn-success" (click)="sendReciboWhatsapp()">
+              <i class="fab fa-whatsapp"></i> WhatsApp Recibo
+            </button>
+            <button class="btn btn-success" (click)="sendContratoWhatsapp()">
+              <i class="fab fa-whatsapp"></i> WhatsApp Contrato
+            </button>
           </div>
         </div>
 
@@ -1001,12 +1016,13 @@ export class LocacoesComponent implements OnInit {
     private equipamentoService: EquipamentoService,
     private printableService: PrintableService,
     private navigationService: NavigationService,
+    private whatsappService: WhatsappService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.loadData();
-    
+
     // Verificar se deve abrir modal de locação
     this.navigationService.getNavigationState().subscribe(state => {
       if (state.shouldOpenLocacaoModal && state.locacaoId) {
@@ -1169,5 +1185,96 @@ export class LocacoesComponent implements OnInit {
 
   irParaRecebimento(locacaoId: number) {
     this.router.navigate([`/recebimento/${locacaoId}`]);
+  }
+
+  // Enviar Recibo via WhatsApp
+  sendReciboWhatsapp() {
+    this.sendDocumentWhatsapp('recibo');
+  }
+
+  // Enviar Contrato via WhatsApp
+  sendContratoWhatsapp() {
+    this.sendDocumentWhatsapp('contrato');
+  }
+
+  private sendDocumentWhatsapp(type: 'recibo' | 'contrato') {
+    if (!this.selectedLocacao) return;
+
+    const clientPhone = this.selectedLocacao.cliente?.telefone_celular || this.selectedLocacao.cliente?.telefone_comercial;
+    if (!clientPhone) {
+      alert('Cliente não possui telefone cadastrado.');
+      return;
+    }
+
+    if (!confirm(`Deseja enviar o ${type} via WhatsApp para ${this.selectedLocacao.cliente.nome_razao_social}?`)) {
+      return;
+    }
+
+    // Feedback de carregamento
+    const originalText = document.activeElement?.textContent;
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.textContent = 'Enviando...';
+      document.activeElement.setAttribute('disabled', 'true');
+    }
+
+    const isRecibo = type === 'recibo';
+    const html = isRecibo
+      ? this.printableService.generateReciboHTML(this.selectedLocacao)
+      : this.printableService.generateContratoHTML(this.selectedLocacao);
+
+    const filename = `${type}_${this.selectedLocacao.id}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const caption = `${isRecibo ? 'Recibo' : 'Contrato'} da Locação #${this.selectedLocacao.id}`;
+
+    // Limpar telefone (apenas números)
+    let phone = clientPhone.replace(/\D/g, '');
+    // Adicionar 55 se não tiver (assumindo BR)
+    if (phone.length <= 11) {
+      phone = '55' + phone;
+    }
+
+    this.printableService.generatePdfBlob(html).subscribe({
+      next: (blob) => {
+        this.printableService.uploadPDF(blob, filename).subscribe({
+          next: (response) => {
+            console.log('PDF Uploaded:', response.url);
+            // O response.url pode ser relativo ou absoluto. O serviço de whatsapp espera url.
+            // Se for upload local, o backend retorna algo como "uploads/filename.pdf"
+            // Precisamos garantir que seja uma URL completa ou que o backend trate.
+            // Assumindo que o backend retorna o caminho relativo e o serviço do whats precisa de URL pública ou o backend do whats resolve.
+            // Mas o whats service é placeholder? Não, o usuário disse que "config do uazapi" está sendo usada.
+            // Vamos passar response.url.
+
+            this.whatsappService.sendPdf(phone, response.url, filename, caption).subscribe({
+              next: (res) => {
+                alert(`${type === 'recibo' ? 'Recibo' : 'Contrato'} enviado com sucesso!`);
+                this.restoreButtonState(originalText);
+              },
+              error: (err) => {
+                console.error('Erro ao enviar WhatsApp:', err);
+                alert('Erro ao enviar mensagem no WhatsApp. Verifique o console.');
+                this.restoreButtonState(originalText);
+              }
+            });
+          },
+          error: (err) => {
+            console.error('Erro no upload:', err);
+            alert('Erro ao fazer upload do arquivo PDF.');
+            this.restoreButtonState(originalText);
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Erro ao gerar PDF:', err);
+        alert('Erro ao gerar o PDF no backend.');
+        this.restoreButtonState(originalText);
+      }
+    });
+  }
+
+  private restoreButtonState(originalText: string | null | undefined) {
+    if (document.activeElement instanceof HTMLElement) {
+      if (originalText) document.activeElement.textContent = originalText;
+      document.activeElement.removeAttribute('disabled');
+    }
   }
 } 

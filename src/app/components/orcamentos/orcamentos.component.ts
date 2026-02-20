@@ -190,12 +190,24 @@ import { take } from 'rxjs/operators';
                            class="form-control" placeholder="1">
                   </div>
                   <div class="form-group">
+                    <label for="itemDataInicio">Data Início do Item</label>
+                    <input type="date" id="itemDataInicio" name="itemDataInicio" 
+                           [(ngModel)]="newItemDataInicio" 
+                           (ngModelChange)="onNewItemDataInicioChange()"
+                           class="form-control"
+                           [min]="formData.data_inicio"
+                           [max]="formData.data_fim"
+                           [disabled]="!formData.data_inicio">
+                  </div>
+                  <div class="form-group">
                     <label for="itemDataFim">Data Final do Item</label>
                     <input type="date" id="itemDataFim" name="itemDataFim"
                            [(ngModel)]="newItemDataFim"
                            (ngModelChange)="onNewItemDataFimChange()"
                            class="form-control"
-                           [disabled]="!formData.data_inicio">
+                           [min]="newItemDataInicio"
+                           [max]="formData.data_fim"
+                           [disabled]="!newItemDataInicio">
                   </div>
                   <div class="form-group">
                     <label for="tipo_cobranca">Tipo de Cobrança *</label>
@@ -1927,6 +1939,9 @@ export class OrcamentosComponent implements OnInit {
         // Apenas atualizar o newItem se ele ainda não foi adicionado
         this.newItem.dias = diffDays;
         this.newItem.tipo_cobranca = tipoCobranca as 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
+
+        // Inicializar datas do item com as do orçamento
+        this.newItemDataInicio = this.formData.data_inicio;
         this.updateNewItemDataFim();
 
         this.recalculateTotalWithDiscount();
@@ -2130,7 +2145,11 @@ export class OrcamentosComponent implements OnInit {
     );
 
     console.log('Adding item to formData:', this.newItem);
-    this.formData.itens.push({ ...this.newItem });
+    this.formData.itens.push({
+      ...this.newItem,
+      data_inicio: this.newItemDataInicio,
+      data_fim: this.newItemDataFim
+    });
 
     // Atualizar data final do orçamento com base nos itens
     this.updateOrcamentoEndDate();
@@ -2147,6 +2166,8 @@ export class OrcamentosComponent implements OnInit {
       tipo_cobranca: this.periodoCalculado ? (this.periodoCalculado.tipoCobranca as 'diaria' | 'semanal' | 'quinzenal' | 'mensal') : 'diaria',
       subtotal: 0
     };
+    // Reiniciar data de início para a global
+    this.newItemDataInicio = this.formData.data_inicio;
     this.updateNewItemDataFim();
     console.log('Item added successfully');
   }
@@ -2158,11 +2179,16 @@ export class OrcamentosComponent implements OnInit {
   }
 
   newItemDataFim: string = '';
+  newItemDataInicio: string = '';
 
   updateNewItemDataFim() {
-    if (this.formData.data_inicio && this.newItem.dias) {
+    if (this.formData.data_inicio && !this.newItemDataInicio) {
+      this.newItemDataInicio = this.formData.data_inicio;
+    }
+
+    if (this.newItemDataInicio && this.newItem.dias) {
       // 1. Calcular Data Fim baseada nos dias
-      const parts = this.formData.data_inicio.split('-');
+      const parts = this.newItemDataInicio.split('-');
       const dtInicio = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
 
       const dtFim = new Date(dtInicio);
@@ -2202,9 +2228,14 @@ export class OrcamentosComponent implements OnInit {
     }
   }
 
+  onNewItemDataInicioChange() {
+    // Quando muda a data de início, mantemos os dias e recalculamos o fim
+    this.updateNewItemDataFim();
+  }
+
   onNewItemDataFimChange() {
-    if (this.formData.data_inicio && this.newItemDataFim) {
-      const partsStart = this.formData.data_inicio.split('-');
+    if (this.newItemDataInicio && this.newItemDataFim) {
+      const partsStart = this.newItemDataInicio.split('-');
       const dtInicio = new Date(Number(partsStart[0]), Number(partsStart[1]) - 1, Number(partsStart[2]));
 
       const partsEnd = this.newItemDataFim.split('-');
@@ -2215,8 +2246,30 @@ export class OrcamentosComponent implements OnInit {
 
       if (diffDays > 0) {
         this.newItem.dias = diffDays;
-        // Reutilizar a lógica centralizada (que vai recalcular data fim string, mas ok, importante é o resto)
-        this.updateNewItemDataFim();
+        // Atualizar tipo de cobrança e subtotal
+        const diffDaysForType = diffDays;
+        if (diffDaysForType >= 30) {
+          this.newItem.tipo_cobranca = 'mensal';
+        } else if (diffDaysForType >= 15) {
+          this.newItem.tipo_cobranca = 'quinzenal';
+        } else if (diffDaysForType >= 7) {
+          this.newItem.tipo_cobranca = 'semanal';
+        } else {
+          this.newItem.tipo_cobranca = 'diaria';
+        }
+
+        if (this.newItem.equipamento_id) {
+          const equipamento = this.equipamentos.find(e => e.id === Number(this.newItem.equipamento_id));
+          if (equipamento) {
+            this.newItem.preco_unitario = this.getPrecoPorTipoCobranca(equipamento, this.newItem.tipo_cobranca);
+            this.newItem.subtotal = this.calcularSubtotalPorTipoCobranca(
+              this.newItem.quantidade,
+              equipamento,
+              this.newItem.dias,
+              this.newItem.tipo_cobranca
+            );
+          }
+        }
       }
     }
   }

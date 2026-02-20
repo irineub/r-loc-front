@@ -5,49 +5,54 @@ import { MasterGuard } from './guards/master.guard';
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', loadComponent: () => import('./components/login/login.component').then(m => m.LoginComponent) },
-  { 
-    path: 'dashboard', 
+  {
+    path: 'dashboard',
     loadComponent: () => import('./components/dashboard/dashboard.component').then(m => m.DashboardComponent),
     canActivate: [AuthGuard]
   },
-  { 
-    path: 'clientes', 
+  {
+    path: 'clientes',
     loadComponent: () => import('./components/clientes/clientes.component').then(m => m.ClientesComponent),
     canActivate: [AuthGuard]
   },
-  { 
-    path: 'clientes/:id', 
+  {
+    path: 'clientes/:id',
     loadComponent: () => import('./components/clientes/cliente-detalhes.component').then(m => m.ClienteDetalhesComponent),
     canActivate: [AuthGuard]
   },
-  { 
-    path: 'equipamentos', 
+  {
+    path: 'equipamentos',
     loadComponent: () => import('./components/equipamentos/equipamentos.component').then(m => m.EquipamentosComponent),
     canActivate: [AuthGuard]
   },
-  { 
-    path: 'orcamentos', 
+  {
+    path: 'orcamentos',
     loadComponent: () => import('./components/orcamentos/orcamentos.component').then(m => m.OrcamentosComponent),
     canActivate: [AuthGuard]
   },
-  { 
-    path: 'locacoes', 
+  {
+    path: 'locacoes',
     loadComponent: () => import('./components/locacoes/locacoes.component').then(m => m.LocacoesComponent),
     canActivate: [AuthGuard]
   },
-  { 
-    path: 'recebimento/:id', 
+  {
+    path: 'recebimento/:id',
     loadComponent: () => import('./components/recebimento/recebimento.component').then(m => m.RecebimentoComponent),
     canActivate: [AuthGuard]
   },
-  { 
-    path: 'funcionarios', 
+  {
+    path: 'funcionarios',
     loadComponent: () => import('./components/funcionarios/funcionarios.component').then(m => m.FuncionariosComponent),
     canActivate: [AuthGuard, MasterGuard]
   },
-  { 
-    path: 'logs', 
+  {
+    path: 'logs',
     loadComponent: () => import('./components/logs/logs.component').then(m => m.LogsComponent),
+    canActivate: [AuthGuard, MasterGuard]
+  },
+  {
+    path: 'relatorios',
+    loadComponent: () => import('./components/relatorios/relatorios.component').then(m => m.RelatoriosComponent),
     canActivate: [AuthGuard, MasterGuard]
   },
   { path: '**', redirectTo: '/login' }

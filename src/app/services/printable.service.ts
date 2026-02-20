@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Orcamento, Locacao, Equipamento } from '../models/index';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { Observable } from 'rxjs';
+import { ApiService } from './api.service';
+import { WhatsappService } from './whatsapp.service';
 
 @Injectable({
   providedIn: 'root'
@@ -9,8 +10,21 @@ import html2canvas from 'html2canvas';
 export class PrintableService {
 
   private equipamentos: Equipamento[] = [];
+  private timezone = 'America/Manaus';
 
-  constructor() { }
+  constructor(
+    private apiService: ApiService,
+    private whatsappService: WhatsappService
+  ) {
+    this.whatsappService.getTimezoneConfig().subscribe({
+      next: (config) => {
+        if (config && config.timezone) {
+          this.timezone = config.timezone;
+        }
+      },
+      error: () => console.log('Usando timezone padrão: America/Manaus')
+    });
+  }
 
   private formatCurrency(value: number): string {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -19,6 +33,35 @@ export class PrintableService {
   // Método para definir os equipamentos disponíveis
   setEquipamentos(equipamentos: Equipamento[]) {
     this.equipamentos = equipamentos;
+  }
+
+  // Helper para formatar data de contrato (usa string YYYY-MM-DD para evitar shift de timezone)
+  private formatDateForContract(dateStr: string): string {
+    if (!dateStr) return '-';
+    const datePart = dateStr.split('T')[0];
+    const parts = datePart.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return datePart;
+  }
+
+  // Helper para formatar data de criação/sistema (usa timezone configurado)
+  private formatSystemDate(dateStr: string): string {
+    if (!dateStr) return '-';
+    // Se a string vier sem offset (naive) e assumimos que é UTC, adicionar Z?
+    // Pydantic envia ISO com offset se for aware.
+    return new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: this.timezone });
+  }
+
+  // Helper para data atual por extenso
+  private getCurrentDateExtenso(): string {
+    return new Date().toLocaleDateString('pt-BR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: this.timezone
+    });
   }
 
   // Dados da empresa (configuráveis)
@@ -31,31 +74,30 @@ export class PrintableService {
 
   // Gerar HTML do orçamento usando o template personalizado
   generateOrcamentoHTML(orcamento: Orcamento): string {
-    const dataInicio = new Date(orcamento.data_inicio).toLocaleDateString('pt-BR');
-    const dataFim = new Date(orcamento.data_fim).toLocaleDateString('pt-BR');
-    const dataCriacao = new Date(orcamento.data_criacao).toLocaleDateString('pt-BR');
-    const dataAtual = new Date().toLocaleDateString('pt-BR', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
-    });
+    const dataInicio = this.formatDateForContract(orcamento.data_inicio);
+    const dataFim = this.formatDateForContract(orcamento.data_fim);
+    const dataCriacao = this.formatSystemDate(orcamento.data_criacao);
+    const dataAtual = this.getCurrentDateExtenso();
 
     // Obter informações do documento do cliente
     const documentoCliente = this.getDocumentoInfo(orcamento.cliente?.cnpj || orcamento.cliente?.cpf);
     const documentoFormatado = documentoCliente.documento.replace(/\D/g, '');
 
     // Gerar linhas da tabela de itens com formatação otimizada para impressão
-    const itensHTML = orcamento.itens?.map(item => `
+    const itensHTML = orcamento.itens?.map(item => {
+      const itemDataInicio = item.data_inicio ? this.formatDateForContract(item.data_inicio) : dataInicio;
+      const itemDataFim = item.data_fim ? this.formatDateForContract(item.data_fim) : dataFim;
+      return `
       <tr>
         <td style="text-align: left; vertical-align: middle;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
         <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.preco_unitario)}</td>
         <td style="text-align: center; vertical-align: middle;">${item.quantidade}</td>
-        <td style="text-align: center; vertical-align: middle;">${dataInicio}</td>
-        <td style="text-align: center; vertical-align: middle;">${dataFim}</td>
+        <td style="text-align: center; vertical-align: middle;">${itemDataInicio}</td>
+        <td style="text-align: center; vertical-align: middle;">${itemDataFim}</td>
         <td style="text-align: center; vertical-align: middle;">${item.dias}</td>
         <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.subtotal)}</td>
       </tr>
-    `).join('') || '';
+    `}).join('') || '';
 
     const subtotal = orcamento.itens?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
     const descontoValor = this.formatCurrency(orcamento.desconto || 0);
@@ -308,31 +350,30 @@ export class PrintableService {
 
   // Gerar HTML do contrato usando o template personalizado
   generateContratoHTML(locacao: Locacao): string {
-    const dataInicio = new Date(locacao.data_inicio).toLocaleDateString('pt-BR');
-    const dataFim = new Date(locacao.data_fim).toLocaleDateString('pt-BR');
-    const dataCriacao = new Date(locacao.data_criacao).toLocaleDateString('pt-BR');
-    const dataAtual = new Date().toLocaleDateString('pt-BR', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
-    });
+    const dataInicio = this.formatDateForContract(locacao.data_inicio);
+    const dataFim = this.formatDateForContract(locacao.data_fim);
+    const dataCriacao = this.formatSystemDate(locacao.data_criacao);
+    const dataAtual = this.getCurrentDateExtenso();
 
     // Obter informações do documento do cliente
     const documentoCliente = this.getDocumentoInfo(locacao.cliente?.cnpj || locacao.cliente?.cpf);
 
     // Gerar linhas da tabela de itens com formatação melhorada
-    const itensHTML = locacao.itens?.map(item => `
+    const itensHTML = locacao.itens?.map(item => {
+      const itemDataInicio = item.data_inicio ? this.formatDateForContract(item.data_inicio) : dataInicio;
+      const itemDataFim = item.data_fim ? this.formatDateForContract(item.data_fim) : dataFim;
+      return `
       <tr>
         <td style="text-align: left; vertical-align: middle;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
         <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.preco_unitario)}</td>
         <td style="text-align: center; vertical-align: middle;">${item.quantidade}</td>
-        <td style="text-align: center; vertical-align: middle;">${dataInicio}</td>
+        <td style="text-align: center; vertical-align: middle;">${itemDataInicio}</td>
         <td style="text-align: center; vertical-align: middle; white-space: nowrap;">
-          <div style="display: block; line-height: 1.3;">${dataFim}</div>
+          <div style="display: block; line-height: 1.3;">${itemDataFim}</div>
         </td>
         <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.subtotal)}</td>
       </tr>
-    `).join('') || '';
+    `}).join('') || '';
 
     // Calcular subtotal, desconto e frete do orçamento
     const subtotal = locacao.itens?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
@@ -667,32 +708,31 @@ export class PrintableService {
 
   // Gerar HTML do recibo usando o template personalizado
   generateReciboHTML(locacao: Locacao): string {
-    const dataInicio = new Date(locacao.data_inicio).toLocaleDateString('pt-BR');
-    const dataFim = new Date(locacao.data_fim).toLocaleDateString('pt-BR');
-    const dataCriacao = new Date(locacao.data_criacao).toLocaleDateString('pt-BR');
-    const dataAtual = new Date().toLocaleDateString('pt-BR', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
-    });
+    const dataInicio = this.formatDateForContract(locacao.data_inicio);
+    const dataFim = this.formatDateForContract(locacao.data_fim);
+    const dataCriacao = this.formatSystemDate(locacao.data_criacao);
+    const dataAtual = this.getCurrentDateExtenso();
 
     // Obter informações do documento do cliente
     const documentoCliente = this.getDocumentoInfo(locacao.cliente?.cnpj || locacao.cliente?.cpf);
 
     // Gerar linhas da tabela de itens com formatação melhorada
-    const itensHTML = locacao.itens?.map(item => `
+    const itensHTML = locacao.itens?.map(item => {
+      const itemDataInicio = item.data_inicio ? this.formatDateForContract(item.data_inicio) : dataInicio;
+      const itemDataFim = item.data_fim ? this.formatDateForContract(item.data_fim) : dataFim;
+      return `
       <tr>
         <td style="text-align: left; vertical-align: middle;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
         <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.preco_unitario)}</td>
         <td style="text-align: center; vertical-align: middle;">${item.quantidade}</td>
-        <td style="text-align: center; vertical-align: middle;">${dataInicio}</td>
+        <td style="text-align: center; vertical-align: middle;">${itemDataInicio}</td>
         <td style="text-align: center; vertical-align: middle; white-space: nowrap;">
-          <div style="display: block; line-height: 1.3;">${dataFim}</div>
+          <div style="display: block; line-height: 1.3;">${itemDataFim}</div>
           <div style="display: block; font-size: 8pt; color: #666; margin-top: 1px;">${item.dias} dia${item.dias !== 1 ? 's' : ''}</div>
         </td>
         <td style="text-align: right; vertical-align: middle;">${this.formatCurrency(item.subtotal)}</td>
       </tr>
-    `).join('') || '';
+    `}).join('') || '';
 
     // Calcular subtotal, desconto e frete do orçamento
     const subtotal = locacao.itens?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
@@ -893,10 +933,10 @@ export class PrintableService {
     if (!documento) {
       return { tipo: 'Documento', documento: 'não informado' };
     }
-    
+
     // Remove caracteres não numéricos
     const numeros = documento.replace(/\D/g, '');
-    
+
     if (numeros.length === 11) {
       return { tipo: 'CPF', documento: documento };
     } else if (numeros.length === 14) {
@@ -988,7 +1028,7 @@ export class PrintableService {
       } else {
         alert('Por favor, permita pop-ups para visualizar o documento.');
       }
-      
+
     } catch (error) {
       console.error('Erro ao abrir documento:', error);
       alert('Erro ao abrir documento. Tente novamente.');
@@ -1010,5 +1050,19 @@ export class PrintableService {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     }
+  }
+
+  // Gera um Blob do PDF a partir do HTML usando o backend (WeasyPrint)
+  generatePdfBlob(html: string): Observable<Blob> {
+    // Envia o HTML para o backend gerar o PDF
+    const endpoint = '/pdf/generate';
+    return this.apiService.postHtmlReturnBlob(endpoint, html);
+  }
+
+  // Upload do PDF para o backend
+  uploadPDF(blob: Blob, filename: string): Observable<{ url: string }> {
+    const formData = new FormData();
+    formData.append('file', blob, filename);
+    return this.apiService.postFile<{ url: string }>('/upload', formData);
   }
 }

@@ -4,11 +4,13 @@ import { RouterModule } from '@angular/router';
 import { AuthService } from './services/auth.service';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
+import { WhatsappService } from './services/whatsapp.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
@@ -20,16 +22,22 @@ export class AppComponent implements OnInit, OnDestroy {
   private userSubscription?: Subscription;
   private sessionCheckInterval?: any;
 
+  // Configuração Uazapi
+  showConfigModal = false;
+  uazapiConfig = { url: '', token: '' };
+  isLoadingConfig = false;
+
   constructor(
     private authService: AuthService,
-    private router: Router
-  ) {}
+    private router: Router,
+    private whatsappService: WhatsappService
+  ) { }
 
   ngOnInit() {
     this.authSubscription = this.authService.isAuthenticated$.subscribe(
       isAuth => this.isAuthenticated = isAuth
     );
-    
+
     this.userSubscription = this.authService.currentUser$.subscribe(
       user => this.currentUser = user
     );
@@ -82,5 +90,54 @@ export class AppComponent implements OnInit, OnDestroy {
 
   isMasterUser(): boolean {
     return this.authService.isMasterUser();
+  }
+
+  timezone = 'America/Manaus';
+  timezones = ['America/Manaus', 'America/Sao_Paulo', 'America/Fortaleza', 'America/Rio_Branco', 'America/Belem', 'UTC'];
+
+  openConfigModal() {
+    this.isLoadingConfig = true;
+    this.showConfigModal = true;
+    import('rxjs').then(({ forkJoin }) => {
+      forkJoin({
+        uazapi: this.whatsappService.getCredentials(),
+        timezone: this.whatsappService.getTimezoneConfig()
+      }).subscribe({
+        next: (results) => {
+          this.uazapiConfig = results.uazapi;
+          this.timezone = results.timezone.timezone;
+          this.isLoadingConfig = false;
+        },
+        error: (err) => {
+          console.error('Erro ao carregar configurações', err);
+          this.isLoadingConfig = false;
+        }
+      });
+    });
+  }
+
+  closeConfigModal() {
+    this.showConfigModal = false;
+  }
+
+  saveConfig() {
+    this.isLoadingConfig = true;
+    import('rxjs').then(({ forkJoin }) => {
+      forkJoin([
+        this.whatsappService.updateCredentials(this.uazapiConfig.url, this.uazapiConfig.token),
+        this.whatsappService.updateTimezoneConfig(this.timezone)
+      ]).subscribe({
+        next: () => {
+          alert('Configurações salvas com sucesso!');
+          this.isLoadingConfig = false;
+          this.closeConfigModal();
+        },
+        error: (err) => {
+          console.error('Erro ao salvar configurações', err);
+          alert('Erro ao salvar configurações.');
+          this.isLoadingConfig = false;
+        }
+      });
+    });
   }
 }

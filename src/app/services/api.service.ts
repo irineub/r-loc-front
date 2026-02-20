@@ -10,7 +10,7 @@ import { environment } from '../../environments/environment';
 export class ApiService {
   private baseUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) { 
+  constructor(private http: HttpClient) {
     console.log('API Service initialized with baseUrl:', this.baseUrl);
   }
 
@@ -98,6 +98,27 @@ export class ApiService {
     );
   }
 
+  postFile<T>(endpoint: string, formData: FormData): Observable<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    console.log('POST File request:', url);
+    // Angular HttpClient automatically sets the Content-Type to multipart/form-data with the correct boundary
+    // when we pass a FormData object. We still include our custom headers for auth.
+    return this.http.post<T>(url, formData, { headers: this.getHeaders() }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  postHtmlReturnBlob(endpoint: string, html: string): Observable<Blob> {
+    const url = `${this.baseUrl}${endpoint}`;
+    console.log('POST HTML for Blob request:', url);
+    return this.http.post(url, { html }, {
+      headers: this.getHeaders(),
+      responseType: 'blob'
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   private handleError = (error: HttpErrorResponse) => {
     console.error('API Error:', error);
     console.error('Error status:', error.status);
@@ -106,9 +127,9 @@ export class ApiService {
     console.error('Error headers:', error.headers);
     console.error('Error body:', error.error);
     console.error('Current baseUrl:', this.baseUrl);
-    
+
     let errorMessage = 'An error occurred';
-    
+
     // Tratar erros de parsing JSON
     if (error.message && error.message.includes('Http failure during parsing')) {
       if (error.status === 200) {

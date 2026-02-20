@@ -19,7 +19,7 @@ export interface LogAuditoria {
 export class LogService {
   constructor(private apiService: ApiService) { }
 
-  getLogs(funcionario_id?: number, entidade?: string): Observable<LogAuditoria[]> {
+  getLogs(funcionario_id?: number, entidade?: string, startDate?: string, endDate?: string): Observable<LogAuditoria[]> {
     const queryParams: string[] = [];
     if (funcionario_id !== undefined && funcionario_id !== null) {
       queryParams.push(`funcionario_id=${funcionario_id}`);
@@ -27,12 +27,18 @@ export class LogService {
     if (entidade && entidade !== null && entidade !== '') {
       queryParams.push(`entidade=${entidade}`);
     }
-    
+    if (startDate) {
+      queryParams.push(`start_date=${startDate}`);
+    }
+    if (endDate) {
+      queryParams.push(`end_date=${endDate}`);
+    }
+
     let endpoint = '/logs';
     if (queryParams.length > 0) {
       endpoint += '?' + queryParams.join('&');
     }
-    
+
     return this.apiService.get<LogAuditoria>(endpoint);
   }
 

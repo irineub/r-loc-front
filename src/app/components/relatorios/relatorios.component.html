@@ -1,0 +1,89 @@
+<div class="relatorios-container">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Relatórios de Atividades</h2>
+
+            <div class="period-selector">
+                <button class="btn btn-sm" [class.active]="selectedPeriod === 'today'"
+                    (click)="setPeriod('today')">Hoje</button>
+                <button class="btn btn-sm" [class.active]="selectedPeriod === 'week'" (click)="setPeriod('week')">Esta
+                    Semana</button>
+                <button class="btn btn-sm" [class.active]="selectedPeriod === 'month'" (click)="setPeriod('month')">Este
+                    Mês</button>
+                <button class="btn btn-sm" [class.active]="selectedPeriod === 'custom'"
+                    (click)="setPeriod('custom')">Personalizado</button>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-success" (click)="exportToXLSX()" [disabled]="logs.length === 0">
+                    <i class="fas fa-file-excel"></i> Exportar XLSX
+                </button>
+                <button class="btn btn-info" (click)="exportToCSV()" [disabled]="logs.length === 0">
+                    <i class="fas fa-file-csv"></i> Exportar CSV
+                </button>
+            </div>
+        </div>
+
+        <div class="filters-section">
+            <div class="filter-group">
+                <label>Funcionário:</label>
+                <select [(ngModel)]="selectedFuncionario" (change)="onFilterChange()" class="form-control">
+                    <option [ngValue]="null">Todos</option>
+                    <option *ngFor="let func of funcionarios" [ngValue]="func.id">{{ func.nome }}</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Entidade:</label>
+                <select [(ngModel)]="selectedEntidade" (change)="onFilterChange()" class="form-control">
+                    <option [ngValue]="null">Todas</option>
+                    <option value="orcamento">Orçamento</option>
+                    <option value="locacao">Locação</option>
+                    <option value="cliente">Cliente</option>
+                    <option value="equipamento">Equipamento</option>
+                </select>
+            </div>
+
+            <div class="filter-group period-inputs" *ngIf="selectedPeriod === 'custom'">
+                <label>De:</label>
+                <input type="date" [(ngModel)]="startDate" (change)="onFilterChange()" class="form-control">
+                <label>Até:</label>
+                <input type="date" [(ngModel)]="endDate" (change)="onFilterChange()" class="form-control">
+            </div>
+        </div>
+
+        <div class="table-section">
+            <div *ngIf="isLoading" class="loading">Carregando dados...</div>
+
+            <table class="table" *ngIf="!isLoading">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Funcionário</th>
+                        <th>Ação</th>
+                        <th>Entidade</th>
+                        <th>ID</th>
+                        <th>Detalhes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let log of logs">
+                        <td>{{ formatDateTime(log.data_hora) }}</td>
+                        <td>
+                            <span class="badge badge-info">{{ log.funcionario_username || 'rloc' }}</span>
+                        </td>
+                        <td>{{ log.acao }}</td>
+                        <td>
+                            <span class="badge badge-secondary">{{ log.entidade }}</span>
+                        </td>
+                        <td>{{ log.entidade_id || '-' }}</td>
+                        <td>{{ log.detalhes || '-' }}</td>
+                    </tr>
+                    <tr *ngIf="logs.length === 0">
+                        <td colspan="6" class="text-center">Nenhum registro encontrado no período selecionado.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
