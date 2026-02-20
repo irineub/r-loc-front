@@ -68,9 +68,11 @@ export class WhatsappService {
     }
 
     sendMessage(phone: string, message: string): Observable<any> {
+        // UazAPI: campo 'text' (não 'message') e type: 'conversation'
         const body = {
             number: phone,
-            message: message
+            text: message,
+            type: 'conversation'
         };
 
         const headers: { [key: string]: string } = {
