@@ -48,25 +48,20 @@ export class WhatsappService {
     }
 
     sendPdf(phone: string, pdfUrl: string, filename: string, caption: string): Observable<any> {
-        // UazAPI endpoint correto: /send/media (não /message/send-media)
-        // Payload: number, url, type, filename, caption
+        // UazAPI: header 'token' (não 'Authorization: Bearer')
+        //         campo 'file' (não 'url') com a URL pública do PDF
         const body = {
             number: phone,
-            url: pdfUrl,
-            type: 'document',        // UazAPI usa 'type', não 'mediatype'
+            file: pdfUrl,        // UazAPI usa 'file', não 'url'
+            type: 'document',
             filename: filename,
             caption: caption
         };
 
         const headers: { [key: string]: string } = {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'token': this.apiToken   // UazAPI: header 'token', sem 'Bearer'
         };
-
-        // UazAPI aceita token no header 'Authorization' sem 'Bearer' prefix
-        // ou como 'token' dependendo da instância. Testar as duas formas.
-        if (this.apiToken) {
-            headers['Authorization'] = this.apiToken; // sem Bearer
-        }
 
         console.log('Sending PDF via WhatsApp:', { url: `${this.apiUrl}/send/media`, body });
         return this.http.post(`${this.apiUrl}/send/media`, body, { headers });
@@ -79,12 +74,9 @@ export class WhatsappService {
         };
 
         const headers: { [key: string]: string } = {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'token': this.apiToken
         };
-
-        if (this.apiToken) {
-            headers['Authorization'] = this.apiToken;
-        }
 
         return this.http.post(`${this.apiUrl}/send/text`, body, { headers });
     }
