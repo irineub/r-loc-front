@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Orcamento, Locacao, Equipamento } from '../models/index';
-import { Observable } from 'rxjs';
+import { Observable, from } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { WhatsappService } from './whatsapp.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -11,6 +13,7 @@ export class PrintableService {
 
   private equipamentos: Equipamento[] = [];
   private timezone = 'America/Manaus';
+  private logoDataUrl: string | null = null;
 
   constructor(
     private apiService: ApiService,
@@ -24,7 +27,33 @@ export class PrintableService {
       },
       error: () => console.log('Usando timezone padrão: America/Manaus')
     });
+    // Pre-load logo as data URL so it always works in blob:// pages
+    this.preloadLogo();
   }
+
+  /** Fetches the logo and caches it as a base64 data URL */
+  private preloadLogo(): void {
+    const logoUrl = `${window.location.origin}/logo-r-loc.jpg`;
+    fetch(logoUrl)
+      .then(r => r.blob())
+      .then(blob => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      }))
+      .then(dataUrl => { this.logoDataUrl = dataUrl; })
+      .catch(() => console.warn('Logo não pôde ser pré-carregada'));
+  }
+
+  /** Replaces all /logo-r-loc.jpg references with an embedded data URL */
+  private injectLogo(html: string): string {
+    if (!this.logoDataUrl) return html;
+    return html
+      .replace(/src="\/logo-r-loc\.jpg"/g, `src="${this.logoDataUrl}"`)
+      .replace(/src='\/logo-r-loc\.jpg'/g, `src='${this.logoDataUrl}'`);
+  }
+
 
   private formatCurrency(value: number): string {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -949,6 +978,8 @@ export class PrintableService {
   // Exportar HTML para nova janela com botão de impressão
   exportToPDF(html: string, filename: string): void {
     try {
+      // Injetar logo como data URL (funciona em blob://, PDF, etc)
+      const htmlComLogo = this.injectLogo(html);
       // Criar HTML completo com botão de impressão e CSS otimizado
       const fullHtml = `
 <!DOCTYPE html>
@@ -1015,7 +1046,7 @@ export class PrintableService {
 <body>
   <button class="print-button" onclick="window.print()">🖨️ Imprimir</button>
   <div class="document-container">
-    ${html}
+    ${htmlComLogo}
   </div>
 </body>
 </html>`;
@@ -1053,17 +1084,22 @@ export class PrintableService {
     }
   }
 
-  // Gera um Blob do PDF a partir do HTML usando o backend (WeasyPrint)
+  // Gera um Blob do PDF a partir do HTML usando o backend
   generatePdfBlob(html: string): Observable<Blob> {
-    // Envia o HTML para o backend gerar o PDF
+    // Injetar logo como data URL antes de enviar ao backend
+    const htmlComLogo = this.injectLogo(html);
     const endpoint = '/pdf/generate';
-    return this.apiService.postHtmlReturnBlob(endpoint, html);
+    return this.apiService.postHtmlReturnBlob(endpoint, htmlComLogo);
   }
 
   // Upload do PDF para o backend
   uploadPDF(blob: Blob, filename: string): Observable<{ url: string }> {
+    // Garantir que o blob tenha o tipo correto de PDF
+    const pdfBlob = blob.type === 'application/pdf'
+      ? blob
+      : new Blob([blob], { type: 'application/pdf' });
     const formData = new FormData();
-    formData.append('file', blob, filename);
+    formData.append('file', pdfBlob, filename);
     return this.apiService.postFile<{ url: string }>('/upload', formData);
   }
 }
