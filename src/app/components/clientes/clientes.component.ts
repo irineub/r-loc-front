@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ClienteService } from '../../services/cliente.service';
 import { Cliente, ClienteCreate } from '../../models/index';
+import { SnackbarService } from '../../services/snackbar.service';
 
 @Component({
   selector: 'app-clientes',
@@ -1055,8 +1056,9 @@ export class ClientesComponent implements OnInit {
 
   constructor(
     private clienteService: ClienteService,
-    private router: Router
-  ) {}
+    private router: Router,
+    private snackbarService: SnackbarService
+  ) { }
 
   ngOnInit() {
     this.loadClientes();
@@ -1138,11 +1140,11 @@ export class ClientesComponent implements OnInit {
       next: () => {
         this.loadClientes();
         this.closeDeleteModal();
-        alert('Cliente excluído com sucesso!');
+        this.snackbarService.success('Cliente excluído com sucesso!');
       },
       error: (error) => {
         console.error('Erro ao excluir cliente:', error);
-        alert('Erro ao excluir cliente. Tente novamente.');
+        this.snackbarService.error('Erro ao excluir cliente. Tente novamente.');
       }
     });
   }

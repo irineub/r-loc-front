@@ -10,11 +10,14 @@ import { Locacao, Equipamento } from '../../models/index';
 
 import { Router } from '@angular/router';
 import { WhatsappService } from '../../services/whatsapp.service';
+import { SnackbarService } from '../../services/snackbar.service';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-locacoes',
   standalone: true,
-  imports: [CommonModule, CurrencyBrPipe, FormsModule],
+  imports: [CommonModule, CurrencyBrPipe, FormsModule, MatDialogModule],
   template: `
     <div class="locacoes">
       <div class="card">
@@ -220,13 +223,13 @@ import { WhatsappService } from '../../services/whatsapp.service';
             </div>
           </div>
 
-
-          <div class="whatsapp-buttons" style="margin-top: 10px; display: flex; gap: 10px; justify-content: flex-end; width: 100%;">
-            <button class="btn btn-success" (click)="sendReciboWhatsapp()">
-              <i class="fab fa-whatsapp"></i> WhatsApp Recibo
+          <div class="whatsapp-buttons" style="margin-top: 10px; display: flex; gap: 10px; justify-content: flex-end; width: 100%; align-items: center;">
+            <span *ngIf="whatsappStatus" style="font-size: 13px; color: #666;">{{ whatsappStatus }}</span>
+            <button type="button" class="btn btn-success" (click)="sendReciboWhatsapp()" [disabled]="isSendingWhatsapp">
+              <i class="fab fa-whatsapp"></i> {{ isSendingWhatsapp ? '...' : 'WhatsApp Recibo' }}
             </button>
-            <button class="btn btn-success" (click)="sendContratoWhatsapp()">
-              <i class="fab fa-whatsapp"></i> WhatsApp Contrato
+            <button type="button" class="btn btn-success" (click)="sendContratoWhatsapp()" [disabled]="isSendingWhatsapp">
+              <i class="fab fa-whatsapp"></i> {{ isSendingWhatsapp ? '...' : 'WhatsApp Contrato' }}
             </button>
           </div>
         </div>
@@ -1017,7 +1020,9 @@ export class LocacoesComponent implements OnInit {
     private printableService: PrintableService,
     private navigationService: NavigationService,
     private whatsappService: WhatsappService,
-    private router: Router
+    private router: Router,
+    private snackbarService: SnackbarService,
+    private dialog: MatDialog
   ) { }
 
   ngOnInit() {
@@ -1073,11 +1078,24 @@ export class LocacoesComponent implements OnInit {
 
 
   finalizarLocacao(id: number) {
-    if (confirm('Tem certeza que deseja finalizar esta locação?')) {
-      this.locacaoService.finalizarLocacao(id).subscribe(() => {
-        this.loadData();
-      });
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Finalizar Locação',
+        message: 'Tem certeza que deseja finalizar esta locação?',
+        confirmText: 'Finalizar',
+        cancelText: 'Cancelar'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.locacaoService.finalizarLocacao(id).subscribe(() => {
+          this.loadData();
+          this.snackbarService.success('Locação finalizada com sucesso!');
+        });
+      }
+    });
   }
 
   cancelarLocacao(id: number) {
@@ -1110,11 +1128,11 @@ export class LocacoesComponent implements OnInit {
       next: () => {
         this.loadData();
         this.closeCancelModal();
-        alert('Locação cancelada com sucesso!');
+        this.snackbarService.success('Locação cancelada com sucesso!');
       },
       error: (error) => {
         console.error('Erro ao cancelar locação:', error);
-        alert('Erro ao cancelar locação. Tente novamente.');
+        this.snackbarService.error('Erro ao cancelar locação. Tente novamente.');
       }
     });
   }
@@ -1150,7 +1168,7 @@ export class LocacoesComponent implements OnInit {
   // Exportar recibo como PDF
   exportToReciboPDF() {
     if (!this.selectedLocacao) {
-      alert('Nenhuma locação selecionada');
+      this.snackbarService.error('Nenhuma locação selecionada');
       return;
     }
 
@@ -1160,7 +1178,7 @@ export class LocacoesComponent implements OnInit {
       this.printableService.exportToPDF(html, filename);
     } catch (error) {
       console.error('Erro ao exportar recibo:', error);
-      alert('Erro ao exportar recibo. Tente novamente.');
+      this.snackbarService.error('Erro ao exportar recibo. Tente novamente.');
     }
   }
 
@@ -1169,7 +1187,7 @@ export class LocacoesComponent implements OnInit {
   // Exportar contrato como PDF
   exportToContratoPDF() {
     if (!this.selectedLocacao) {
-      alert('Nenhuma locação selecionada');
+      this.snackbarService.error('Nenhuma locação selecionada');
       return;
     }
 
@@ -1179,7 +1197,7 @@ export class LocacoesComponent implements OnInit {
       this.printableService.exportToPDF(html, filename);
     } catch (error) {
       console.error('Erro ao exportar contrato:', error);
-      alert('Erro ao exportar contrato. Tente novamente.');
+      this.snackbarService.error('Erro ao exportar contrato. Tente novamente.');
     }
   }
 
@@ -1197,91 +1215,178 @@ export class LocacoesComponent implements OnInit {
     this.sendDocumentWhatsapp('contrato');
   }
 
+  isSendingWhatsapp = false;
+  whatsappStatus = '';
+
   private sendDocumentWhatsapp(type: 'recibo' | 'contrato') {
     if (!this.selectedLocacao) return;
+    if (this.isSendingWhatsapp) return;
 
     const clientPhone = this.selectedLocacao.cliente?.telefone_celular || this.selectedLocacao.cliente?.telefone_comercial;
     if (!clientPhone) {
-      alert('Cliente não possui telefone cadastrado.');
+      this.snackbarService.error('Cliente não possui telefone cadastrado.');
       return;
     }
 
-    if (!confirm(`Deseja enviar o ${type} via WhatsApp para ${this.selectedLocacao.cliente.nome_razao_social}?`)) {
-      return;
-    }
-
-    // Feedback de carregamento
-    const originalText = document.activeElement?.textContent;
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.textContent = 'Enviando...';
-      document.activeElement.setAttribute('disabled', 'true');
-    }
-
-    const isRecibo = type === 'recibo';
-    const html = isRecibo
-      ? this.printableService.generateReciboHTML(this.selectedLocacao)
-      : this.printableService.generateContratoHTML(this.selectedLocacao);
-
-    // Formatar data como DD-MM-AAAA para nome amigável
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, '0');
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const yyyy = now.getFullYear();
-    const dataFormatada = `${dd}-${mm}-${yyyy}`;
-
-    const filename = `${type}-${dataFormatada}.pdf`;
-    const caption = `${isRecibo ? 'Recibo' : 'Contrato'} da Locação #${this.selectedLocacao.id}`;
-
-    // Limpar telefone (apenas números)
-    let phone = clientPhone.replace(/\D/g, '');
-    // Adicionar 55 se não tiver (assumindo BR)
-    if (phone.length <= 11) {
-      phone = '55' + phone;
-    }
-
-    this.printableService.generatePdfBlob(html).subscribe({
-      next: (blob) => {
-        this.printableService.uploadPDF(blob, filename).subscribe({
-          next: (response) => {
-            console.log('PDF Uploaded:', response.url);
-            // O response.url pode ser relativo ou absoluto. O serviço de whatsapp espera url.
-            // Se for upload local, o backend retorna algo como "uploads/filename.pdf"
-            // Precisamos garantir que seja uma URL completa ou que o backend trate.
-            // Assumindo que o backend retorna o caminho relativo e o serviço do whats precisa de URL pública ou o backend do whats resolve.
-            // Mas o whats service é placeholder? Não, o usuário disse que "config do uazapi" está sendo usada.
-            // Vamos passar response.url.
-
-            this.whatsappService.sendPdf(phone, response.url, filename, caption).subscribe({
-              next: (res) => {
-                alert(`${type === 'recibo' ? 'Recibo' : 'Contrato'} enviado com sucesso!`);
-                this.restoreButtonState(originalText);
-              },
-              error: (err) => {
-                console.error('Erro ao enviar WhatsApp:', err);
-                alert('Erro ao enviar mensagem no WhatsApp. Verifique o console.');
-                this.restoreButtonState(originalText);
-              }
-            });
-          },
-          error: (err) => {
-            console.error('Erro no upload:', err);
-            alert('Erro ao fazer upload do arquivo PDF.');
-            this.restoreButtonState(originalText);
-          }
-        });
-      },
-      error: (err) => {
-        console.error('Erro ao gerar PDF:', err);
-        alert('Erro ao gerar o PDF no backend.');
-        this.restoreButtonState(originalText);
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Enviar Whatsapp',
+        message: `Deseja enviar o ${type} via WhatsApp para <b>${this.selectedLocacao.cliente.nome_razao_social}</b>?`,
+        confirmText: 'Enviar'
       }
     });
-  }
 
-  private restoreButtonState(originalText: string | null | undefined) {
-    if (document.activeElement instanceof HTMLElement) {
-      if (originalText) document.activeElement.textContent = originalText;
-      document.activeElement.removeAttribute('disabled');
-    }
+    dialogRef.afterClosed().subscribe(result => {
+      if (!result) return;
+      if (!this.selectedLocacao) return; // Fix TypeScript null check
+
+      this.isSendingWhatsapp = true;
+      this.whatsappStatus = 'Gerando PDF...';
+
+      const isRecibo = type === 'recibo';
+      const html = isRecibo
+        ? this.printableService.generateReciboHTML(this.selectedLocacao)
+        : this.printableService.generateContratoHTML(this.selectedLocacao);
+
+      // Formatar data como DD-MM-AAAA para nome amigável
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const yyyy = now.getFullYear();
+      const dataFormatada = `${dd}-${mm}-${yyyy}`;
+
+      const filename = `${type}-${dataFormatada}.pdf`;
+      const caption = `${isRecibo ? 'Recibo' : 'Contrato'} da Locação #${this.selectedLocacao.id}`;
+
+      // Limpar telefone (apenas números)
+      let phone = clientPhone.replace(/\D/g, '');
+      // Adicionar 55 se não tiver (assumindo BR)
+      if (phone.length <= 11) {
+        phone = '55' + phone;
+      }
+
+      this.printableService.generatePdfBlob(html).subscribe({
+        next: (blob) => {
+          this.whatsappStatus = 'Gerando anexo...';
+
+          // O app.component já vai puxar isso, mas para ter certeza localmente no serviço de zap, pedimos de novo (ou faz da config)
+          this.whatsappService.getUploadConfig().subscribe(uploadConf => {
+
+            const _sendPipeline = (pdfUriOuUrl: string, usingBase64: boolean) => {
+              this.whatsappStatus = 'Enviando saudação...';
+
+              this.whatsappService.getTimezoneConfig().subscribe((tzConf) => {
+                const timeZoneKey = tzConf.timezone || 'America/Manaus';
+                const dateNow = new Date();
+                const hourStr = new Intl.DateTimeFormat('pt-BR', { timeZone: timeZoneKey, hour: 'numeric', hourCycle: 'h23' }).format(dateNow);
+                const hour = parseInt(hourStr, 10);
+
+                let saudacaoTime = 'Olá';
+                if (hour >= 5 && hour < 12) {
+                  saudacaoTime = 'Bom dia';
+                } else if (hour >= 12 && hour < 18) {
+                  saudacaoTime = 'Boa tarde';
+                } else {
+                  saudacaoTime = 'Boa noite';
+                }
+
+                const clientName = this.selectedLocacao?.cliente?.nome_razao_social || 'Cliente';
+                const introMessage = isRecibo
+                  ? `${saudacaoTime}, Sr(a) ${clientName}. Segue o seu Recibo de locação.`
+                  : `${saudacaoTime}, Sr(a) ${clientName}. Segue o seu Contrato de locação.`;
+
+                // Dispara primeiro a Saudação Personalizada
+                this.whatsappService.sendMessage(phone, introMessage).subscribe({
+                  next: () => {
+                    this.whatsappStatus = 'Enviando anexo...';
+                    // Dispara o PDF
+                    this.whatsappService.sendPdf(phone, pdfUriOuUrl, filename, caption).subscribe({
+                      next: (res) => {
+                        this.whatsappStatus = 'Enviando encerramento...';
+                        const endMessage = `A JR Loc agradece a preferência! 🤝`;
+
+                        this.whatsappService.sendMessage(phone, endMessage).subscribe({
+                          next: () => {
+                            this.isSendingWhatsapp = false;
+                            this.whatsappStatus = '';
+                            this.snackbarService.success(`${isRecibo ? 'Recibo' : 'Contrato'} enviado com sucesso via WhatsApp! ✅`);
+                          },
+                          error: () => { // se falhar msg final paciencia, anexo foi
+                            this.isSendingWhatsapp = false;
+                            this.whatsappStatus = '';
+                            this.snackbarService.success(`${isRecibo ? 'Recibo' : 'Contrato'} enviado com sucesso (sem msg final)!`);
+                          }
+                        });
+                      },
+                      error: (err) => {
+                        console.error('Erro ao enviar WhatsApp PDF:', err);
+                        this.isSendingWhatsapp = false;
+                        this.whatsappStatus = '';
+                        let errorMsg = 'Erro ao enviar o PDF no WhatsApp. Verifique o console.';
+
+                        if (err.error && typeof err.error.error === 'string') {
+                          errorMsg = `Erro na API do WhatsApp (PDF): ${err.error.error}`;
+                        } else if (err.status === 413) {
+                          errorMsg = 'Erro: O PDF é muito grande para ser enviado.';
+                        }
+
+                        this.snackbarService.error(errorMsg);
+                      }
+                    });
+                  },
+                  error: (err) => {
+                    console.error('Erro ao enviar WhatsApp Saudação:', err);
+                    this.isSendingWhatsapp = false;
+                    this.whatsappStatus = '';
+                    let errorMsg = 'Erro ao enviar saudação no WhatsApp. Verifique o console.';
+
+                    if (err.error && typeof err.error.error === 'string') {
+                      if (err.error.error.includes('is not on WhatsApp')) {
+                        errorMsg = 'Erro: O número de telefone desse cliente não possui uma conta WhatsApp válida ou está com o formato incorreto (faltando dígito 9, etc). Verifique o cadastro do cliente!';
+                      } else {
+                        errorMsg = `Erro na API do WhatsApp: ${err.error.error}`;
+                      }
+                    } else if (err.status === 401) {
+                      errorMsg = 'Erro: Token ou URL do WhatsApp UazAPI inválidos. Verifique as configurações.';
+                    }
+
+                    this.snackbarService.error(errorMsg);
+                  }
+                });
+              });
+            };
+
+            if (uploadConf.use_base64) {
+              const reader = new FileReader();
+              reader.readAsDataURL(blob);
+              reader.onloadend = () => {
+                const base64data = reader.result as string;
+                _sendPipeline(base64data, true);
+              };
+            } else {
+              this.printableService.uploadPDF(blob, filename).subscribe({
+                next: (response) => {
+                  console.log('PDF Uploaded:', response.url);
+                  _sendPipeline(response.url, false);
+                },
+                error: (err) => {
+                  console.error('Erro no upload:', err);
+                  this.isSendingWhatsapp = false;
+                  this.whatsappStatus = '';
+                  this.snackbarService.error('Erro ao fazer upload do arquivo PDF para a URL Pública/Privada configurada.');
+                }
+              });
+            }
+          });
+        },
+        error: (err) => {
+          console.error('Erro ao gerar PDF:', err);
+          this.isSendingWhatsapp = false;
+          this.whatsappStatus = '';
+          this.snackbarService.error('Erro ao gerar o PDF no backend.');
+        }
+      });
+    });
   }
-} 
+}

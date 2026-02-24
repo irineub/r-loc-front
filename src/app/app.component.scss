@@ -1641,3 +1641,28 @@ select.form-control {
     min-width: 100px;
   }
 }
+
+/* Config Modal Tabs */
+.tab-btn {
+  &:hover {
+    background: #f1f5f9 !important;
+  }
+
+  &.active {
+    background: white !important;
+    color: #dc2626 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

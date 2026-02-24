@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 import { WhatsappService } from './services/whatsapp.service';
 import { FormsModule } from '@angular/forms';
+import { SnackbarService } from './services/snackbar.service';
 
 @Component({
   selector: 'app-root',
@@ -25,13 +26,16 @@ export class AppComponent implements OnInit, OnDestroy {
   // Configuração Uazapi
   showConfigModal = false;
   uazapiConfig = { url: '', token: '' };
+  uploadConfig = { use_base64: true, public_url: '' };
   isLoadingConfig = false;
   showToken = false;
+  activeConfigTab: 'whatsapp' | 'timezone' | 'upload' = 'whatsapp';
 
   constructor(
     private authService: AuthService,
     private router: Router,
-    private whatsappService: WhatsappService
+    private whatsappService: WhatsappService,
+    private snackbarService: SnackbarService
   ) { }
 
   ngOnInit() {
@@ -102,11 +106,15 @@ export class AppComponent implements OnInit, OnDestroy {
     import('rxjs').then(({ forkJoin }) => {
       forkJoin({
         uazapi: this.whatsappService.getCredentials(),
-        timezone: this.whatsappService.getTimezoneConfig()
+        timezone: this.whatsappService.getTimezoneConfig(),
+        upload: this.whatsappService.getUploadConfig()
       }).subscribe({
         next: (results) => {
           this.uazapiConfig = results.uazapi;
           this.timezone = results.timezone.timezone;
+          if (results.upload) {
+            this.uploadConfig = results.upload;
+          }
           this.isLoadingConfig = false;
         },
         error: (err) => {
@@ -127,16 +135,17 @@ export class AppComponent implements OnInit, OnDestroy {
     import('rxjs').then(({ forkJoin }) => {
       forkJoin([
         this.whatsappService.updateCredentials(this.uazapiConfig.url, this.uazapiConfig.token),
-        this.whatsappService.updateTimezoneConfig(this.timezone)
+        this.whatsappService.updateTimezoneConfig(this.timezone),
+        this.whatsappService.updateUploadConfig(this.uploadConfig.use_base64, this.uploadConfig.public_url)
       ]).subscribe({
         next: () => {
-          alert('Configurações salvas com sucesso!');
+          this.snackbarService.success('Configurações salvas com sucesso!');
           this.isLoadingConfig = false;
           this.closeConfigModal();
         },
         error: (err) => {
           console.error('Erro ao salvar configurações', err);
-          alert('Erro ao salvar configurações.');
+          this.snackbarService.error('Erro ao salvar configurações.');
           this.isLoadingConfig = false;
         }
       });

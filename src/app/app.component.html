@@ -78,59 +78,116 @@
           </div>
           <form *ngIf="!isLoadingConfig">
 
+            <!-- Header and Tab Nav -->
+            <div class="config-tabs"
+              style="display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;">
+              <button type="button" (click)="activeConfigTab = 'whatsapp'"
+                [class.active]="activeConfigTab === 'whatsapp'" class="tab-btn"
+                style="flex: 1; padding: 10px; border: none; background: transparent; font-weight: 600; color: #64748b; cursor: pointer; border-radius: 8px; transition: all 0.2s;">
+                WhatsApp
+              </button>
+              <button type="button" (click)="activeConfigTab = 'timezone'"
+                [class.active]="activeConfigTab === 'timezone'" class="tab-btn"
+                style="flex: 1; padding: 10px; border: none; background: transparent; font-weight: 600; color: #64748b; cursor: pointer; border-radius: 8px; transition: all 0.2s;">
+                Fuso Horário
+              </button>
+              <button type="button" (click)="activeConfigTab = 'upload'" [class.active]="activeConfigTab === 'upload'"
+                class="tab-btn"
+                style="flex: 1; padding: 10px; border: none; background: transparent; font-weight: 600; color: #64748b; cursor: pointer; border-radius: 8px; transition: all 0.2s;">
+                Uploads
+              </button>
+            </div>
+
             <!-- Seção WhatsApp -->
-            <div style="margin-bottom: 20px;">
-              <h6
-                style="font-weight: bold; color: #25d366; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-                📱 WhatsApp (UazAPI)
-              </h6>
-              <div style="background: #f8f9fa; border-radius: 8px; padding: 12px; border: 1px solid #e9ecef;">
+            <div *ngIf="activeConfigTab === 'whatsapp'" class="tab-pane" style="animation: fadeIn 0.3s ease;">
+              <div style="background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0;">
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">Configurações de integração com a
+                  UazAPI para envio de mensagens automáticas.</p>
 
                 <!-- Status indicator -->
-                <div style="margin-bottom: 12px; font-size: 12px; color: #6c757d;">
-                  <span *ngIf="uazapiConfig.url && uazapiConfig.token">
-                    ✅ Credenciais configuradas
-                  </span>
-                  <span *ngIf="!uazapiConfig.url || !uazapiConfig.token" style="color: #dc3545;">
-                    ⚠️ Credenciais não configuradas
-                  </span>
+                <div style="margin-bottom: 20px; font-size: 13px; font-weight: 500; padding: 10px; border-radius: 8px;"
+                  [ngStyle]="{'background': (uazapiConfig.url && uazapiConfig.token) ? '#dcfce7' : '#fee2e2', 'color': (uazapiConfig.url && uazapiConfig.token) ? '#166534' : '#991b1b'}">
+                  <span *ngIf="uazapiConfig.url && uazapiConfig.token">Credenciais Ativas</span>
+                  <span *ngIf="!uazapiConfig.url || !uazapiConfig.token">Credenciais Ausentes</span>
                 </div>
 
-                <div class="form-group">
-                  <label for="uazapiUrl" style="font-size: 13px; font-weight: 600;">URL do Servidor</label>
+                <div class="form-group" style="margin-bottom: 16px;">
+                  <label for="uazapiUrl"
+                    style="display: block; font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 6px;">URL
+                    do Servidor</label>
                   <input type="text" class="form-control" id="uazapiUrl" [(ngModel)]="uazapiConfig.url" name="url"
                     placeholder="https://free.uazapi.com">
-                  <small class="form-text text-muted">Endereço base da API UazAPI</small>
                 </div>
 
-                <div class="form-group">
-                  <label for="uazapiToken" style="font-size: 13px; font-weight: 600;">Token da Instância</label>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="uazapiToken"
+                    style="display: block; font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 6px;">Token
+                    da Instância</label>
                   <div style="position: relative;">
                     <input [type]="showToken ? 'text' : 'password'" class="form-control" id="uazapiToken"
-                      [(ngModel)]="uazapiConfig.token" name="token" placeholder="Token UUID da instância WhatsApp"
+                      [(ngModel)]="uazapiConfig.token" name="token" placeholder="UUID da instância"
                       style="padding-right: 80px;">
-                    <button type="button" (click)="showToken = !showToken" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-                             background: none; border: none; cursor: pointer; color: #6c757d; font-size: 12px;">
-                      {{ showToken ? '🙈 Ocultar' : '👁️ Ver' }}
+                    <button type="button" (click)="showToken = !showToken"
+                      style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+                             background: #e2e8f0; border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer; color: #475569; font-size: 12px; font-weight: 600;">
+                      {{ showToken ? 'Ocultar' : 'Mostrar' }}
                     </button>
                   </div>
-                  <small class="form-text text-muted">Token UUID da instância (não o Admin Token)</small>
                 </div>
               </div>
             </div>
 
             <!-- Seção Fuso Horário -->
-            <div>
-              <h6
-                style="font-weight: bold; color: #0d6efd; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-                🕐 Fuso Horário do Sistema
-              </h6>
-              <div style="background: #f8f9fa; border-radius: 8px; padding: 12px; border: 1px solid #e9ecef;">
+            <div *ngIf="activeConfigTab === 'timezone'" class="tab-pane" style="animation: fadeIn 0.3s ease;">
+              <div style="background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0;">
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">As datas relativas e saudações aos
+                  clientes se baseiam no horário configurado abaixo.</p>
+
                 <div class="form-group" style="margin-bottom: 0;">
-                  <select class="form-control" id="timezone" [(ngModel)]="timezone" name="timezone">
+                  <label for="timezone"
+                    style="display: block; font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 6px;">Fuso
+                    Horário Padrão</label>
+                  <select class="form-control" id="timezone" [(ngModel)]="timezone" name="timezone"
+                    style="background-color: white;">
                     <option *ngFor="let tz of timezones" [value]="tz">{{ tz }}</option>
                   </select>
-                  <small class="form-text text-muted">Afeta datas em PDFs, contratos e recibos</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Seção de Arquivos (Upload) -->
+            <div *ngIf="activeConfigTab === 'upload'" class="tab-pane" style="animation: fadeIn 0.3s ease;">
+              <div style="background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0;">
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Método e configuração para envio de PDF
+                  (contratos/recibos).</p>
+
+                <div class="form-group"
+                  style="padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 16px;">
+                  <div style="display: flex; align-items: flex-start;">
+                    <input type="checkbox" id="useBase64" [(ngModel)]="uploadConfig.use_base64" name="useBase64"
+                      style="margin-top: 4px; margin-right: 12px; transform: scale(1.2);">
+                    <div>
+                      <label for="useBase64"
+                        style="font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 4px; cursor: pointer;">Empacotamento
+                        Direto (Base64) - Recomendado</label>
+                      <small class="form-text text-muted" style="display: block; line-height: 1.4; color: #64748b;">
+                        Dispensa URLs públicas. O arquivo não possuirá título no WhatsApp ("Sem Título.pdf"), porém o
+                        sistema contornará isso enviando uma mensagem prévia de identificação.
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group" *ngIf="!uploadConfig.use_base64" style="animation: fadeIn 0.3s ease;">
+                  <label for="publicUrl"
+                    style="display: block; font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 6px;">URL
+                    Base Pública do Backend (Avançado)</label>
+                  <input type="text" class="form-control" id="publicUrl" [(ngModel)]="uploadConfig.public_url"
+                    name="publicUrl" placeholder="https://api.meudominio.com" style="background: white;">
+                  <small style="display: block; margin-top: 6px; color: #64748b; font-size: 12px; line-height: 1.4;">
+                    Requer domínio próprio ou túneis confiáveis (como Nginx Proxy ou Locahost.run). Arquivos terão o
+                    título real exibido no WhatsApp.
+                  </small>
                 </div>
               </div>
             </div>

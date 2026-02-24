@@ -12,6 +12,7 @@ import { NavigationService } from '../../services/navigation.service';
 import { AuthService } from '../../services/auth.service';
 import { Orcamento, Cliente, Equipamento, OrcamentoCreate, ItemOrcamentoCreate, Locacao } from '../../models/index';
 import * as XLSX from 'xlsx';
+import { SnackbarService } from '../../services/snackbar.service';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { take } from 'rxjs/operators';
@@ -1831,6 +1832,7 @@ export class OrcamentosComponent implements OnInit {
     data_inicio: '',
     data_fim: '',
     desconto: 0,
+    desconto_percentual: 0,
     frete: 0,
     total_final: 0,
     observacoes: '',
@@ -1863,7 +1865,8 @@ export class OrcamentosComponent implements OnInit {
     private printableService: PrintableService,
     private router: Router,
     private navigationService: NavigationService,
-    public authService: AuthService
+    public authService: AuthService,
+    private snackbarService: SnackbarService
   ) { }
 
   ngOnInit() {
@@ -2063,7 +2066,7 @@ export class OrcamentosComponent implements OnInit {
     if (this.newItem.quantidade && this.newItem.quantidade > maxDisponivel) {
       // Ajustar automaticamente para o máximo disponível
       this.newItem.quantidade = maxDisponivel;
-      alert(`Quantidade ajustada para o máximo disponível: ${maxDisponivel}`);
+      this.snackbarService.error(`Quantidade ajustada para o máximo disponível: ${maxDisponivel}`);
     }
   }
 
@@ -2073,12 +2076,12 @@ export class OrcamentosComponent implements OnInit {
 
     // Validação básica
     if (!this.newItem.equipamento_id) {
-      alert('Selecione um equipamento');
+      this.snackbarService.error('Selecione um equipamento');
       return;
     }
 
     if (!this.newItem.dias || this.newItem.dias <= 0) {
-      alert('Dias deve ser maior que 0');
+      this.snackbarService.error('Dias deve ser maior que 0');
       return;
     }
 
@@ -2089,7 +2092,7 @@ export class OrcamentosComponent implements OnInit {
     console.log('equipamento found:', equipamento);
 
     if (!equipamento) {
-      alert('Equipamento não encontrado');
+      this.snackbarService.error('Equipamento não encontrado');
       return;
     }
 
@@ -2098,13 +2101,13 @@ export class OrcamentosComponent implements OnInit {
     const quantidadeSolicitada = Number(this.newItem.quantidade) || 0;
 
     if (quantidadeSolicitada <= 0) {
-      alert('Quantidade deve ser maior que 0');
+      this.snackbarService.error('Quantidade deve ser maior que 0');
       return;
     }
 
     // Verificar se há estoque disponível
     if (maxDisponivel <= 0) {
-      alert(`Não é possível adicionar "${equipamento.descricao}".\n\n` +
+      this.snackbarService.error(`Não é possível adicionar "${equipamento.descricao}".\n\n` +
         `Estoque disponível: 0 unidades.\n\n` +
         `Este equipamento não possui estoque disponível no momento.`);
       return;
@@ -2118,7 +2121,7 @@ export class OrcamentosComponent implements OnInit {
 
       const estoqueTotal = equipamento.estoque_disponivel || 0;
 
-      alert(`Quantidade excede o estoque disponível!\n\n` +
+      this.snackbarService.error(`Quantidade excede o estoque disponível!\n\n` +
         `Equipamento: ${equipamento.descricao}\n` +
         `Quantidade solicitada: ${quantidadeSolicitada}\n` +
         `Estoque total disponível: ${estoqueTotal} unidades\n` +
@@ -2294,10 +2297,8 @@ export class OrcamentosComponent implements OnInit {
     const subtotal = this.getSubtotalItens();
 
     // Se temos uma porcentagem definida e válida (> 10% requer autorização, mas se já está definido, assumimos ok)
-    // Mas devemos respeitar o limite de autorização? Se o usuário já autorizou 15%, e adicionamos itens, 
-    // o valor aumenta e continua sendo 15%. Não precisa pedir senha de novo pois a porcentagem é a mesma.
-    if (this.descontoPorcentagem > 0) {
-      this.formData.desconto = (subtotal * this.descontoPorcentagem) / 100;
+    if (this.formData.desconto_percentual > 0) {
+      this.formData.desconto = (subtotal * this.formData.desconto_percentual) / 100;
     }
 
     this.formData.total_final = this.calculateTotal();
@@ -2371,6 +2372,7 @@ export class OrcamentosComponent implements OnInit {
     // Se não há itens, não há o que calcular
     if (subtotal === 0) {
       this.formData.desconto = 0;
+      this.formData.desconto_percentual = 0;
       return;
     }
 
@@ -2386,6 +2388,7 @@ export class OrcamentosComponent implements OnInit {
       this.showPasswordModal = true;
     } else {
       // Se <= 10%, aplica direto
+      this.formData.desconto_percentual = this.descontoPorcentagem;
       this.formData.desconto = proposedValue;
       this.onDescontoFreteChange();
     }
@@ -2399,6 +2402,7 @@ export class OrcamentosComponent implements OnInit {
 
       if (this.pendingDiscountPercentage !== null) {
         const subtotal = this.getSubtotalItens();
+        this.formData.desconto_percentual = this.pendingDiscountPercentage;
         this.formData.desconto = (subtotal * this.pendingDiscountPercentage) / 100;
         this.onDescontoFreteChange();
         this.pendingDiscountPercentage = null;
@@ -2413,17 +2417,8 @@ export class OrcamentosComponent implements OnInit {
     this.passwordError = '';
     this.pendingDiscountPercentage = null;
 
-    // Reverter o desconto para o valor correspondente ao atual formData.desconto
-    // Se o usuário cancelou, o desconto não foi aplicado, então devemos 
-    // voltar a porcentagem para o que representa o valor atual
-    const subtotal = this.getSubtotalItens();
-    if (subtotal > 0) {
-      this.descontoPorcentagem = (this.formData.desconto / subtotal) * 100;
-      // Arredondar para 2 casas decimais para ficar bonito
-      this.descontoPorcentagem = Math.round(this.descontoPorcentagem * 100) / 100;
-    } else {
-      this.descontoPorcentagem = 0;
-    }
+    // Reverter a view para o que está efetivamente no model
+    this.descontoPorcentagem = this.formData.desconto_percentual || 0;
   }
 
   openChangePasswordModal() {
@@ -2459,7 +2454,7 @@ export class OrcamentosComponent implements OnInit {
     }
 
     this.authService.changeDiscountPassword(this.newPasswordInput);
-    alert('Senha de desconto alterada com sucesso!');
+    this.snackbarService.success('Senha de desconto alterada com sucesso!');
     this.closeChangePasswordModal();
   }
 
@@ -2469,14 +2464,24 @@ export class OrcamentosComponent implements OnInit {
   }
 
   updateDescontoPercentageFromValue() {
-    const subtotal = this.getSubtotalItens();
-    if (subtotal > 0 && this.formData.desconto > 0) {
-      this.descontoPorcentagem = (this.formData.desconto / subtotal) * 100;
-      // Arredondar
-      this.descontoPorcentagem = Math.round(this.descontoPorcentagem * 10) / 10;
+    if (this.formData.desconto_percentual && this.formData.desconto_percentual > 0) {
+      this.descontoPorcentagem = this.formData.desconto_percentual;
     } else {
-      this.descontoPorcentagem = 0;
+      // Fallback for older records
+      const subtotal = this.getSubtotalItens();
+      if (subtotal > 0 && this.formData.desconto > 0) {
+        let percent = (this.formData.desconto / subtotal) * 100;
+        this.descontoPorcentagem = Math.round(percent * 10) / 10;
+        this.formData.desconto_percentual = this.descontoPorcentagem;
+      } else {
+        this.descontoPorcentagem = 0;
+        this.formData.desconto_percentual = 0;
+      }
     }
+
+    // Atualizar valor absoluto de desconto caso o subtotal tenha mudado e
+    // precisemos sincronizar
+    this.recalculateTotalWithDiscount();
   }
 
   onEquipamentoChange(equipamentoId: any) {
@@ -2708,7 +2713,7 @@ export class OrcamentosComponent implements OnInit {
     }
 
     if (itensSemEstoque.length > 0) {
-      alert('Não é possível salvar o orçamento!\n\n' +
+      this.snackbarService.error('Não é possível salvar o orçamento!\n\n' +
         'Os seguintes itens não possuem estoque disponível:\n\n' +
         itensSemEstoque.map(item => `• ${item}`).join('\n') +
         '\n\nPor favor, remova ou ajuste os itens antes de salvar.');
@@ -2742,7 +2747,7 @@ export class OrcamentosComponent implements OnInit {
         },
         error: (error) => {
           const errorMessage = error.error?.detail || error.message || 'Erro desconhecido';
-          alert('Erro ao atualizar orçamento: ' + errorMessage);
+          this.snackbarService.error('Erro ao atualizar orçamento: ' + errorMessage);
         }
       });
     } else {
@@ -2753,7 +2758,7 @@ export class OrcamentosComponent implements OnInit {
         },
         error: (error) => {
           const errorMessage = error.error?.detail || error.message || 'Erro desconhecido';
-          alert('Erro ao criar orçamento: ' + errorMessage);
+          this.snackbarService.error('Erro ao criar orçamento: ' + errorMessage);
         }
       });
     }
@@ -2799,7 +2804,7 @@ export class OrcamentosComponent implements OnInit {
       // Depois recarregar os dados para sincronizar com o servidor
       this.loadData();
 
-      alert('Orçamento aprovado com sucesso!');
+      this.snackbarService.success('Orçamento aprovado com sucesso!');
     });
   }
 
@@ -2813,6 +2818,7 @@ export class OrcamentosComponent implements OnInit {
 
       // Recarregar os dados para sincronizar com o servidor
       this.loadData();
+      this.snackbarService.success('Orçamento rejeitado com sucesso!');
     });
   }
 
@@ -2871,6 +2877,8 @@ export class OrcamentosComponent implements OnInit {
             quantidade: estoqueDisponivel, // Ajustar para o máximo disponível
             preco_unitario: precoUnitario,
             dias: item.dias,
+            data_inicio: item.data_inicio,
+            data_fim: item.data_fim,
             tipo_cobranca: item.tipo_cobranca,
             subtotal: novoSubtotal
           });
@@ -2884,6 +2892,8 @@ export class OrcamentosComponent implements OnInit {
             quantidade: item.quantidade,
             preco_unitario: item.preco_unitario,
             dias: item.dias,
+            data_inicio: item.data_inicio,
+            data_fim: item.data_fim,
             tipo_cobranca: item.tipo_cobranca,
             subtotal: item.subtotal
           });
@@ -2896,12 +2906,12 @@ export class OrcamentosComponent implements OnInit {
           `Alguns itens foram ajustados ou removidos devido à falta de estoque:\n\n` +
           itensRemovidos.map(item => `• ${item}`).join('\n') +
           `\n\nPor favor, revise os itens antes de salvar.`;
-        alert(mensagem);
+        this.snackbarService.error(mensagem);
       }
 
       // Se não sobrou nenhum item válido, avisar e não permitir editar
       if (itensValidos.length === 0) {
-        alert('Não é possível editar este orçamento!\n\nTodos os itens foram removidos porque não há estoque disponível.\n\nPor favor, adicione novos itens com estoque disponível.');
+        this.snackbarService.error('Não é possível editar este orçamento!\n\nTodos os itens foram removidos porque não há estoque disponível.\n\nPor favor, adicione novos itens com estoque disponível.');
         return;
       }
     } else {
@@ -2911,6 +2921,8 @@ export class OrcamentosComponent implements OnInit {
         quantidade: item.quantidade,
         preco_unitario: item.preco_unitario,
         dias: item.dias,
+        data_inicio: item.data_inicio,
+        data_fim: item.data_fim,
         tipo_cobranca: item.tipo_cobranca,
         subtotal: item.subtotal
       })) || []));
@@ -2923,6 +2935,7 @@ export class OrcamentosComponent implements OnInit {
       data_inicio: orcamento.data_inicio.split('T')[0], // Converter para formato de input date
       data_fim: orcamento.data_fim.split('T')[0],
       desconto: orcamento.desconto || 0,
+      desconto_percentual: orcamento.desconto_percentual || 0,
       frete: orcamento.frete || 0,
       total_final: orcamento.total_final,
       observacoes: orcamento.observacoes || '',
@@ -2988,7 +3001,7 @@ export class OrcamentosComponent implements OnInit {
     });
 
     if (!this.orcamentoIdParaLocacao || !this.enderecoEntrega || this.enderecoEntrega.trim() === '') {
-      alert('Por favor, informe o endereço de entrega.');
+      this.snackbarService.error('Por favor, informe o endereço de entrega.');
       return;
     }
 
@@ -3008,7 +3021,7 @@ export class OrcamentosComponent implements OnInit {
 
     if (!orcamentoId || !this.selectedOrcamento) {
       console.error('Validação falhou em createLocacaoFromOrcamento', { orcamentoId, selectedOrcamento: this.selectedOrcamento });
-      alert('Erro: Orçamento não selecionado. Por favor, tente novamente.');
+      this.snackbarService.error('Erro: Orçamento não selecionado. Por favor, tente novamente.');
       return;
     }
 
@@ -3041,7 +3054,7 @@ export class OrcamentosComponent implements OnInit {
               const reciboFilename = `recibo_${locacaoCriada.id}_${new Date().toISOString().split('T')[0]}`;
               this.printableService.exportToPDF(reciboHtml, reciboFilename);
 
-              alert('Locação criada com sucesso! Contrato e recibo foram gerados automaticamente. Redirecionando para a página de locações...');
+              this.snackbarService.success('Locação criada com sucesso! Contrato e recibo foram gerados automaticamente. Redirecionando para a página de locações...');
 
               // Definir estado para abrir modal da locação
               this.navigationService.setNavigationState({
@@ -3053,11 +3066,11 @@ export class OrcamentosComponent implements OnInit {
               this.router.navigate(['/locacoes']);
             } catch (error) {
               console.error('Erro ao gerar documentos:', error);
-              alert('Locação criada com sucesso, mas houve erro ao gerar os documentos. Redirecionando para a página de locações...');
+              this.snackbarService.error('Locação criada com sucesso, mas houve erro ao gerar os documentos. Redirecionando para a página de locações...');
               this.router.navigate(['/locacoes']);
             }
           } else {
-            alert('Locação criada com sucesso! Redirecionando para a página de locações...');
+            this.snackbarService.success('Locação criada com sucesso! Redirecionando para a página de locações...');
             this.router.navigate(['/locacoes']);
           }
         }, 1000);
@@ -3094,7 +3107,7 @@ export class OrcamentosComponent implements OnInit {
           errorMessage = 'Apenas orçamentos aprovados podem gerar locações. Aprove o orçamento primeiro.';
         }
 
-        alert(errorMessage);
+        this.snackbarService.error(errorMessage);
       }
     });
   }
@@ -3149,7 +3162,7 @@ export class OrcamentosComponent implements OnInit {
   // Exportar orçamento como PDF usando template personalizado
   exportToOrcamentoPDF() {
     if (!this.selectedOrcamento) {
-      alert('Nenhum orçamento selecionado');
+      this.snackbarService.error('Nenhum orçamento selecionado');
       return;
     }
 
@@ -3159,14 +3172,14 @@ export class OrcamentosComponent implements OnInit {
       this.printableService.exportToPDF(html, filename);
     } catch (error) {
       console.error('Erro ao exportar orçamento:', error);
-      alert('Erro ao exportar orçamento. Tente novamente.');
+      this.snackbarService.error('Erro ao exportar orçamento. Tente novamente.');
     }
   }
 
   // Exportar contrato como PDF usando template personalizado
   exportToContratoPDF() {
     if (!this.selectedOrcamento) {
-      alert('Nenhum orçamento selecionado');
+      this.snackbarService.error('Nenhum orçamento selecionado');
       return;
     }
 
@@ -3188,10 +3201,10 @@ export class OrcamentosComponent implements OnInit {
       const reciboFilename = `recibo_${this.selectedOrcamento.id}_${new Date().toISOString().split('T')[0]}`;
       this.printableService.exportToPDF(reciboHtml, reciboFilename);
 
-      alert('Contrato e recibo gerados com sucesso!');
+      this.snackbarService.success('Contrato e recibo gerados com sucesso!');
     } catch (error) {
       console.error('Erro ao exportar documentos:', error);
-      alert('Erro ao exportar documentos. Tente novamente.');
+      this.snackbarService.error('Erro ao exportar documentos. Tente novamente.');
     }
   }
 
@@ -3395,7 +3408,7 @@ export class OrcamentosComponent implements OnInit {
 
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
-      alert('Erro ao gerar PDF. Tente novamente.');
+      this.snackbarService.error('Erro ao gerar PDF. Tente novamente.');
     }
   }
 
@@ -3407,6 +3420,7 @@ export class OrcamentosComponent implements OnInit {
       data_inicio: '',
       data_fim: '',
       desconto: 0,
+      desconto_percentual: 0,
       frete: 0,
       total_final: 0,
       observacoes: '',

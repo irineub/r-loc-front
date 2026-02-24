@@ -52,6 +52,7 @@ export interface Orcamento {
   data_inicio: string;
   data_fim: string;
   desconto: number;
+  desconto_percentual: number;
   frete: number;
   total_final: number;
   status: 'pendente' | 'aprovado' | 'rejeitado';
@@ -138,6 +139,7 @@ export interface OrcamentoCreate {
   data_inicio: string;
   data_fim: string;
   desconto: number;
+  desconto_percentual: number;
   frete: number;
   total_final: number;
   observacoes?: string;

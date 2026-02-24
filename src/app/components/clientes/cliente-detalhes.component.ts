@@ -6,6 +6,7 @@ import { ClienteService } from '../../services/cliente.service';
 import { OrcamentoService } from '../../services/orcamento.service';
 import { LocacaoService } from '../../services/locacao.service';
 import { Cliente, Orcamento, Locacao } from '../../models/index';
+import { SnackbarService } from '../../services/snackbar.service';
 
 @Component({
   selector: 'app-cliente-detalhes',
@@ -518,8 +519,9 @@ export class ClienteDetalhesComponent implements OnInit {
     private router: Router,
     private clienteService: ClienteService,
     private orcamentoService: OrcamentoService,
-    private locacaoService: LocacaoService
-  ) {}
+    private locacaoService: LocacaoService,
+    private snackbarService: SnackbarService
+  ) { }
 
   ngOnInit() {
     this.route.params.subscribe(params => {
@@ -536,7 +538,7 @@ export class ClienteDetalhesComponent implements OnInit {
       },
       error: (error) => {
         console.error('Erro ao carregar cliente:', error);
-        alert('Cliente não encontrado');
+        this.snackbarService.error('Cliente não encontrado');
         this.voltar();
       }
     });

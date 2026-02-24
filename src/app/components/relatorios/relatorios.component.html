@@ -1,7 +1,7 @@
 <div class="relatorios-container">
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Relatórios de Atividades</h2>
+            <h2 class="card-title">Relatórios</h2>
 
             <div class="period-selector">
                 <button class="btn btn-sm" [class.active]="selectedPeriod === 'today'"
@@ -15,10 +15,12 @@
             </div>
 
             <div class="actions">
-                <button class="btn btn-success" (click)="exportToXLSX()" [disabled]="logs.length === 0">
+                <button class="btn btn-success" (click)="exportToXLSX()"
+                    [disabled]="(selectedEntidade ? relatorioData.length : logs.length) === 0">
                     <i class="fas fa-file-excel"></i> Exportar XLSX
                 </button>
-                <button class="btn btn-info" (click)="exportToCSV()" [disabled]="logs.length === 0">
+                <button class="btn btn-info" (click)="exportToCSV()"
+                    [disabled]="(selectedEntidade ? relatorioData.length : logs.length) === 0">
                     <i class="fas fa-file-csv"></i> Exportar CSV
                 </button>
             </div>
@@ -34,13 +36,13 @@
             </div>
 
             <div class="filter-group">
-                <label>Entidade:</label>
+                <label>Entidade / Tipo:</label>
                 <select [(ngModel)]="selectedEntidade" (change)="onFilterChange()" class="form-control">
-                    <option [ngValue]="null">Todas</option>
-                    <option value="orcamento">Orçamento</option>
-                    <option value="locacao">Locação</option>
-                    <option value="cliente">Cliente</option>
-                    <option value="equipamento">Equipamento</option>
+                    <option [ngValue]="null">Atividades (Logs)</option>
+                    <option value="orcamento">Orçamentos</option>
+                    <option value="locacao">Locações (Contratos)</option>
+                    <option value="cliente">Clientes</option>
+                    <option value="equipamento">Equipamentos</option>
                 </select>
             </div>
 
@@ -55,7 +57,8 @@
         <div class="table-section">
             <div *ngIf="isLoading" class="loading">Carregando dados...</div>
 
-            <table class="table" *ngIf="!isLoading">
+            <!-- Table for Logs (when selectedEntidade is null) -->
+            <table class="table" *ngIf="!isLoading && !selectedEntidade">
                 <thead>
                     <tr>
                         <th>Data/Hora</th>
@@ -84,6 +87,136 @@
                     </tr>
                 </tbody>
             </table>
+
+            <!-- Table for Orcamentos -->
+            <table class="table" *ngIf="!isLoading && selectedEntidade === 'orcamento'">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Data</th>
+                        <th>Cliente</th>
+                        <th>Período</th>
+                        <th>Desconto</th>
+                        <th>Frete</th>
+                        <th>Total</th>
+                        <th>Funcionário</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of relatorioData">
+                        <td>#{{ item.id }}</td>
+                        <td>{{ getDateOnly(item.data_criacao) }}</td>
+                        <td>{{ item.cliente?.nome_razao_social || 'Desconhecido' }}</td>
+                        <td>{{ getDateOnly(item.data_inicio) }} até {{ getDateOnly(item.data_fim) }}</td>
+                        <td class="text-danger">{{ item.desconto > 0 ? formatCurrency(item.desconto) : '-' }}</td>
+                        <td class="text-success">{{ item.frete > 0 ? formatCurrency(item.frete) : '-' }}</td>
+                        <td class="font-weight-bold">{{ formatCurrency(item.total_final) }}</td>
+                        <td>{{ item.funcionario?.nome || 'Desconhecido' }}</td>
+                        <td>
+                            <span class="badge" [class.badge-warning]="item.status === 'pendente'"
+                                [class.badge-success]="item.status === 'aprovado'"
+                                [class.badge-danger]="item.status === 'rejeitado'">
+                                {{ item.status | uppercase }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr *ngIf="relatorioData.length === 0">
+                        <td colspan="8" class="text-center">Nenhum orçamento encontrado no período selecionado.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Table for Locacoes -->
+            <table class="table" *ngIf="!isLoading && selectedEntidade === 'locacao'">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Data</th>
+                        <th>Cliente</th>
+                        <th>Período</th>
+                        <th>Total</th>
+                        <th>Funcionário</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of relatorioData">
+                        <td>#{{ item.id }}</td>
+                        <td>{{ getDateOnly(item.data_criacao) }}</td>
+                        <td>{{ item.cliente?.nome_razao_social || 'Desconhecido' }}</td>
+                        <td>{{ getDateOnly(item.data_inicio) }} até {{ getDateOnly(item.data_fim) }}</td>
+                        <td class="font-weight-bold">{{ formatCurrency(item.total_final) }}</td>
+                        <td>{{ item.funcionario?.nome || 'Desconhecido' }}</td>
+                        <td>
+                            <span class="badge" [class.badge-primary]="item.status === 'ativa'"
+                                [class.badge-secondary]="item.status === 'finalizada'"
+                                [class.badge-danger]="item.status === 'cancelada'"
+                                [class.badge-warning]="item.status === 'atrasada'">
+                                {{ item.status | uppercase }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr *ngIf="relatorioData.length === 0">
+                        <td colspan="6" class="text-center">Nenhum contrato encontrado no período selecionado.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Table for Clientes -->
+            <table class="table" *ngIf="!isLoading && selectedEntidade === 'cliente'">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome/Razão Social</th>
+                        <th>Tipo</th>
+                        <th>Contato</th>
+                        <th>Cidade/UF</th>
+                        <th>Data Cadastro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of relatorioData">
+                        <td>#{{ item.id }}</td>
+                        <td>{{ item.nome_razao_social }}</td>
+                        <td>{{ item.tipo_pessoa === 'fisica' ? 'PF' : 'PJ' }}</td>
+                        <td>{{ item.telefone_celular || item.telefone_comercial || '-' }}</td>
+                        <td>{{ item.cidade || '-' }} / {{ item.estado || '-' }}</td>
+                        <td>{{ getDateOnly(item.data_cadastro) }}</td>
+                    </tr>
+                    <tr *ngIf="relatorioData.length === 0">
+                        <td colspan="6" class="text-center">Nenhum cliente encontrado no período selecionado.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Table for Equipamentos -->
+            <table class="table" *ngIf="!isLoading && selectedEntidade === 'equipamento'">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Descrição</th>
+                        <th>Mensal (R$)</th>
+                        <th>Est. Total</th>
+                        <th>Est. Alugado</th>
+                        <th>Disponível</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of relatorioData">
+                        <td>#{{ item.id }}</td>
+                        <td>{{ item.descricao }}</td>
+                        <td>{{ formatCurrency(item.preco_mensal) }}</td>
+                        <td>{{ item.estoque }}</td>
+                        <td class="text-warning">{{ item.estoque_alugado }}</td>
+                        <td class="text-success font-weight-bold">{{ item.estoque - item.estoque_alugado }}</td>
+                    </tr>
+                    <tr *ngIf="relatorioData.length === 0">
+                        <td colspan="6" class="text-center">Nenhum equipamento encontrado.</td>
+                    </tr>
+                </tbody>
+            </table>
+
         </div>
     </div>
 </div>

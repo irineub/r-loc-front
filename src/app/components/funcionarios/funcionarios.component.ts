@@ -2,11 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FuncionarioService, Funcionario, FuncionarioCreate, FuncionarioUpdate } from '../../services/funcionario.service';
+import { SnackbarService } from '../../services/snackbar.service';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-funcionarios',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatDialogModule],
   template: `
     <div class="funcionarios">
       <div class="card">
@@ -379,7 +382,11 @@ export class FuncionariosComponent implements OnInit {
     ativo: true
   };
 
-  constructor(private funcionarioService: FuncionarioService) {}
+  constructor(
+    private funcionarioService: FuncionarioService,
+    private snackbarService: SnackbarService,
+    private dialog: MatDialog
+  ) { }
 
   ngOnInit() {
     this.loadFuncionarios();
@@ -393,7 +400,7 @@ export class FuncionariosComponent implements OnInit {
         this.isLoading = false;
       },
       error: (error) => {
-        this.errorMessage = 'Erro ao carregar funcionários';
+        this.snackbarService.error('Erro ao carregar funcionários');
         this.isLoading = false;
       }
     });
@@ -431,7 +438,7 @@ export class FuncionariosComponent implements OnInit {
         nome: this.formData.nome,
         ativo: this.formData.ativo
       };
-      
+
       if (this.formData.senha && this.formData.senha.length >= 4) {
         updateData.senha = this.formData.senha;
       }
@@ -442,13 +449,13 @@ export class FuncionariosComponent implements OnInit {
           this.cancelForm();
         },
         error: (error) => {
-          this.errorMessage = error?.error?.detail || 'Erro ao atualizar funcionário';
+          this.snackbarService.error(error?.error?.detail || 'Erro ao atualizar funcionário');
           this.isLoading = false;
         }
       });
     } else {
       if (!this.formData.senha || this.formData.senha.length < 4) {
-        this.errorMessage = 'A senha deve ter pelo menos 4 caracteres';
+        this.snackbarService.error('A senha deve ter pelo menos 4 caracteres');
         this.isLoading = false;
         return;
       }
@@ -459,7 +466,7 @@ export class FuncionariosComponent implements OnInit {
           this.cancelForm();
         },
         error: (error) => {
-          this.errorMessage = error?.error?.detail || 'Erro ao criar funcionário';
+          this.snackbarService.error(error?.error?.detail || 'Erro ao criar funcionário');
           this.isLoading = false;
         }
       });
@@ -467,18 +474,30 @@ export class FuncionariosComponent implements OnInit {
   }
 
   deleteFuncionario(id: number) {
-    if (!confirm('Tem certeza que deseja excluir este funcionário?')) {
-      return;
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Excluir Funcionário',
+        message: 'Tem certeza que deseja excluir este funcionário?',
+        confirmText: 'Excluir',
+        cancelText: 'Cancelar',
+        isDestructive: true
+      }
+    });
 
-    this.isLoading = true;
-    this.funcionarioService.deleteFuncionario(id).subscribe({
-      next: () => {
-        this.loadFuncionarios();
-      },
-      error: (error) => {
-        this.errorMessage = error?.error?.detail || 'Erro ao excluir funcionário';
-        this.isLoading = false;
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.isLoading = true;
+        this.funcionarioService.deleteFuncionario(id).subscribe({
+          next: () => {
+            this.loadFuncionarios();
+            this.snackbarService.success('Funcionário excluído com sucesso!');
+          },
+          error: (error) => {
+            this.snackbarService.error(error?.error?.detail || 'Erro ao excluir funcionário');
+            this.isLoading = false;
+          }
+        });
       }
     });
   }

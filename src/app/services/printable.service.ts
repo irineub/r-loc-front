@@ -4,6 +4,7 @@ import { Observable, from } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { WhatsappService } from './whatsapp.service';
+import { SnackbarService } from './snackbar.service';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -17,7 +18,8 @@ export class PrintableService {
 
   constructor(
     private apiService: ApiService,
-    private whatsappService: WhatsappService
+    private whatsappService: WhatsappService,
+    private snackbarService: SnackbarService
   ) {
     this.whatsappService.getTimezoneConfig().subscribe({
       next: (config) => {
@@ -93,6 +95,32 @@ export class PrintableService {
     });
   }
 
+  // Helper: retorna a maior data_fim entre os itens (ou fallback se nenhum item tem data_fim)
+  private getMaxItemDataFim(itens: Array<{ data_inicio?: string; data_fim?: string; dias?: number }> | undefined, fallback: string): string {
+    if (!itens || itens.length === 0) return fallback;
+    const datas = itens
+      .map(i => this.computeItemDataFim(i, fallback))
+      .filter((d): d is string => !!d);
+    if (datas.length === 0) return fallback;
+    const maxDate = datas.reduce((max, d) => d > max ? d : max);
+    return maxDate;
+  }
+
+  // Helper: retorna a data_fim do item — se não existir, calcula a partir de data_inicio + dias
+  private computeItemDataFim(item: { data_inicio?: string; data_fim?: string; dias?: number }, fallback: string): string {
+    if (item.data_fim) return item.data_fim.split('T')[0];
+    // Calcular a partir de data_inicio + dias
+    const dataInicioStr = item.data_inicio ? item.data_inicio.split('T')[0] : fallback.split('T')[0];
+    if (dataInicioStr && item.dias && item.dias > 0) {
+      const parts = dataInicioStr.split('-');
+      const dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      dt.setDate(dt.getDate() + item.dias);
+      return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    }
+    return fallback;
+  }
+
+
   // Dados da empresa (configuráveis)
   private empresaData = {
     nome: 'JR Loc',
@@ -104,7 +132,9 @@ export class PrintableService {
   // Gerar HTML do orçamento usando o template personalizado
   generateOrcamentoHTML(orcamento: Orcamento): string {
     const dataInicio = this.formatDateForContract(orcamento.data_inicio);
-    const dataFim = this.formatDateForContract(orcamento.data_fim);
+    // Usar a maior data_fim entre os itens como data de devolução do contrato
+    const maxDataFimRaw = this.getMaxItemDataFim(orcamento.itens, orcamento.data_fim);
+    const dataFim = this.formatDateForContract(maxDataFimRaw);
     const dataCriacao = this.formatSystemDate(orcamento.data_criacao);
     const dataAtual = this.getCurrentDateExtenso();
 
@@ -115,7 +145,7 @@ export class PrintableService {
     // Gerar linhas da tabela de itens com formatação otimizada para impressão
     const itensHTML = orcamento.itens?.map(item => {
       const itemDataInicio = item.data_inicio ? this.formatDateForContract(item.data_inicio) : dataInicio;
-      const itemDataFim = item.data_fim ? this.formatDateForContract(item.data_fim) : dataFim;
+      const itemDataFim = this.formatDateForContract(this.computeItemDataFim(item, dataFim));
       return `
       <tr>
         <td style="text-align: left; vertical-align: middle;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
@@ -380,7 +410,9 @@ export class PrintableService {
   // Gerar HTML do contrato usando o template personalizado
   generateContratoHTML(locacao: Locacao): string {
     const dataInicio = this.formatDateForContract(locacao.data_inicio);
-    const dataFim = this.formatDateForContract(locacao.data_fim);
+    // Usar a maior data_fim entre os itens como data de devolução do contrato
+    const maxDataFimRaw = this.getMaxItemDataFim(locacao.itens, locacao.data_fim);
+    const dataFim = this.formatDateForContract(maxDataFimRaw);
     const dataCriacao = this.formatSystemDate(locacao.data_criacao);
     const dataAtual = this.getCurrentDateExtenso();
 
@@ -390,7 +422,7 @@ export class PrintableService {
     // Gerar linhas da tabela de itens com formatação melhorada
     const itensHTML = locacao.itens?.map(item => {
       const itemDataInicio = item.data_inicio ? this.formatDateForContract(item.data_inicio) : dataInicio;
-      const itemDataFim = item.data_fim ? this.formatDateForContract(item.data_fim) : dataFim;
+      const itemDataFim = this.formatDateForContract(this.computeItemDataFim(item, dataFim));
       return `
       <tr>
         <td style="text-align: left; vertical-align: middle;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
@@ -738,7 +770,9 @@ export class PrintableService {
   // Gerar HTML do recibo usando o template personalizado
   generateReciboHTML(locacao: Locacao): string {
     const dataInicio = this.formatDateForContract(locacao.data_inicio);
-    const dataFim = this.formatDateForContract(locacao.data_fim);
+    // Usar a maior data_fim entre os itens como data de devolução do recibo
+    const maxDataFimRaw = this.getMaxItemDataFim(locacao.itens, locacao.data_fim);
+    const dataFim = this.formatDateForContract(maxDataFimRaw);
     const dataCriacao = this.formatSystemDate(locacao.data_criacao);
     const dataAtual = this.getCurrentDateExtenso();
 
@@ -748,7 +782,7 @@ export class PrintableService {
     // Gerar linhas da tabela de itens com formatação melhorada
     const itensHTML = locacao.itens?.map(item => {
       const itemDataInicio = item.data_inicio ? this.formatDateForContract(item.data_inicio) : dataInicio;
-      const itemDataFim = item.data_fim ? this.formatDateForContract(item.data_fim) : dataFim;
+      const itemDataFim = this.formatDateForContract(this.computeItemDataFim(item, dataFim));
       return `
       <tr>
         <td style="text-align: left; vertical-align: middle;">${this.getEquipamentoDescricao(item.equipamento_id)}</td>
@@ -1056,14 +1090,14 @@ export class PrintableService {
       const blobUrl = URL.createObjectURL(blob);
       const printWindow = window.open(blobUrl, '_blank');
       if (!printWindow) {
-        alert('Por favor, permita pop-ups para visualizar o documento.');
+        this.snackbarService.error('Por favor, permita pop-ups para visualizar o documento.');
       }
       // Liberar o objeto URL após um tempo
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
 
     } catch (error) {
       console.error('Erro ao abrir documento:', error);
-      alert('Erro ao abrir documento. Tente novamente.');
+      this.snackbarService.error('Erro ao abrir documento. Tente novamente.');
     }
   }
 

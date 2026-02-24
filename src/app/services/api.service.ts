@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { SnackbarService } from './snackbar.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +11,10 @@ import { environment } from '../../environments/environment';
 export class ApiService {
   private baseUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private snackbarService: SnackbarService
+  ) {
     console.log('API Service initialized with baseUrl:', this.baseUrl);
   }
 
@@ -56,7 +60,7 @@ export class ApiService {
   }
 
   put<T>(endpoint: string, id: number, data: any): Observable<T> {
-    const url = `${this.baseUrl}${endpoint}/${id}/`;
+    const url = `${this.baseUrl}${endpoint}/${id}`;
     const updateUrl = `${this.baseUrl}${endpoint}/${id}/update`;
     console.log('PUT request:', url, data);
     // Tentar PUT primeiro, se falhar com 405, tentar PATCH, depois POST
@@ -82,7 +86,7 @@ export class ApiService {
   }
 
   delete(endpoint: string, id: number): Observable<any> {
-    const url = `${this.baseUrl}${endpoint}/${id}/`;
+    const url = `${this.baseUrl}${endpoint}/${id}`;
     console.log('DELETE request:', url);
     return this.http.delete(url, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
@@ -151,6 +155,10 @@ export class ApiService {
         errorMessage = `${error.status}: ${error.message || 'Erro desconhecido'}`;
       }
     }
+
+    // Exibir o erro em um Snackbar para o usuário
+    this.snackbarService.error(errorMessage);
+
     return throwError(() => new Error(errorMessage));
   }
 } 

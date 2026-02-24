@@ -4,11 +4,14 @@ import { CurrencyBrPipe } from '../../pipes/currency-br.pipe';
 import { FormsModule } from '@angular/forms';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { Equipamento, EquipamentoCreate } from '../../models/index';
+import { SnackbarService } from '../../services/snackbar.service';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-equipamentos',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyBrPipe],
+  imports: [CommonModule, FormsModule, CurrencyBrPipe, MatDialogModule],
   template: `
     <div class="equipamentos">
       <div class="card">
@@ -28,13 +31,15 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
                 <label for="descricao">Descrição *</label>
                 <input type="text" id="descricao" name="descricao" 
                        [(ngModel)]="formData.descricao" required
-                       class="form-control" placeholder="Ex: Betoneira, Escavadeira">
+                       class="form-control" placeholder="Ex: Betoneira, Escavadeira"
+                       [disabled]="isEditingAlugado()">
               </div>
               <div class="form-group">
                 <label for="unidade">Unidade *</label>
                 <input type="text" id="unidade" name="unidade" 
                        [(ngModel)]="formData.unidade" required
-                       class="form-control" placeholder="Ex: UN, PC, LT">
+                       class="form-control" placeholder="Ex: UN, PC, LT"
+                       [disabled]="isEditingAlugado()">
               </div>
             </div>
             
@@ -43,13 +48,15 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
                 <label for="preco_diaria">Preço Diária (R$) *</label>
                 <input type="number" id="preco_diaria" name="preco_diaria" 
                        [(ngModel)]="formData.preco_diaria" required min="0" step="0.01"
-                       class="form-control" placeholder="0.00">
+                       class="form-control" placeholder="0.00"
+                       [disabled]="isEditingAlugado()">
               </div>
               <div class="form-group">
                 <label for="preco_semanal">Preço Semanal (R$) *</label>
                 <input type="number" id="preco_semanal" name="preco_semanal" 
                        [(ngModel)]="formData.preco_semanal" required min="0" step="0.01"
-                       class="form-control" placeholder="0.00">
+                       class="form-control" placeholder="0.00"
+                       [disabled]="isEditingAlugado()">
               </div>
             </div>
             
@@ -58,13 +65,15 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
                 <label for="preco_quinzenal">Preço Quinzenal (R$) *</label>
                 <input type="number" id="preco_quinzenal" name="preco_quinzenal" 
                        [(ngModel)]="formData.preco_quinzenal" required min="0" step="0.01"
-                       class="form-control" placeholder="0.00">
+                       class="form-control" placeholder="0.00"
+                       [disabled]="isEditingAlugado()">
               </div>
               <div class="form-group">
                 <label for="preco_mensal">Preço Mensal (R$) *</label>
                 <input type="number" id="preco_mensal" name="preco_mensal" 
                        [(ngModel)]="formData.preco_mensal" required min="0" step="0.01"
-                       class="form-control" placeholder="0.00">
+                       class="form-control" placeholder="0.00"
+                       [disabled]="isEditingAlugado()">
               </div>
             </div>
 
@@ -72,8 +81,12 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
               <div class="form-group">
                 <label for="estoque">Quantidade em Estoque *</label>
                 <input type="number" id="estoque" name="estoque" 
-                       [(ngModel)]="formData.estoque" required min="1"
-                       class="form-control" placeholder="1">
+                       [(ngModel)]="formData.estoque" required [min]="getMinEstoque()"
+                       class="form-control" placeholder="1"
+                       (ngModelChange)="checkEstoqueChange()">
+                <small *ngIf="isEditingAlugado()" style="color: #6b7280; margin-top: 0.5rem; font-size: 0.8rem;">
+                  Equipamento em uso. Você só pode aumentar a quantidade. (Mínimo: {{ getMinEstoque() }})
+                </small>
               </div>
             </div>
 
@@ -143,7 +156,7 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
                   <td data-label="Ações">
                     <div class="action-buttons">
                       <button class="action-btn edit" (click)="editEquipamento(equipamento)" 
-                              title="Editar Equipamento" [disabled]="equipamento.estoque_alugado > 0">
+                              title="Editar Equipamento">
                         ✏️ Editar
                       </button>
                       <button class="action-btn delete" (click)="deleteEquipamento(equipamento.id)" 
@@ -808,7 +821,11 @@ export class EquipamentosComponent implements OnInit {
   editingEquipamento: Equipamento | null = null;
   showForm = false;
 
-  constructor(private equipamentoService: EquipamentoService) {}
+  constructor(
+    private equipamentoService: EquipamentoService,
+    private snackbarService: SnackbarService,
+    private dialog: MatDialog
+  ) { }
 
   ngOnInit() {
     this.loadData();
@@ -822,13 +839,18 @@ export class EquipamentosComponent implements OnInit {
 
   saveEquipamento() {
     if (this.editingEquipamento) {
+      if (this.isEditingAlugado() && this.formData.estoque < this.editingEquipamento.estoque) {
+        this.snackbarService.error('A quantidade não pode ser menor do que a quantidade atual em estoque quando o equipamento está em uso.');
+        return;
+      }
       this.equipamentoService.updateEquipamento(this.editingEquipamento.id, this.formData).subscribe({
         next: (response) => {
           this.loadData();
           this.cancelForm();
+          this.snackbarService.success('Equipamento atualizado com sucesso!');
         },
         error: (error) => {
-          alert('Erro ao atualizar equipamento: ' + error.message);
+          this.snackbarService.error('Erro ao atualizar equipamento: ' + error.message);
         }
       });
     } else {
@@ -836,9 +858,10 @@ export class EquipamentosComponent implements OnInit {
         next: (response) => {
           this.loadData();
           this.cancelForm();
+          this.snackbarService.success('Equipamento criado com sucesso!');
         },
         error: (error) => {
-          alert('Erro ao criar equipamento: ' + error.message);
+          this.snackbarService.error('Erro ao criar equipamento: ' + error.message);
         }
       });
     }
@@ -859,16 +882,30 @@ export class EquipamentosComponent implements OnInit {
   }
 
   deleteEquipamento(id: number) {
-    if (confirm('Tem certeza que deseja excluir este equipamento?')) {
-      this.equipamentoService.deleteEquipamento(id).subscribe({
-        next: () => {
-          this.loadData();
-        },
-        error: (error) => {
-          alert('Erro ao excluir equipamento: ' + error.message);
-        }
-      });
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Confirmar Exclusão',
+        message: 'Tem certeza que deseja excluir este equipamento?',
+        confirmText: 'Excluir',
+        cancelText: 'Cancelar',
+        isDestructive: true
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.equipamentoService.deleteEquipamento(id).subscribe({
+          next: () => {
+            this.loadData();
+            this.snackbarService.success('Equipamento excluído com sucesso!');
+          },
+          error: (error) => {
+            this.snackbarService.error('Erro ao excluir equipamento: ' + error.message);
+          }
+        });
+      }
+    });
   }
 
   cancelForm() {
@@ -902,6 +939,23 @@ export class EquipamentosComponent implements OnInit {
       return 'Estoque Baixo';
     } else {
       return 'Disponível';
+    }
+  }
+
+  isEditingAlugado(): boolean {
+    return this.editingEquipamento !== null && this.editingEquipamento.estoque_alugado > 0;
+  }
+
+  getMinEstoque(): number {
+    return this.isEditingAlugado() ? this.editingEquipamento!.estoque : 1;
+  }
+
+  checkEstoqueChange() {
+    if (this.isEditingAlugado() && this.formData.estoque < this.editingEquipamento!.estoque) {
+      // Optional: revert change automatically or just let the form be invalid
+      // Setting to min value automatically if user types a lower number:
+      // this.formData.estoque = this.editingEquipamento!.estoque;
+      // But letting standard angular min validation handle it is fine.
     }
   }
 } 

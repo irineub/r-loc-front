@@ -47,14 +47,25 @@ export class WhatsappService {
         return this.http.post(`${environment.apiUrl}/config/timezone`, { timezone });
     }
 
+    getUploadConfig(): Observable<{ use_base64: boolean, public_url: string }> {
+        return this.http.get<{ use_base64: boolean, public_url: string }>(`${environment.apiUrl}/config/upload`);
+    }
+
+    updateUploadConfig(use_base64: boolean, public_url: string): Observable<any> {
+        return this.http.post(`${environment.apiUrl}/config/upload`, { use_base64, public_url });
+    }
+
     sendPdf(phone: string, pdfUrl: string, filename: string, caption: string): Observable<any> {
         // UazAPI: header 'token' (não 'Authorization: Bearer')
         //         campo 'file' (não 'url') com a URL pública do PDF
         const body = {
             number: phone,
-            file: pdfUrl,        // UazAPI usa 'file', não 'url'
+            file: pdfUrl,        // URI base64
             type: 'document',
-            filename: filename,
+            fileName: filename,  // UazAPI request body param é case-sensitive (fileName)
+            filename: filename,  // Outra variação comum de APIs baseadas em Baileys
+            name: filename,      // Outra variação
+            mimetype: 'application/pdf',
             caption: caption
         };
 

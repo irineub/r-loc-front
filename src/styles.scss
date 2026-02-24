@@ -2,6 +2,65 @@
 
 /* Import Google Fonts - Inter for modern, clean typography */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "@angular/material/prebuilt-themes/indigo-pink.css";
+
+.snackbar-success {
+  --mdc-snackbar-container-color: #10b981 !important;
+  --mdc-snackbar-supporting-text-color: white !important;
+  --mat-mdc-snack-bar-button-color: white !important;
+  background-color: #10b981 !important;
+  color: white !important;
+}
+
+.snackbar-error {
+  --mdc-snackbar-container-color: #ef4444 !important;
+  --mdc-snackbar-supporting-text-color: white !important;
+  --mat-mdc-snack-bar-button-color: white !important;
+  background-color: #ef4444 !important;
+  color: white !important;
+}
+
+/* Make snackbars larger and more visible */
+::ng-deep .snackbar-success,
+::ng-deep .snackbar-error,
+.snackbar-success,
+.snackbar-error {
+  /* Adiciona uma margem superior para não ficar grudado no topo da tela */
+  margin-top: 50px !important;
+
+  .mdc-snackbar__surface {
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.3) !important;
+    border-radius: 20px !important;
+    min-width: 500px !important;
+    padding: 18px !important;
+  }
+
+  .mdc-snackbar__label {
+    font-size: 1.5rem !important;
+    font-weight: 800 !important;
+    font-family: 'Inter', sans-serif !important;
+    text-align: center !important;
+    line-height: 1.6 !important;
+    width: 100% !important;
+    justify-content: center !important;
+    display: flex !important;
+  }
+
+  /* Fallback for pre-MDC Material versions */
+  &.mat-snack-bar-container {
+    border-radius: 20px !important;
+    min-width: 500px !important;
+    padding: 24px !important;
+    margin-top: 50px !important;
+  }
+
+  .mat-simple-snackbar {
+    font-size: 1.5rem !important;
+    font-weight: 800 !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+}
 
 /* Base font settings */
 * {

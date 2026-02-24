@@ -7,6 +7,9 @@ import { LocacaoService } from '../../services/locacao.service';
 import { EquipamentoService } from '../../services/equipamento.service';
 import { Locacao, ItemLocacao, Equipamento } from '../../models/index';
 import { forkJoin } from 'rxjs';
+import { SnackbarService } from '../../services/snackbar.service';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
 interface ItemRecebimento extends ItemLocacao {
   devolvido: boolean;
@@ -19,7 +22,7 @@ interface ItemRecebimento extends ItemLocacao {
 @Component({
   selector: 'app-recebimento',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyBrPipe],
+  imports: [CommonModule, FormsModule, CurrencyBrPipe, MatDialogModule],
   template: `
     <div class="recebimento">
       <div class="card">
@@ -765,8 +768,10 @@ export class RecebimentoComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private locacaoService: LocacaoService,
-    private equipamentoService: EquipamentoService
-  ) {}
+    private equipamentoService: EquipamentoService,
+    private snackbarService: SnackbarService,
+    private dialog: MatDialog
+  ) { }
 
   ngOnInit() {
     this.carregarEquipamentos();
@@ -824,7 +829,7 @@ export class RecebimentoComponent implements OnInit {
         if (error.message && error.message.includes('não é um JSON válido')) {
           errorMessage = 'O endpoint de locação não está disponível no servidor. Verifique a configuração da API.';
         }
-        alert(errorMessage);
+        this.snackbarService.error(errorMessage);
         this.voltar();
       }
     });
@@ -875,64 +880,76 @@ export class RecebimentoComponent implements OnInit {
 
   finalizarRecebimento() {
     if (!this.locacao || this.getTotalDevolvidos() === 0) {
-      alert('Nenhum equipamento foi marcado como devolvido.');
+      this.snackbarService.error('Nenhum equipamento foi marcado como devolvido.');
       return;
     }
 
     const todosDevolvidos = this.itensRecebimento.every(item => item.devolvido && (item.devolverQuantidade || 0) === item.quantidade);
-    const confirmMessage = todosDevolvidos 
+    const confirmMessage = todosDevolvidos
       ? 'Todos os equipamentos foram devolvidos. Deseja finalizar a locação?'
       : `Atenção: ${this.getTotalNaoDevolvidos()} item(ns) não foi(ram) devolvido(s). Deseja continuar mesmo assim?`;
 
-    if (confirm(confirmMessage)) {
-      // Se todos os equipamentos foram devolvidos, finalizar a locação
-      if (todosDevolvidos && this.locacaoId) {
-        const itens = this.itensRecebimento.map(item => ({
-          equipamento_id: item.equipamento_id,
-          quantidade: item.quantidade - (item.quantidade_devolvida || 0)
-        }));
-        this.locacaoService.receberParcial(this.locacaoId as number, itens).subscribe({
-          next: () => {
-            this.locacaoService.finalizarLocacao(this.locacaoId as number).subscribe({
-              next: () => {
-                alert('Locação finalizada com sucesso! Todos os equipamentos foram devolvidos.');
-                this.voltar();
-              },
-              error: (error) => {
-                console.error('Erro ao finalizar locação:', error);
-                alert('Erro ao finalizar locação. Tente novamente.');
-              }
-            });
-          },
-          error: (error) => {
-            console.error('Erro ao registrar recebimento total:', error);
-            alert('Erro ao registrar recebimento. Tente novamente.');
-          }
-        });
-      } else {
-        // Recebimento parcial via locação (atualiza quantidade_devolvida e estoque)
-        const itens = this.itensRecebimento
-          .filter(item => item.devolvido && (item.devolverQuantidade || 0) > 0)
-          .map(item => ({ equipamento_id: item.equipamento_id, quantidade: item.devolverQuantidade as number }));
-
-        if (itens.length === 0) {
-          alert('Nenhuma quantidade válida informada para devolução.');
-          return;
-        }
-
-        this.locacaoService.receberParcial(this.locacaoId as number, itens).subscribe({
-          next: (locacaoAtualizada) => {
-            this.locacao = locacaoAtualizada;
-            alert(`Recebimento parcial registrado! ${this.getTotalDevolvidos()} item(ns) com devolução processada.`);
-            this.carregarLocacao();
-          },
-          error: (error) => {
-            console.error('Erro ao registrar recebimento parcial:', error);
-            alert('Erro ao registrar recebimento parcial. Tente novamente.');
-          }
-        });
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Finalizar Recebimento',
+        message: confirmMessage,
+        confirmText: todosDevolvidos ? 'Finalizar' : 'Continuar',
+        cancelText: 'Cancelar'
       }
-    }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // Se todos os equipamentos foram devolvidos, finalizar a locação
+        if (todosDevolvidos && this.locacaoId) {
+          const itens = this.itensRecebimento.map(item => ({
+            equipamento_id: item.equipamento_id,
+            quantidade: item.quantidade - (item.quantidade_devolvida || 0)
+          }));
+          this.locacaoService.receberParcial(this.locacaoId as number, itens).subscribe({
+            next: () => {
+              this.locacaoService.finalizarLocacao(this.locacaoId as number).subscribe({
+                next: () => {
+                  this.snackbarService.success('Locação finalizada com sucesso! Todos os equipamentos foram devolvidos.');
+                  this.voltar();
+                },
+                error: (error) => {
+                  console.error('Erro ao finalizar locação:', error);
+                  this.snackbarService.error('Erro ao finalizar locação. Tente novamente.');
+                }
+              });
+            },
+            error: (error) => {
+              console.error('Erro ao registrar recebimento total:', error);
+              this.snackbarService.error('Erro ao registrar recebimento. Tente novamente.');
+            }
+          });
+        } else {
+          // Recebimento parcial via locação (atualiza quantidade_devolvida e estoque)
+          const itens = this.itensRecebimento
+            .filter(item => item.devolvido && (item.devolverQuantidade || 0) > 0)
+            .map(item => ({ equipamento_id: item.equipamento_id, quantidade: item.devolverQuantidade as number }));
+
+          if (itens.length === 0) {
+            this.snackbarService.error('Nenhuma quantidade válida informada para devolução.');
+            return;
+          }
+
+          this.locacaoService.receberParcial(this.locacaoId as number, itens).subscribe({
+            next: (locacaoAtualizada) => {
+              this.locacao = locacaoAtualizada;
+              this.snackbarService.success(`Recebimento parcial registrado! ${this.getTotalDevolvidos()} item(ns) com devolução processada.`);
+              this.carregarLocacao();
+            },
+            error: (error) => {
+              console.error('Erro ao registrar recebimento parcial:', error);
+              this.snackbarService.error('Erro ao registrar recebimento parcial. Tente novamente.');
+            }
+          });
+        }
+      }
+    });
   }
 
   voltar() {
