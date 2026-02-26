@@ -102,6 +102,14 @@ export class ApiService {
     );
   }
 
+  patchCustom<T>(endpoint: string, data?: any): Observable<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    console.log('PATCH Custom request:', url, data);
+    return this.http.patch<T>(url, data, { headers: this.getHeaders() }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   postFile<T>(endpoint: string, formData: FormData): Observable<T> {
     const url = `${this.baseUrl}${endpoint}`;
     console.log('POST File request:', url);

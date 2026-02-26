@@ -6,6 +6,7 @@ export interface NavigationState {
   locacaoId?: number;
   shouldOpenOrcamentoModal?: boolean;
   orcamentoId?: number;
+  shouldOpenDocumentViewer?: boolean;
 }
 
 @Injectable({

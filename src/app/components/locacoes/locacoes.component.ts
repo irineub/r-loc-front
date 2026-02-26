@@ -13,11 +13,12 @@ import { WhatsappService } from '../../services/whatsapp.service';
 import { SnackbarService } from '../../services/snackbar.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
+import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared/document-viewer/document-viewer.component';
 
 @Component({
   selector: 'app-locacoes',
   standalone: true,
-  imports: [CommonModule, CurrencyBrPipe, FormsModule, MatDialogModule],
+  imports: [CommonModule, CurrencyBrPipe, FormsModule, MatDialogModule, DocumentViewerComponent],
   template: `
     <div class="locacoes">
       <div class="card">
@@ -175,6 +176,17 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
                 {{ selectedLocacao?.status }}
               </span>
             </div>
+            <div class="info-row" *ngIf="selectedLocacao">
+              <strong>Assinatura Realizada:</strong>
+              <button class="btn btn-sm btn-outline-secondary" style="margin-left: 10px; padding: 2px 8px; font-size: 12px;" (click)="toggleAssinatura(selectedLocacao)">
+                <i class="fas" [ngClass]="selectedLocacao.assinatura_realizada ? 'fa-undo' : 'fa-check'"></i>
+                {{ selectedLocacao.assinatura_realizada ? 'Marcar Pendente' : 'Marcar Papel Assinado' }}
+              </button>
+              <span class="badge" [ngClass]="selectedLocacao.assinatura_realizada ? 'badge-ativa' : 'badge-cancelada'">
+                <i class="fas" [ngClass]="selectedLocacao.assinatura_realizada ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                {{ selectedLocacao.assinatura_realizada ? 'Sim' : 'Não' }}
+              </span>
+            </div>
             <div class="info-row" *ngIf="selectedLocacao?.observacoes">
               <strong>Observações:</strong> {{ selectedLocacao?.observacoes }}
             </div>
@@ -225,6 +237,12 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
 
           <div class="whatsapp-buttons" style="margin-top: 10px; display: flex; gap: 10px; justify-content: flex-end; width: 100%; align-items: center;">
             <span *ngIf="whatsappStatus" style="font-size: 13px; color: #666;">{{ whatsappStatus }}</span>
+            <button class="btn btn-info" (click)="openDocumentViewer('view')">
+              <i class="fas fa-file-pdf"></i> Ver Documentos
+            </button>
+            <button class="btn" [ngClass]="selectedLocacao?.assinatura_realizada ? 'btn-secondary' : 'btn-warning'" (click)="openDocumentViewer('sign')">
+              <i class="fas fa-signature"></i> {{ selectedLocacao?.assinatura_realizada ? 'Refazer Assinatura' : 'Assinar Contrato' }}
+            </button>
             <button type="button" class="btn btn-success" (click)="sendReciboWhatsapp()" [disabled]="isSendingWhatsapp">
               <i class="fab fa-whatsapp"></i> {{ isSendingWhatsapp ? '...' : 'WhatsApp Recibo' }}
             </button>
@@ -235,18 +253,21 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-primary" (click)="exportToReciboPDF()">
-            Recibo PDF
-          </button>
-          <button class="btn btn-warning" (click)="exportToContratoPDF()">
-            Contrato PDF
-          </button>
           <button class="btn btn-secondary" (click)="closeViewModal()">
             Fechar
           </button>
         </div>
       </div>
     </div>
+
+    <!-- Document Viewer -->
+    <app-document-viewer
+      *ngIf="showDocumentViewer"
+      [documents]="viewerDocuments"
+      [mode]="viewerMode"
+      (closeViewer)="closeDocumentViewer()"
+      (onAction)="handleViewerAction($event)">
+    </app-document-viewer>
   `,
   styles: [`
     .locacoes {
@@ -1014,6 +1035,10 @@ export class LocacoesComponent implements OnInit {
   confirmText = '';
   isConfirmTextValid = false;
 
+  showDocumentViewer = false;
+  viewerDocuments: ViewerDocument[] = [];
+  viewerMode: 'view' | 'sign' = 'view';
+
   constructor(
     private locacaoService: LocacaoService,
     private equipamentoService: EquipamentoService,
@@ -1036,6 +1061,9 @@ export class LocacoesComponent implements OnInit {
           const locacao = this.locacoes.find(l => l.id === state.locacaoId);
           if (locacao) {
             this.viewLocacao(locacao);
+            if (state.shouldOpenDocumentViewer) {
+              this.openDocumentViewer('view');
+            }
           }
           // Limpar o estado
           this.navigationService.clearNavigationState();
@@ -1201,8 +1229,116 @@ export class LocacoesComponent implements OnInit {
     }
   }
 
+  openDocumentViewer(mode: 'view' | 'sign') {
+    if (!this.selectedLocacao) return;
+
+    this.viewerMode = mode;
+    this.viewerDocuments = [];
+
+    try {
+      if (mode === 'view') {
+        const contratoHtml = this.printableService.generateContratoHTML(this.selectedLocacao);
+        this.viewerDocuments.push({
+          id: 'contrato',
+          title: 'Contrato',
+          type: 'contrato',
+          html: contratoHtml
+        });
+
+        const reciboHtml = this.printableService.generateReciboHTML(this.selectedLocacao);
+        this.viewerDocuments.push({
+          id: 'recibo',
+          title: 'Recibo',
+          type: 'recibo',
+          html: reciboHtml
+        });
+
+        // Se houver orçamento, podemos incluir
+        if (this.selectedLocacao.orcamento) {
+          const orcamentoHtml = this.printableService.generateOrcamentoHTML(this.selectedLocacao.orcamento);
+          this.viewerDocuments.push({
+            id: 'orcamento',
+            title: 'Orçamento',
+            type: 'orcamento',
+            html: orcamentoHtml
+          });
+        }
+      } else if (mode === 'sign') {
+        const contratoHtml = this.printableService.generateContratoHTML(this.selectedLocacao);
+        this.viewerDocuments.push({
+          id: 'contrato',
+          title: 'Contrato',
+          type: 'contrato',
+          html: contratoHtml
+        });
+      }
+      this.showDocumentViewer = true;
+    } catch (error) {
+      console.error('Erro ao gerar documentos para visualização:', error);
+      this.snackbarService.error('Erro ao gerar documentos.');
+    }
+  }
+
+  closeDocumentViewer() {
+    this.showDocumentViewer = false;
+    this.viewerDocuments = [];
+  }
+
+  handleViewerAction(event: ViewerAction) {
+    if (!this.selectedLocacao || !event.signature) return;
+
+    const base64Signature = event.signature;
+
+    // Primeiro salva na API
+    this.locacaoService.updateAssinatura(this.selectedLocacao.id, {
+      assinatura_realizada: true,
+      assinatura_base64: base64Signature
+    }).subscribe({
+      next: (updatedLocacao) => {
+        // Atualiza objeto local e gera HTML com nova assinatura salva
+        this.selectedLocacao = updatedLocacao;
+
+        // Agora o HTML gerado vai trazer a imagem Base64 da locação injetada de forma clean em cima da linha
+        const signedHtml = this.printableService.generateContratoHTML(this.selectedLocacao!);
+
+        if (event.action === 'whatsapp') {
+          // Reusa pipeline do WhatsApp
+          this.sendDocumentWhatsapp('contrato', signedHtml, true);
+        } else if (event.action === 'download') {
+          const filename = `contrato_assinado_${this.selectedLocacao!.id}_${new Date().toISOString().split('T')[0]}`;
+          this.printableService.exportToPDF(signedHtml, filename);
+        } else if ((event.action as any) === 'save') {
+          this.snackbarService.success('Assinatura salva com sucesso!');
+        }
+
+        this.loadData();
+      },
+      error: (err) => {
+        console.error('Erro ao salvar assinatura', err);
+        this.snackbarService.error('Erro ao salvar assinatura permanentemente.');
+      }
+    });
+  }
+
   irParaRecebimento(locacaoId: number) {
     this.router.navigate([`/recebimento/${locacaoId}`]);
+  }
+
+  toggleAssinatura(locacao: Locacao) {
+    const newValue = !locacao.assinatura_realizada;
+    this.locacaoService.updateAssinatura(locacao.id, {
+      assinatura_realizada: newValue,
+      assinatura_base64: locacao.assinatura_base64 || null // Keep existing
+    }).subscribe({
+      next: () => {
+        locacao.assinatura_realizada = newValue;
+        this.snackbarService.success(`Assinatura marcada como ${newValue ? 'Realizada' : 'Pendente'}`);
+      },
+      error: (err) => {
+        console.error('Erro ao alternar assinatura', err);
+        this.snackbarService.error('Erro ao atualizar status de assinatura.');
+      }
+    });
   }
 
   // Enviar Recibo via WhatsApp
@@ -1218,7 +1354,7 @@ export class LocacoesComponent implements OnInit {
   isSendingWhatsapp = false;
   whatsappStatus = '';
 
-  private sendDocumentWhatsapp(type: 'recibo' | 'contrato') {
+  private sendDocumentWhatsapp(type: 'recibo' | 'contrato', htmlOverride?: string, isSigned: boolean = false) {
     if (!this.selectedLocacao) return;
     if (this.isSendingWhatsapp) return;
 
@@ -1228,11 +1364,13 @@ export class LocacoesComponent implements OnInit {
       return;
     }
 
+    const docName = isSigned ? 'Contrato Assinado' : (type === 'recibo' ? 'Recibo' : 'Contrato');
+
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
       data: {
         title: 'Enviar Whatsapp',
-        message: `Deseja enviar o ${type} via WhatsApp para <b>${this.selectedLocacao.cliente.nome_razao_social}</b>?`,
+        message: `Deseja enviar o <b>${docName}</b> via WhatsApp para <b>${this.selectedLocacao.cliente.nome_razao_social}</b>?`,
         confirmText: 'Enviar'
       }
     });
@@ -1245,9 +1383,9 @@ export class LocacoesComponent implements OnInit {
       this.whatsappStatus = 'Gerando PDF...';
 
       const isRecibo = type === 'recibo';
-      const html = isRecibo
+      const html = htmlOverride || (isRecibo
         ? this.printableService.generateReciboHTML(this.selectedLocacao)
-        : this.printableService.generateContratoHTML(this.selectedLocacao);
+        : this.printableService.generateContratoHTML(this.selectedLocacao));
 
       // Formatar data como DD-MM-AAAA para nome amigável
       const now = new Date();
@@ -1256,8 +1394,9 @@ export class LocacoesComponent implements OnInit {
       const yyyy = now.getFullYear();
       const dataFormatada = `${dd}-${mm}-${yyyy}`;
 
-      const filename = `${type}-${dataFormatada}.pdf`;
-      const caption = `${isRecibo ? 'Recibo' : 'Contrato'} da Locação #${this.selectedLocacao.id}`;
+      const filenamePrefix = isSigned ? 'contrato_assinado' : type;
+      const filename = `${filenamePrefix}-${dataFormatada}.pdf`;
+      const caption = `${docName} da Locação #${this.selectedLocacao.id}`;
 
       // Limpar telefone (apenas números)
       let phone = clientPhone.replace(/\D/g, '');

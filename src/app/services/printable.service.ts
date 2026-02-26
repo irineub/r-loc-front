@@ -500,7 +500,7 @@ export class PrintableService {
 
     .page {
       width: 100%;
-      padding: 6mm 0; /* remover sobra lateral, usar container centralizado */
+      padding: 0;
       margin: 0 auto;
       background: white;
       position: relative;
@@ -513,8 +513,7 @@ export class PrintableService {
 
     /* Ajustes específicos para a segunda página */
     .page.page-2 {
-      padding-top: 4mm;
-      padding-bottom: 8mm;
+      padding: 0;
     }
     .page.page-2 * {
       line-height: 1.35;
@@ -537,17 +536,6 @@ export class PrintableService {
     .page.page-2 .assinaturas div {
       width: 48%;
       font-size: 11pt;
-    }
-    .page.page-2 .assinaturas .linha-assinatura {
-      border-bottom: 1px solid #000;
-      height: 1px;
-      margin-bottom: 10px;
-      width: 100%;
-      display: block;
-      white-space: nowrap;
-    }
-    .linha-assinatura {
-      margin-top: 20px;
     }
 
     .container {
@@ -629,7 +617,7 @@ export class PrintableService {
     }
 
     .assinaturas-container {
-      margin-top: 50px;
+      margin-top: 20px;
       page-break-inside: avoid;
       break-inside: avoid;
     }
@@ -648,6 +636,7 @@ export class PrintableService {
     .assinaturas div {
       width: 45%;
       text-align: center;
+      position: relative; /* Para a assinatura Base64 se encaixar bem */
     }
 
     .footer {
@@ -762,35 +751,41 @@ export class PrintableService {
       </div>
 
       <div class="assinaturas-container">
-        <div class="assinaturas">
-          <div>
-            <div class="linha-assinatura"></div>
-            <p><strong>LOCADORA</strong></p>
-            <p>${this.empresaData.nome.toUpperCase()}</p>
-            <p>CNPJ: ${this.empresaData.cnpj}</p>
+        <div class="assinaturas" style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+          <div style="width: 45%; text-align: center;">
+            <div style="height: 50px;"></div>
+            <div class="linha-assinatura" style="border-top: 1px solid #000; width: 100%; margin: 0 auto 5px auto;"></div>
+            <p style="margin: 2px 0; font-size: 10pt;"><strong>LOCADORA</strong></p>
+            <p style="margin: 2px 0; font-size: 10pt;">${this.empresaData.nome.toUpperCase()}</p>
+            <p style="margin: 2px 0; font-size: 10pt;">CNPJ: ${this.empresaData.cnpj}</p>
           </div>
-          <div>
-            <div class="linha-assinatura"></div>
-            <p><strong>LOCATÁRIA</strong></p>
-            <p>${(locacao.cliente?.nome_razao_social || 'Cliente não encontrado').toUpperCase()}</p>
-            <p>${documentoCliente.tipo}: ${documentoCliente.documento}</p>
-            ${celularFormatado ? `<p>Celular: ${celularFormatado}</p>` : ''}
-            ${telComercialFormatado ? `<p>Tel. Comercial: ${telComercialFormatado}</p>` : ''}
+          <div style="width: 45%; text-align: center;">
+            <div id="assinatura-locataria-container" style="height: 50px; position: relative;">
+              ${locacao.assinatura_base64 ? `<img src="${locacao.assinatura_base64}" style="max-height: 150px; max-width: 350px; width: 100%; object-fit: contain; position: absolute; bottom: 0px; left: 50%; transform: translateX(-10%); z-index: 10;">` : ''}
+            </div>
+            <div class="linha-assinatura" style="border-top: 1px solid #000; width: 100%; margin: 0 auto 5px auto; position: relative; z-index: 1;"></div>
+            <p style="margin: 2px 0; font-size: 10pt;"><strong>LOCATÁRIA</strong></p>
+            <p style="margin: 2px 0; font-size: 10pt;">${(locacao.cliente?.nome_razao_social || 'Cliente não encontrado').toUpperCase()}</p>
+            <p style="margin: 2px 0; font-size: 10pt;">${documentoCliente.tipo}: ${documentoCliente.documento}</p>
+            ${celularFormatado ? `<p style="margin: 2px 0; font-size: 10pt;">Celular: ${celularFormatado}</p>` : ''}
+            ${telComercialFormatado ? `<p style="margin: 2px 0; font-size: 10pt;">Tel. Comercial: ${telComercialFormatado}</p>` : ''}
           </div>
         </div>
 
-        <div class="assinaturas">
-          <div>
-            <div class="linha-assinatura"></div>
-            <p><strong>TESTEMUNHA 1</strong></p>
-            <p>Nome: ________________________</p>
-            <p>CPF: _________________________</p>
+        <div class="assinaturas" style="display: flex; justify-content: space-between;">
+          <div style="width: 45%; text-align: center;">
+            <div style="height: 40px;"></div>
+            <div class="linha-assinatura" style="border-top: 1px solid #000; width: 100%; margin: 0 auto 5px auto;"></div>
+            <p style="margin: 2px 0; font-size: 10pt;"><strong>TESTEMUNHA 1</strong></p>
+            <p style="margin: 2px 0; font-size: 10pt;">Nome: ________________________</p>
+            <p style="margin: 2px 0; font-size: 10pt;">CPF: _________________________</p>
           </div>
-          <div>
-            <div class="linha-assinatura"></div>
-            <p><strong>TESTEMUNHA 2</strong></p>
-            <p>Nome: ________________________</p>
-            <p>CPF: _________________________</p>
+          <div style="width: 45%; text-align: center;">
+            <div style="height: 40px;"></div>
+            <div class="linha-assinatura" style="border-top: 1px solid #000; width: 100%; margin: 0 auto 5px auto;"></div>
+            <p style="margin: 2px 0; font-size: 10pt;"><strong>TESTEMUNHA 2</strong></p>
+            <p style="margin: 2px 0; font-size: 10pt;">Nome: ________________________</p>
+            <p style="margin: 2px 0; font-size: 10pt;">CPF: _________________________</p>
           </div>
         </div>
       </div>

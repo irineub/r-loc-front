@@ -29,6 +29,10 @@ export class LocacaoService {
     return this.apiService.put<Locacao>('/locacoes', id, locacao);
   }
 
+  updateAssinatura(id: number, data: { assinatura_realizada: boolean, assinatura_base64: string | null }): Observable<any> {
+    return this.apiService.patchCustom(`/locacoes/${id}/assinatura`, data);
+  }
+
   finalizarLocacao(id: number): Observable<any> {
     return this.apiService.postCustom(`/locacoes/${id}/finalizar`);
   }

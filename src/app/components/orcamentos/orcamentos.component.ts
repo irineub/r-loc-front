@@ -3107,33 +3107,17 @@ export class OrcamentosComponent implements OnInit {
           const locacaoCriada = this.locacoes.find(l => l.orcamento_id === orcamentoId);
 
           if (locacaoCriada) {
-            // Gerar contrato e recibo automaticamente
-            try {
-              // Gerar contrato
-              const contratoHtml = this.printableService.generateContratoHTML(locacaoCriada);
-              const contratoFilename = `contrato_${locacaoCriada.id}_${new Date().toISOString().split('T')[0]}`;
-              this.printableService.exportToPDF(contratoHtml, contratoFilename);
+            this.snackbarService.success('Locação criada com sucesso! Redirecionando para a página de locações para visualizar e assinar os documentos...');
 
-              // Gerar recibo
-              const reciboHtml = this.printableService.generateReciboHTML(locacaoCriada);
-              const reciboFilename = `recibo_${locacaoCriada.id}_${new Date().toISOString().split('T')[0]}`;
-              this.printableService.exportToPDF(reciboHtml, reciboFilename);
+            // Definir estado para abrir modal da locação e visualizador em View Mode
+            this.navigationService.setNavigationState({
+              shouldOpenLocacaoModal: true,
+              locacaoId: locacaoCriada.id,
+              shouldOpenDocumentViewer: true
+            });
 
-              this.snackbarService.success('Locação criada com sucesso! Contrato e recibo foram gerados automaticamente. Redirecionando para a página de locações...');
-
-              // Definir estado para abrir modal da locação
-              this.navigationService.setNavigationState({
-                shouldOpenLocacaoModal: true,
-                locacaoId: locacaoCriada.id
-              });
-
-              // Redirecionar para a página de locações
-              this.router.navigate(['/locacoes']);
-            } catch (error) {
-              console.error('Erro ao gerar documentos:', error);
-              this.snackbarService.error('Locação criada com sucesso, mas houve erro ao gerar os documentos. Redirecionando para a página de locações...');
-              this.router.navigate(['/locacoes']);
-            }
+            // Redirecionar para a página de locações
+            this.router.navigate(['/locacoes']);
           } else {
             this.snackbarService.success('Locação criada com sucesso! Redirecionando para a página de locações...');
             this.router.navigate(['/locacoes']);

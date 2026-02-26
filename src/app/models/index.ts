@@ -91,6 +91,8 @@ export interface Locacao {
   orcamento: Orcamento;
   cliente: Cliente;
   itens: ItemLocacao[];
+  assinatura_realizada?: boolean;
+  assinatura_base64?: string | null;
 }
 
 // Create/Update interfaces
