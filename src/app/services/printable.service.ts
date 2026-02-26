@@ -658,6 +658,8 @@ export class PrintableService {
         <p><strong>Locatário:</strong> ${locacao.cliente?.nome_razao_social || 'Cliente não encontrado'}</p>
         <p><strong>Endereço:</strong> ${locacao.cliente?.endereco || 'Endereço não informado'}</p>
         <p><strong>${documentoCliente.tipo}:</strong> ${documentoCliente.documento}</p>
+        <p><strong>Celular:</strong> ${locacao.cliente?.telefone_celular || 'Não informado'}</p>
+        <p><strong>Tel. Comercial:</strong> ${locacao.cliente?.telefone_comercial || 'Não informado'}</p>
         <br/>
         <p><strong>Locadora:</strong> ${this.empresaData.nome}</p>
         <p><strong>Endereço:</strong> ${this.empresaData.endereco}</p>
@@ -743,6 +745,8 @@ export class PrintableService {
             <p><strong>LOCATÁRIA</strong></p>
             <p>${(locacao.cliente?.nome_razao_social || 'Cliente não encontrado').toUpperCase()}</p>
             <p>${documentoCliente.tipo}: ${documentoCliente.documento}</p>
+            <p>Celular: ${locacao.cliente?.telefone_celular || 'Não informado'}</p>
+            <p>Tel. Comercial: ${locacao.cliente?.telefone_comercial || 'Não informado'}</p>
           </div>
         </div>
 
@@ -940,6 +944,8 @@ export class PrintableService {
       <p><strong>Locatário:</strong> ${locacao.cliente?.nome_razao_social || 'Cliente não encontrado'}</p>
       <p><strong>Endereço:</strong> ${locacao.cliente?.endereco || 'Endereço não informado'}</p>
       <p><strong>${documentoCliente.tipo}:</strong> ${documentoCliente.documento}</p>
+      <p><strong>Celular:</strong> ${locacao.cliente?.telefone_celular || 'Não informado'}</p>
+      <p><strong>Tel. Comercial:</strong> ${locacao.cliente?.telefone_comercial || 'Não informado'}</p>
       <br/>
       <p><strong>Locadora:</strong> ${this.empresaData.nome}</p>
       <p><strong>Endereço:</strong> ${this.empresaData.endereco}</p>
