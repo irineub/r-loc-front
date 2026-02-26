@@ -61,6 +61,29 @@ export class PrintableService {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   }
 
+  formatPhone(phone: string | undefined | null): string {
+    if (!phone) return '';
+    let num = phone.replace(/\D/g, '');
+
+    // Remove +55 se o usuário digitou
+    if (num.startsWith('55') && num.length >= 12) {
+      num = num.substring(2);
+    }
+
+    if (num.length === 11) {
+      return `(${num.substring(0, 2)}) ${num.substring(2, 7)}-${num.substring(7)}`;
+    } else if (num.length === 10) {
+      return `(${num.substring(0, 2)}) ${num.substring(2, 6)}-${num.substring(6)}`;
+    } else if (num.length === 9) {
+      return `${num.substring(0, 5)}-${num.substring(5)}`;
+    } else if (num.length === 8) {
+      return `${num.substring(0, 4)}-${num.substring(4)}`;
+    }
+
+    // Retorna original se não tem o tamanho padrão de telefone brasileiro
+    return phone;
+  }
+
   // Método para definir os equipamentos disponíveis
   setEquipamentos(equipamentos: Equipamento[]) {
     this.equipamentos = equipamentos;
@@ -141,6 +164,9 @@ export class PrintableService {
     // Obter informações do documento do cliente
     const documentoCliente = this.getDocumentoInfo(orcamento.cliente?.cnpj || orcamento.cliente?.cpf);
     const documentoFormatado = documentoCliente.documento.replace(/\D/g, '');
+
+    const celularFormatado = this.formatPhone(orcamento.cliente?.telefone_celular);
+    const telComercialFormatado = this.formatPhone(orcamento.cliente?.telefone_comercial);
 
     // Gerar linhas da tabela de itens com formatação otimizada para impressão
     const itensHTML = orcamento.itens?.map(item => {
@@ -366,8 +392,8 @@ export class PrintableService {
       <p>${orcamento.cliente?.nome_razao_social || 'Cliente não encontrado'}</p>
       <p>Endereço: ${orcamento.cliente?.endereco || 'Endereço não informado'}</p>
       <p>${documentoCliente.tipo}: ${documentoFormatado}</p>
-      <p>Celular: ${orcamento.cliente?.telefone_celular || 'Não informado'}</p>
-      <p>Tel. Comercial: ${orcamento.cliente?.telefone_comercial || 'Não informado'}</p>
+      ${celularFormatado ? `<p>Celular: ${celularFormatado}</p>` : ''}
+      ${telComercialFormatado ? `<p>Tel. Comercial: ${telComercialFormatado}</p>` : ''}
     </div>
 
 
@@ -418,6 +444,9 @@ export class PrintableService {
 
     // Obter informações do documento do cliente
     const documentoCliente = this.getDocumentoInfo(locacao.cliente?.cnpj || locacao.cliente?.cpf);
+
+    const celularFormatado = this.formatPhone(locacao.cliente?.telefone_celular);
+    const telComercialFormatado = this.formatPhone(locacao.cliente?.telefone_comercial);
 
     // Gerar linhas da tabela de itens com formatação melhorada
     const itensHTML = locacao.itens?.map(item => {
@@ -658,8 +687,8 @@ export class PrintableService {
         <p><strong>Locatário:</strong> ${locacao.cliente?.nome_razao_social || 'Cliente não encontrado'}</p>
         <p><strong>Endereço:</strong> ${locacao.cliente?.endereco || 'Endereço não informado'}</p>
         <p><strong>${documentoCliente.tipo}:</strong> ${documentoCliente.documento}</p>
-        <p><strong>Celular:</strong> ${locacao.cliente?.telefone_celular || 'Não informado'}</p>
-        <p><strong>Tel. Comercial:</strong> ${locacao.cliente?.telefone_comercial || 'Não informado'}</p>
+        ${celularFormatado ? `<p><strong>Celular:</strong> ${celularFormatado}</p>` : ''}
+        ${telComercialFormatado ? `<p><strong>Tel. Comercial:</strong> ${telComercialFormatado}</p>` : ''}
         <br/>
         <p><strong>Locadora:</strong> ${this.empresaData.nome}</p>
         <p><strong>Endereço:</strong> ${this.empresaData.endereco}</p>
@@ -745,8 +774,8 @@ export class PrintableService {
             <p><strong>LOCATÁRIA</strong></p>
             <p>${(locacao.cliente?.nome_razao_social || 'Cliente não encontrado').toUpperCase()}</p>
             <p>${documentoCliente.tipo}: ${documentoCliente.documento}</p>
-            <p>Celular: ${locacao.cliente?.telefone_celular || 'Não informado'}</p>
-            <p>Tel. Comercial: ${locacao.cliente?.telefone_comercial || 'Não informado'}</p>
+            ${celularFormatado ? `<p>Celular: ${celularFormatado}</p>` : ''}
+            ${telComercialFormatado ? `<p>Tel. Comercial: ${telComercialFormatado}</p>` : ''}
           </div>
         </div>
 
@@ -782,6 +811,9 @@ export class PrintableService {
 
     // Obter informações do documento do cliente
     const documentoCliente = this.getDocumentoInfo(locacao.cliente?.cnpj || locacao.cliente?.cpf);
+
+    const celularFormatado = this.formatPhone(locacao.cliente?.telefone_celular);
+    const telComercialFormatado = this.formatPhone(locacao.cliente?.telefone_comercial);
 
     // Gerar linhas da tabela de itens com formatação melhorada
     const itensHTML = locacao.itens?.map(item => {
@@ -944,8 +976,8 @@ export class PrintableService {
       <p><strong>Locatário:</strong> ${locacao.cliente?.nome_razao_social || 'Cliente não encontrado'}</p>
       <p><strong>Endereço:</strong> ${locacao.cliente?.endereco || 'Endereço não informado'}</p>
       <p><strong>${documentoCliente.tipo}:</strong> ${documentoCliente.documento}</p>
-      <p><strong>Celular:</strong> ${locacao.cliente?.telefone_celular || 'Não informado'}</p>
-      <p><strong>Tel. Comercial:</strong> ${locacao.cliente?.telefone_comercial || 'Não informado'}</p>
+      ${celularFormatado ? `<p><strong>Celular:</strong> ${celularFormatado}</p>` : ''}
+      ${telComercialFormatado ? `<p><strong>Tel. Comercial:</strong> ${telComercialFormatado}</p>` : ''}
       <br/>
       <p><strong>Locadora:</strong> ${this.empresaData.nome}</p>
       <p><strong>Endereço:</strong> ${this.empresaData.endereco}</p>

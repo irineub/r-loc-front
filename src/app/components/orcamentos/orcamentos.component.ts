@@ -374,7 +374,7 @@ import { take } from 'rxjs/operators';
     <div class="modal-overlay" *ngIf="showEnderecoDialog" (click)="closeEnderecoDialog()" style="z-index: 2000;">
       <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 600px;">
         <div class="modal-header">
-          <h3>Endereço de Entrega</h3>
+          <h3>Informações de Entrega</h3>
           <button class="modal-close" (click)="closeEnderecoDialog()">×</button>
         </div>
         <div class="modal-body">
@@ -392,8 +392,38 @@ import { take } from 'rxjs/operators';
               [(ngModel)]="enderecoEntrega"
               rows="4"
               required
-              style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; resize: vertical;"
+              style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; resize: vertical; margin-bottom: 1rem;"
               placeholder="Ex: Av. Paulista, 8659, São Paulo - SP"></textarea>
+          </div>
+          
+          <p style="margin-bottom: 1rem; color: #666;">
+            Confirme ou edite os contatos para entrega dos equipamentos do cliente. 
+          </p>
+          <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="form-group">  
+              <label for="telefone_celular" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Telefone Celular
+              </label>
+              <input 
+                type="tel"
+                id="telefone_celular" 
+                name="telefone_celular"
+                [(ngModel)]="telefoneCelular"
+                style="width: 80%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;"
+                placeholder="(00) 00000-0000">
+            </div>
+            <div class="form-group">
+              <label for="telefone_comercial" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Telefone Comercial
+              </label>
+              <input 
+                type="tel"
+                id="telefone_comercial" 
+                name="telefone_comercial"
+                [(ngModel)]="telefoneComercial"
+                style="width: 80%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;"
+                placeholder="(00) 0000-0000">
+            </div>
           </div>
           <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
             <button class="btn btn-secondary" (click)="closeEnderecoDialog()">
@@ -1822,6 +1852,8 @@ export class OrcamentosComponent implements OnInit {
   showViewModal = false;
   showEnderecoDialog = false;
   enderecoEntrega = '';
+  telefoneCelular = '';
+  telefoneComercial = '';
   orcamentoIdParaLocacao: number | undefined;
   selectedMonth: string = '';
   selectedYear: string = '';
@@ -2983,6 +3015,8 @@ export class OrcamentosComponent implements OnInit {
 
     // Preencher com o endereço do cliente como padrão
     this.enderecoEntrega = this.selectedOrcamento.cliente?.endereco || '';
+    this.telefoneCelular = this.selectedOrcamento.cliente?.telefone_celular || '';
+    this.telefoneComercial = this.selectedOrcamento.cliente?.telefone_comercial || '';
     this.orcamentoIdParaLocacao = orcamentoId;
     this.showEnderecoDialog = true;
     console.log('Dialog aberto', { showEnderecoDialog: this.showEnderecoDialog, enderecoEntrega: this.enderecoEntrega });
@@ -2991,6 +3025,8 @@ export class OrcamentosComponent implements OnInit {
   closeEnderecoDialog() {
     this.showEnderecoDialog = false;
     this.enderecoEntrega = '';
+    this.telefoneCelular = '';
+    this.telefoneComercial = '';
     this.orcamentoIdParaLocacao = undefined;
   }
 
@@ -3008,12 +3044,41 @@ export class OrcamentosComponent implements OnInit {
     // Salvar os valores antes de fechar o dialog
     const orcamentoId = this.orcamentoIdParaLocacao;
     const endereco = this.enderecoEntrega.trim();
+    const celular = this.telefoneCelular.trim() || undefined;
+    const comercial = this.telefoneComercial.trim() || undefined;
+
+    const clienteId = this.selectedOrcamento?.cliente?.id;
+    const temMudancaTelefone = clienteId && (
+      (this.selectedOrcamento?.cliente?.telefone_celular || '') !== this.telefoneCelular.trim() ||
+      (this.selectedOrcamento?.cliente?.telefone_comercial || '') !== this.telefoneComercial.trim()
+    );
 
     // Fechar o dialog
     this.showEnderecoDialog = false;
 
-    // Criar a locação com os valores salvos
-    this.createLocacaoFromOrcamento(orcamentoId, endereco);
+    if (temMudancaTelefone) {
+      // Atualizar o cadastro do cliente primeiro
+      this.clienteService.updateCliente(clienteId!, {
+        telefone_celular: celular,
+        telefone_comercial: comercial
+      }).subscribe({
+        next: (clienteAtualizado) => {
+          // Atualiza localmente para o PDF gerar usando as infos cadastradas recém chegadas
+          if (this.selectedOrcamento && this.selectedOrcamento.cliente) {
+            this.selectedOrcamento.cliente.telefone_celular = clienteAtualizado.telefone_celular;
+            this.selectedOrcamento.cliente.telefone_comercial = clienteAtualizado.telefone_comercial;
+          }
+          this.createLocacaoFromOrcamento(orcamentoId, endereco);
+        },
+        error: (err) => {
+          this.snackbarService.error('Erro ao atualizar os telefones do cliente. A locação não foi gerada.');
+          console.error(err);
+        }
+      });
+    } else {
+      // Criar a locação com os valores salvos normalmente
+      this.createLocacaoFromOrcamento(orcamentoId, endereco);
+    }
   }
 
   async createLocacaoFromOrcamento(orcamentoId: number | undefined, enderecoEntrega?: string) {
