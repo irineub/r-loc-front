@@ -341,6 +341,16 @@ body.dark-mode {
     color: #a1a1aa !important;
   }
 
+  /* Components text visibility fixes */
+  .card-title,
+  .card-name,
+  .info-label,
+  .info-value,
+  .activity-content p,
+  .activity-content small {
+    color: #e0e0e0 !important;
+  }
+
   /* General text color fallback */
   p,
   span,
