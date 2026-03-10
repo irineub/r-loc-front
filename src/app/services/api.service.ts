@@ -30,11 +30,14 @@ export class ApiService {
   // Generic CRUD methods
   get<T>(endpoint: string): Observable<T[]> {
     // Não adicionar barra se já tiver query params
+    const hasQueryParams = endpoint.includes('?');
+    // Em produção, /api/logs/ tem redirecionado para raiz quando acessado sem barra e com query.
+    // Vamos garantir que se houver query params, a barra fique *antes* da "?".
     let url: string;
-    if (endpoint.includes('?')) {
+    if (hasQueryParams) {
       const parts = endpoint.split('?');
-      // Adiciona a barra antes dos query params
-      url = `${this.baseUrl}${parts[0]}/?${parts.slice(1).join('?')}`;
+      // Adiciona "/" antes do "?" (Ex: /logs/?param=1)
+      url = `${this.baseUrl}${parts[0]}/?${parts[1]}`;
     } else {
       url = `${this.baseUrl}${endpoint}/`;
     }
