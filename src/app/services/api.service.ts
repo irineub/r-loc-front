@@ -30,8 +30,14 @@ export class ApiService {
   // Generic CRUD methods
   get<T>(endpoint: string): Observable<T[]> {
     // Não adicionar barra se já tiver query params
-    const hasQueryParams = endpoint.includes('?');
-    const url = `${this.baseUrl}${endpoint}${hasQueryParams ? '' : '/'}`;
+    let url: string;
+    if (endpoint.includes('?')) {
+      const parts = endpoint.split('?');
+      // Adiciona a barra antes dos query params
+      url = `${this.baseUrl}${parts[0]}/?${parts.slice(1).join('?')}`;
+    } else {
+      url = `${this.baseUrl}${endpoint}/`;
+    }
     console.log('GET request:', url);
     return this.http.get<T[]>(url, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
