@@ -15,6 +15,7 @@ export class PrintableService {
   private equipamentos: Equipamento[] = [];
   private timezone = 'America/Manaus';
   private logoDataUrl: string | null = null;
+  private locadoraSignatureBase64: string = '';
 
   constructor(
     private apiService: ApiService,
@@ -31,6 +32,8 @@ export class PrintableService {
     });
     // Pre-load logo as data URL so it always works in blob:// pages
     this.preloadLogo();
+    // Pre-load locadora signature from config
+    this.loadLocadoraSignature();
   }
 
   /** Fetches the logo and caches it as a base64 data URL */
@@ -46,6 +49,18 @@ export class PrintableService {
       }))
       .then(dataUrl => { this.logoDataUrl = dataUrl; })
       .catch(() => console.warn('Logo não pôde ser pré-carregada'));
+  }
+
+  /** Loads the locadora (company) signature from config and caches it */
+  private loadLocadoraSignature(): void {
+    this.whatsappService.getSignatureConfig().subscribe({
+      next: (config) => {
+        if (config?.assinatura_base64) {
+          this.locadoraSignatureBase64 = config.assinatura_base64;
+        }
+      },
+      error: () => console.log('Assinatura da locadora não configurada')
+    });
   }
 
   /** Replaces all /logo-r-loc.jpg references with an embedded data URL */
@@ -753,7 +768,9 @@ export class PrintableService {
       <div class="assinaturas-container">
         <div class="assinaturas" style="display: flex; justify-content: space-between; margin-bottom: 15px;">
           <div style="width: 45%; text-align: center;">
-            <div style="height: 50px;"></div>
+            <div id="assinatura-locadora-container" style="height: 50px; position: relative;">
+              ${locacao.assinatura_base64 && this.locadoraSignatureBase64 ? `<img src="${this.locadoraSignatureBase64}" style="max-height: 150px; max-width: 350px; width: 100%; object-fit: contain; position: absolute; bottom: 0px; left: 50%; transform: translateX(-10%); z-index: 10;">` : ''}
+            </div>
             <div class="linha-assinatura" style="border-top: 1px solid #000; width: 100%; margin: 0 auto 5px auto;"></div>
             <p style="margin: 2px 0; font-size: 10pt;"><strong>LOCADORA</strong></p>
             <p style="margin: 2px 0; font-size: 10pt;">${this.empresaData.nome.toUpperCase()}</p>
@@ -761,7 +778,7 @@ export class PrintableService {
           </div>
           <div style="width: 45%; text-align: center;">
             <div id="assinatura-locataria-container" style="height: 50px; position: relative;">
-              ${locacao.assinatura_base64 ? `<img src="${locacao.assinatura_base64}" style="max-height: 150px; max-width: 350px; width: 100%; object-fit: contain; position: absolute; bottom: 0px; left: 50%; transform: translateX(-10%); z-index: 10;">` : ''}
+              ${locacao.assinatura_base64 ? `<img src="${locacao.assinatura_base64}" style="max-height: 200px; max-width: 400px; width: 100%; object-fit: contain; position: absolute; bottom: 0px; left: 50%; transform: translateX(-10%); z-index: 10;">` : ''}
             </div>
             <div class="linha-assinatura" style="border-top: 1px solid #000; width: 100%; margin: 0 auto 5px auto; position: relative; z-index: 1;"></div>
             <p style="margin: 2px 0; font-size: 10pt;"><strong>LOCATÁRIA</strong></p>
@@ -1042,90 +1059,113 @@ export class PrintableService {
     }
   }
 
-  // Exportar HTML para nova janela com botão de impressão
+  // Exportar HTML para PDF baixado diretamente
   exportToPDF(html: string, filename: string): void {
     try {
-      // Injetar logo como data URL (funciona em blob://, PDF, etc)
+      // Gera PDF real via backend e faz download direto
+      this.generatePdfBlob(html).subscribe({
+        next: (pdfBlob) => {
+          const url = URL.createObjectURL(pdfBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+        },
+        error: (err) => {
+          console.error('Erro ao gerar PDF via backend, abrindo visualização HTML:', err);
+          // Fallback: abre HTML em nova janela para impressão
+          this.exportToPDFFallback(html, filename);
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      this.snackbarService.error('Erro ao exportar PDF. Tente novamente.');
+    }
+  }
+
+  // Fallback: abre HTML em nova janela com botão de impressão
+  private exportToPDFFallback(html: string, filename: string): void {
+    try {
       const htmlComLogo = this.injectLogo(html);
-      // Criar HTML completo com botão de impressão e CSS otimizado
       const fullHtml = `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${filename}</title>
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${filename}</title>
+<style>
+  body {
+    margin: 0;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+  }
+  
+  .print-button {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  
+  .print-button:hover {
+    background: #0056b3;
+  }
+  
+  .document-container {
+    background: white;
+    margin: 0 auto;
+    max-width: 210mm;
+    min-height: 297mm;
+    padding: 15mm;
+    box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+  }
+  
+  @media print {
     body {
-      margin: 0;
-      padding: 15px;
-      font-family: Arial, sans-serif;
-      background-color: #f5f5f5;
+      background: white;
+      padding: 0;
     }
     
     .print-button {
-      position: fixed;
-      top: 15px;
-      right: 15px;
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      z-index: 1000;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-    
-    .print-button:hover {
-      background: #0056b3;
+      display: none;
     }
     
     .document-container {
-      background: white;
-      margin: 0 auto;
-      max-width: 210mm;
-      min-height: 297mm;
+      box-shadow: none;
+      margin: 0;
       padding: 15mm;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
-      box-sizing: border-box;
     }
-    
-    @media print {
-      body {
-        background: white;
-        padding: 0;
-      }
-      
-      .print-button {
-        display: none;
-      }
-      
-      .document-container {
-        box-shadow: none;
-        margin: 0;
-        padding: 15mm;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
-  <button class="print-button" onclick="window.print()">🖨️ Imprimir</button>
-  <div class="document-container">
-    ${htmlComLogo}
-  </div>
+<button class="print-button" onclick="window.print()">🖨️ Imprimir</button>
+<div class="document-container">
+  ${htmlComLogo}
+</div>
 </body>
 </html>`;
 
-      // Abrir em nova aba usando Blob URL (evita interferência com o roteador Angular)
       const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
       const blobUrl = URL.createObjectURL(blob);
       const printWindow = window.open(blobUrl, '_blank');
       if (!printWindow) {
         this.snackbarService.error('Por favor, permita pop-ups para visualizar o documento.');
       }
-      // Liberar o objeto URL após um tempo
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
 
     } catch (error) {

@@ -93,4 +93,12 @@ export class WhatsappService {
 
         return this.http.post(`${this.apiUrl}/send/text`, body, { headers });
     }
+
+    getSignatureConfig(): Observable<{ assinatura_base64: string }> {
+        return this.http.get<{ assinatura_base64: string }>(`${environment.apiUrl}/config/assinatura`);
+    }
+
+    updateSignatureConfig(assinatura_base64: string): Observable<any> {
+        return this.http.post(`${environment.apiUrl}/config/assinatura`, { assinatura_base64 });
+    }
 }

@@ -21,8 +21,9 @@ export class EquipamentoService {
     return this.apiService.post<Equipamento>('/equipamentos', equipamento);
   }
 
-  updateEquipamento(id: number, equipamento: Partial<EquipamentoCreate>): Observable<Equipamento> {
-    return this.apiService.put<Equipamento>('/equipamentos', id, equipamento);
+  updateEquipamento(id: number, equipamento: Partial<EquipamentoCreate>, isMaster: boolean = false): Observable<Equipamento> {
+    const url = `/equipamentos/${id}?is_master=${isMaster}`;
+    return this.apiService.putCustom<Equipamento>(url, equipamento);
   }
 
   deleteEquipamento(id: number): Observable<any> {

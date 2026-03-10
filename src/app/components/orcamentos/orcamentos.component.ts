@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurrencyBrPipe } from '../../pipes/currency-br.pipe';
 import { FormsModule } from '@angular/forms';
@@ -16,11 +16,12 @@ import { SnackbarService } from '../../services/snackbar.service';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { take } from 'rxjs/operators';
+import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared/document-viewer/document-viewer.component';
 
 @Component({
   selector: 'app-orcamentos',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyBrPipe],
+  imports: [CommonModule, FormsModule, CurrencyBrPipe, DocumentViewerComponent],
   template: `
     <div class="orcamentos">
       <div class="card">
@@ -148,19 +149,43 @@ import { take } from 'rxjs/operators';
               
               <div class="item-form">
                 <div class="form-row">
-                  <div class="form-group">
+                  <div class="form-group" style="position: relative;">
                     <label for="equipamento_id">Equipamento *</label>
-                    <select id="equipamento_id" name="equipamento_id" 
-                            [ngModel]="newItem.equipamento_id" (ngModelChange)="onEquipamentoChange($event)" required
-                            class="form-control">
-                      <option value="">Selecione um equipamento...</option>
-                      <option *ngFor="let equipamento of equipamentos" [value]="equipamento.id"
-                              [disabled]="equipamento.estoque_disponivel === 0">
-                        {{ equipamento.descricao }} 
-                        ({{ equipamento.estoque_disponivel }} disponível)
-                        {{ equipamento.estoque_disponivel === 0 ? ' - SEM ESTOQUE' : '' }}
-                      </option>
-                    </select>
+                    <div class="custom-select-container" (click)="toggleDropdown($event)">
+                      <div class="selected-value" [class.placeholder]="!newItem.equipamento_id">
+                        {{ getSelectedEquipamentoName() || 'Selecione um equipamento...' }}
+                      </div>
+                      <span class="dropdown-arrow">▼</span>
+                    </div>
+                    
+                    <div class="custom-options-panel" *ngIf="showDropdown">
+                      <div class="search-box">
+                        <input type="text" 
+                               [(ngModel)]="termoBuscaEquipamento" 
+                               (ngModelChange)="filterEquipamentos()"
+                               name="busca_equipamento" 
+                               class="form-control" 
+                               placeholder="🔍 Buscar equipamento..." 
+                               autocomplete="off"
+                               (click)="$event.stopPropagation()">
+                      </div>
+                      <div class="options-list">
+                        <div class="option-item" 
+                             *ngFor="let equipamento of equipamentosFiltrados" 
+                             [class.disabled]="equipamento.estoque_disponivel === 0"
+                             [class.selected]="equipamento.id === newItem.equipamento_id"
+                             (click)="selectEquipamento(equipamento)">
+                          <div class="option-name">{{ equipamento.descricao }}</div>
+                          <div class="option-stock" [class.no-stock]="equipamento.estoque_disponivel === 0">
+                            {{ equipamento.estoque_disponivel }} disponível
+                            {{ equipamento.estoque_disponivel === 0 ? ' - SEM ESTOQUE' : '' }}
+                          </div>
+                        </div>
+                        <div class="option-item no-results" *ngIf="equipamentosFiltrados.length === 0">
+                          Nenhum equipamento encontrado.
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div class="form-group">
                     <label for="quantidade">Quantidade *</label>
@@ -617,6 +642,16 @@ import { take } from 'rxjs/operators';
         </div>
       </div>
     </div>
+
+    <!-- Document Viewer para Orçamento PDF -->
+    <app-document-viewer
+      *ngIf="showDocumentViewer"
+      [documents]="viewerDocuments"
+      [mode]="'view'"
+      [activeDocId]="'orcamento'"
+      (onAction)="handleViewerAction($event)"
+      (closeViewer)="closeDocumentViewer()">
+    </app-document-viewer>
   `,
   styles: [`
     .orcamentos {
@@ -1098,6 +1133,10 @@ import { take } from 'rxjs/operators';
         box-sizing: border-box;
       }
       
+      .custom-options-panel {
+        width: 100%;
+      }
+      
       .table {
         font-size: 0.875rem;
       }
@@ -1317,6 +1356,137 @@ import { take } from 'rxjs/operators';
       background: linear-gradient(135deg, #ef4444, #dc2626);
       color: white;
       border-color: #dc2626;
+    }
+
+    /* Custom Select Component Styles */
+    .custom-select-container {
+      position: relative;
+      cursor: pointer;
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .custom-select-container:hover {
+      border-color: #dc3545;
+      box-shadow: 0 4px 15px rgba(220, 53, 69, 0.1);
+    }
+
+    .selected-value {
+      font-size: 1rem;
+      color: #212529;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .selected-value.placeholder {
+      color: #6c757d;
+    }
+
+    .dropdown-arrow {
+      color: #6c757d;
+      font-size: 0.8rem;
+    }
+
+    .custom-options-panel {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 0.5rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      border: 1px solid #e9ecef;
+      z-index: 1000;
+      overflow: hidden;
+    }
+
+    .search-box {
+      padding: 1rem;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid #ced4da;
+      border-radius: 8px;
+      outline: none;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+    }
+
+    .search-box input:focus {
+      border-color: #dc3545;
+      box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+    }
+
+    .options-list {
+      max-height: 250px;
+      overflow-y: auto;
+    }
+
+    .option-item {
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f8f9fa;
+      transition: background 0.2s;
+    }
+
+    .option-item:last-child {
+      border-bottom: none;
+    }
+
+    .option-item:hover {
+      background: #f8f9fa;
+    }
+
+    .option-item.selected {
+      background: #fff5f5;
+      border-left: 3px solid #dc3545;
+    }
+
+    .option-item.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #f8f9fa;
+    }
+
+    .option-name {
+      font-weight: 500;
+      color: #212529;
+    }
+
+    .option-stock {
+      font-size: 0.85rem;
+      color: #28a745;
+      font-weight: 600;
+      background: #e8f5e9;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .option-stock.no-stock {
+      color: #dc3545;
+      background: #ffebee;
+    }
+
+    .no-results {
+      padding: 1rem;
+      text-align: center;
+      color: #6c757d;
+      font-style: italic;
     }
 
     /* Filtros */
@@ -1557,6 +1727,8 @@ import { take } from 'rxjs/operators';
       align-items: center;
       z-index: 1000;
       backdrop-filter: blur(5px);
+      padding: 1rem;
+      overscroll-behavior: contain;
     }
 
     .modal-content {
@@ -1859,6 +2031,16 @@ export class OrcamentosComponent implements OnInit {
   selectedYear: string = '';
   selectedStatus: string = '';
   periodoCalculado: { dias: number; tipoCobranca: string } | null = null;
+  termoBuscaEquipamento: string = '';
+
+  get equipamentosFiltrados(): Equipamento[] {
+    if (!this.termoBuscaEquipamento) {
+      return this.equipamentos;
+    }
+    const termo = this.termoBuscaEquipamento.toLowerCase();
+    return this.equipamentos.filter(e => e.descricao.toLowerCase().includes(termo));
+  }
+
   formData: OrcamentoCreate = {
     cliente_id: 0,
     data_inicio: '',
@@ -3217,11 +3399,16 @@ export class OrcamentosComponent implements OnInit {
 
     try {
       const html = this.printableService.generateOrcamentoHTML(this.selectedOrcamento);
-      const filename = `orcamento_${this.selectedOrcamento.id}_${new Date().toISOString().split('T')[0]}`;
-      this.printableService.exportToPDF(html, filename);
+      this.viewerDocuments = [{
+        id: 'orcamento',
+        title: `Orçamento #${this.selectedOrcamento.id}`,
+        type: 'orcamento' as const,
+        html: html
+      }];
+      this.showDocumentViewer = true;
     } catch (error) {
-      console.error('Erro ao exportar orçamento:', error);
-      this.snackbarService.error('Erro ao exportar orçamento. Tente novamente.');
+      console.error('Erro ao abrir visualizador de orçamento:', error);
+      this.snackbarService.error('Erro ao visualizar orçamento. Tente novamente.');
     }
   }
 
@@ -3464,6 +3651,7 @@ export class OrcamentosComponent implements OnInit {
   cancelForm() {
     this.showForm = false;
     this.editingOrcamento = null;
+    this.termoBuscaEquipamento = '';
     this.formData = {
       cliente_id: 0,
       data_inicio: '',
@@ -3477,5 +3665,63 @@ export class OrcamentosComponent implements OnInit {
     };
     this.descontoPorcentagem = 0;
     this.pendingDiscountPercentage = null;
+  }
+
+  showDropdown: boolean = false;
+
+  @HostListener('document:click', ['$event'])
+  clickout(event: Event) {
+    if (this.showDropdown) {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.custom-select-container') && !target.closest('.custom-options-panel')) {
+        this.showDropdown = false;
+      }
+    }
+  }
+
+  toggleDropdown(event: Event) {
+    event.stopPropagation();
+    this.showDropdown = !this.showDropdown;
+    if (this.showDropdown) {
+      this.termoBuscaEquipamento = '';
+      setTimeout(() => {
+        const input = document.querySelector('.search-box input') as HTMLInputElement;
+        if (input) input.focus();
+      }, 50);
+    }
+  }
+
+  filterEquipamentos() {
+    // Getter equipamentosFiltrados handles this automatically
+  }
+
+  getSelectedEquipamentoName(): string {
+    if (!this.newItem.equipamento_id) return '';
+    const equip = this.equipamentos.find(e => e.id === Number(this.newItem.equipamento_id));
+    return equip ? equip.descricao : '';
+  }
+
+  selectEquipamento(equipamento: Equipamento) {
+    if (equipamento.estoque_disponivel === 0) return;
+    this.onEquipamentoChange(equipamento.id.toString());
+    this.showDropdown = false;
+  }
+
+  // --- Document Viewer ---
+  showDocumentViewer = false;
+  viewerDocuments: ViewerDocument[] = [];
+
+  handleViewerAction(event: ViewerAction) {
+    if (event.action === 'download-pdf' && event.docHtml) {
+      const filename = this.selectedOrcamento
+        ? `orcamento_${this.selectedOrcamento.id}_${new Date().toISOString().split('T')[0]}`
+        : `orcamento_${new Date().toISOString().split('T')[0]}`;
+      this.printableService.exportToPDF(event.docHtml, filename);
+    }
+  }
+
+  closeDocumentViewer() {
+    this.showDocumentViewer = false;
+    this.viewerDocuments = [];
   }
 } 

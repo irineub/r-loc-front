@@ -44,6 +44,12 @@
             Config
           </a>
 
+          <div class="theme-toggle" (click)="toggleTheme()"
+            style="cursor: pointer; margin-right: 15px; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); transition: all 0.3s;"
+            title="Alternar Tema Escuro/Claro">
+            <span *ngIf="!isDarkMode">🌙</span>
+            <span *ngIf="isDarkMode">☀️</span>
+          </div>
           <div class="user-section">
             <span class="user-info">👤 {{ currentUser }}</span>
             <button class="btn btn-secondary btn-sm logout-btn" (click)="logout()">
@@ -95,6 +101,11 @@
                 class="tab-btn"
                 style="flex: 1; padding: 10px; border: none; background: transparent; font-weight: 600; color: #64748b; cursor: pointer; border-radius: 8px; transition: all 0.2s;">
                 Uploads
+              </button>
+              <button type="button" (click)="activeConfigTab = 'assinatura'"
+                [class.active]="activeConfigTab === 'assinatura'" class="tab-btn"
+                style="flex: 1; padding: 10px; border: none; background: transparent; font-weight: 600; color: #64748b; cursor: pointer; border-radius: 8px; transition: all 0.2s;">
+                Assinatura
               </button>
             </div>
 
@@ -188,6 +199,63 @@
                     Requer domínio próprio ou túneis confiáveis (como Nginx Proxy ou Locahost.run). Arquivos terão o
                     título real exibido no WhatsApp.
                   </small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Seção Assinatura da Locadora -->
+            <div *ngIf="activeConfigTab === 'assinatura'" class="tab-pane" style="animation: fadeIn 0.3s ease;">
+              <div style="background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0;">
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">Assinatura digital da empresa
+                  (locadora). Será inserida automaticamente no contrato quando o locatário assinar digitalmente.</p>
+
+                <!-- Estado: Assinatura salva -->
+                <div *ngIf="signatureState === 'saved' && assinaturaConfig.assinatura_base64"
+                  style="text-align: center;">
+                  <p style="font-size: 14px; font-weight: 600; color: #166534; margin-bottom: 12px;">✅ Assinatura salva
+                  </p>
+                  <div
+                    style="background: white; border: 2px dashed #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 16px; display: inline-block;">
+                    <img [src]="assinaturaConfig.assinatura_base64"
+                      style="max-width: 350px; max-height: 120px; object-fit: contain;">
+                  </div>
+                  <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button type="button" (click)="startNewSignature()"
+                      style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px;">Refazer
+                      Assinatura</button>
+                    <button type="button" (click)="configRemoveSignature()"
+                      style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px;">Remover</button>
+                  </div>
+                </div>
+
+                <!-- Estado: Sem assinatura -->
+                <div *ngIf="signatureState === 'empty'" style="text-align: center;">
+                  <p style="font-size: 14px; color: #64748b; margin-bottom: 12px;">Nenhuma assinatura configurada.</p>
+                  <button type="button" (click)="startNewSignature()"
+                    style="padding: 10px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;">Criar
+                    Assinatura</button>
+                </div>
+
+                <!-- Estado: Desenhando -->
+                <div *ngIf="signatureState === 'drawing'" style="text-align: center;">
+                  <p style="font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 8px;">Desenhe a assinatura
+                    da empresa abaixo:</p>
+                  <div
+                    style="background: #f1f5f9; border: 2px dashed #94a3b8; border-radius: 8px; padding: 10px; display: inline-block; touch-action: none;">
+                    <canvas #configSignatureCanvas width="500" height="180" (touchstart)="configStartDrawing($event)"
+                      (touchmove)="configDraw($event)" (touchend)="configStopDrawing()"
+                      (mousedown)="configStartDrawing($event)" (mousemove)="configDraw($event)"
+                      (mouseup)="configStopDrawing()" (mouseleave)="configStopDrawing()"
+                      style="background: white; border-radius: 4px; cursor: crosshair; display: block; max-width: 100%;">
+                    </canvas>
+                  </div>
+                  <div style="display: flex; gap: 8px; justify-content: center; margin-top: 12px;">
+                    <button type="button" (click)="configClearSignature()"
+                      style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px;">Limpar</button>
+                    <button type="button" (click)="configSaveSignature()"
+                      style="padding: 8px 16px; background: #f59e0b; color: #1e293b; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px;">Capturar
+                      Assinatura</button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -110,6 +110,14 @@ export class ApiService {
     );
   }
 
+  putCustom<T>(endpoint: string, data?: any): Observable<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    console.log('PUT Custom request:', url, data);
+    return this.http.put<T>(url, data, { headers: this.getHeaders() }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   postFile<T>(endpoint: string, formData: FormData): Observable<T> {
     const url = `${this.baseUrl}${endpoint}`;
     console.log('POST File request:', url);

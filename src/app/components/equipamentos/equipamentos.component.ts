@@ -7,6 +7,7 @@ import { Equipamento, EquipamentoCreate } from '../../models/index';
 import { SnackbarService } from '../../services/snackbar.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-equipamentos',
@@ -49,14 +50,14 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
                 <input type="number" id="preco_diaria" name="preco_diaria" 
                        [(ngModel)]="formData.preco_diaria" required min="0" step="0.01"
                        class="form-control" placeholder="0.00"
-                       [disabled]="isEditingAlugado()">
+                       [disabled]="isEditingAlugado() && !isMasterUser()">
               </div>
               <div class="form-group">
                 <label for="preco_semanal">Preço Semanal (R$) *</label>
                 <input type="number" id="preco_semanal" name="preco_semanal" 
                        [(ngModel)]="formData.preco_semanal" required min="0" step="0.01"
                        class="form-control" placeholder="0.00"
-                       [disabled]="isEditingAlugado()">
+                       [disabled]="isEditingAlugado() && !isMasterUser()">
               </div>
             </div>
             
@@ -66,14 +67,14 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
                 <input type="number" id="preco_quinzenal" name="preco_quinzenal" 
                        [(ngModel)]="formData.preco_quinzenal" required min="0" step="0.01"
                        class="form-control" placeholder="0.00"
-                       [disabled]="isEditingAlugado()">
+                       [disabled]="isEditingAlugado() && !isMasterUser()">
               </div>
               <div class="form-group">
                 <label for="preco_mensal">Preço Mensal (R$) *</label>
                 <input type="number" id="preco_mensal" name="preco_mensal" 
                        [(ngModel)]="formData.preco_mensal" required min="0" step="0.01"
                        class="form-control" placeholder="0.00"
-                       [disabled]="isEditingAlugado()">
+                       [disabled]="isEditingAlugado() && !isMasterUser()">
               </div>
             </div>
 
@@ -103,6 +104,16 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
 
         <!-- Table Section -->
         <div class="table-section" *ngIf="!showForm">
+          <div class="table-header-controls" style="margin-bottom: 20px; display: flex; gap: 1rem; align-items: center;">
+            <div style="flex: 1; position: relative;">
+              <span style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); font-size: 1.2rem; filter: grayscale(1);">🔍</span>
+              <input type="text" 
+                     class="form-control" 
+                     placeholder="Buscar equipamentos por descrição..." 
+                     [(ngModel)]="termoBuscaEquipamento"
+                     style="padding-left: 3rem; background-color: #f8fafc; border-color: #cbd5e1; border-radius: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); margin: 0;">
+            </div>
+          </div>
           <div class="table-wrapper">
             <table class="table">
               <thead>
@@ -117,7 +128,7 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let equipamento of equipamentos">
+                <tr *ngFor="let equipamento of equipamentosFiltrados">
                   <td data-label="ID">{{ equipamento.id }}</td>
                   <td data-label="Descrição">{{ equipamento.descricao }}</td>
                   <td data-label="Unidade">{{ equipamento.unidade }}</td>
@@ -808,6 +819,15 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
 })
 export class EquipamentosComponent implements OnInit {
   equipamentos: Equipamento[] = [];
+  termoBuscaEquipamento: string = '';
+
+  get equipamentosFiltrados(): Equipamento[] {
+    if (!this.termoBuscaEquipamento) {
+      return this.equipamentos;
+    }
+    const termo = this.termoBuscaEquipamento.toLowerCase();
+    return this.equipamentos.filter(e => e.descricao.toLowerCase().includes(termo));
+  }
   formData: EquipamentoCreate = {
     descricao: '',
     unidade: '',
@@ -824,7 +844,8 @@ export class EquipamentosComponent implements OnInit {
   constructor(
     private equipamentoService: EquipamentoService,
     private snackbarService: SnackbarService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    public authService: AuthService
   ) { }
 
   ngOnInit() {
@@ -843,7 +864,10 @@ export class EquipamentosComponent implements OnInit {
         this.snackbarService.error('A quantidade não pode ser menor do que a quantidade atual em estoque quando o equipamento está em uso.');
         return;
       }
-      this.equipamentoService.updateEquipamento(this.editingEquipamento.id, this.formData).subscribe({
+
+      const isMaster = this.isMasterUser();
+
+      this.equipamentoService.updateEquipamento(this.editingEquipamento.id, this.formData, isMaster).subscribe({
         next: (response) => {
           this.loadData();
           this.cancelForm();
@@ -957,5 +981,9 @@ export class EquipamentosComponent implements OnInit {
       // this.formData.estoque = this.editingEquipamento!.estoque;
       // But letting standard angular min validation handle it is fine.
     }
+  }
+
+  isMasterUser(): boolean {
+    return this.authService.isMasterUser();
   }
 } 

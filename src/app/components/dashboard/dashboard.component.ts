@@ -8,11 +8,13 @@ import { OrcamentoService } from '../../services/orcamento.service';
 import { LocacaoService } from '../../services/locacao.service';
 import { NavigationService } from '../../services/navigation.service';
 import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
+import { AuthService } from '../../services/auth.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, CurrencyBrPipe],
+  imports: [CommonModule, CurrencyBrPipe, FormsModule],
   template: `
     <div class="dashboard">
       <div class="card">
@@ -52,6 +54,30 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
               <h3>{{ locacoesAtivas.length }}</h3>
               <p>Locações Ativas</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Faturamento Section (Only Master) -->
+      <div class="card" *ngIf="isMasterUser()">
+        <div class="card-header faturamento-header">
+          <h2 class="card-title">💰 Valor Total em Locações</h2>
+        </div>
+        <div class="faturamento-content">
+          <div class="filtros-faturamento">
+            <button class="btn" [class.btn-primary]="faturamentoFiltro === 'semana'" [class.btn-secondary]="faturamentoFiltro !== 'semana'" (click)="setFiltroFaturamento('semana')">Última Semana</button>
+            <button class="btn" [class.btn-primary]="faturamentoFiltro === 'mes'" [class.btn-secondary]="faturamentoFiltro !== 'mes'" (click)="setFiltroFaturamento('mes')">Último Mês</button>
+            <button class="btn" [class.btn-primary]="faturamentoFiltro === 'custom'" [class.btn-secondary]="faturamentoFiltro !== 'custom'" (click)="setFiltroFaturamento('custom')">Personalizado</button>
+            
+            <div class="custom-dates" *ngIf="faturamentoFiltro === 'custom'">
+               <input type="date" class="form-control" [(ngModel)]="dataInicioFiltro" (change)="calcularFaturamento()">
+               <span>até</span>
+               <input type="date" class="form-control" [(ngModel)]="dataFimFiltro" (change)="calcularFaturamento()">
+            </div>
+          </div>
+          <div class="faturamento-total-display">
+            <h3>{{ faturamentoTotal | currencyBr }}</h3>
+            <p>Total no período selecionado</p>
           </div>
         </div>
       </div>
@@ -479,6 +505,75 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
       border: 2px dashed rgba(220, 53, 69, 0.2);
     }
 
+    .faturamento-header {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .faturamento-header .card-title {
+      color: #334155;
+    }
+
+    .faturamento-content {
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .filtros-faturamento {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .custom-dates {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .custom-dates input {
+      min-width: 140px;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #334155;
+      background-color: white;
+      outline: none;
+      transition: all 0.2s;
+    }
+    
+    .custom-dates input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .faturamento-total-display {
+      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      padding: 2rem;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid rgba(0,0,0,0.05);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+
+    .faturamento-total-display h3 {
+      font-size: 3rem;
+      color: #2563eb;
+      margin: 0;
+      font-weight: 800;
+    }
+
+    .faturamento-total-display p {
+      color: #64748b;
+      margin: 0.5rem 0 0;
+      font-weight: 500;
+      font-size: 1.1rem;
+    }
+
     @media (max-width: 768px) {
       .stats-grid {
         grid-template-columns: 1fr;
@@ -541,6 +636,8 @@ import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
       align-items: center;
       z-index: 1000;
       backdrop-filter: blur(4px);
+      padding: 1rem;
+      overscroll-behavior: contain;
     }
 
     .modal-content {
@@ -905,6 +1002,12 @@ export class DashboardComponent implements OnInit {
   selectedLocacao: Locacao | null = null;
   showLocacaoModal = false;
 
+  // Faturamento
+  faturamentoTotal: number = 0;
+  faturamentoFiltro: 'semana' | 'mes' | 'custom' = 'mes';
+  dataInicioFiltro: string = '';
+  dataFimFiltro: string = '';
+
   private router = inject(Router);
 
   constructor(
@@ -912,8 +1015,9 @@ export class DashboardComponent implements OnInit {
     private equipamentoService: EquipamentoService,
     private orcamentoService: OrcamentoService,
     private locacaoService: LocacaoService,
-    private navigationService: NavigationService
-  ) {}
+    private navigationService: NavigationService,
+    private authService: AuthService
+  ) { }
 
   ngOnInit() {
     this.loadData();
@@ -938,13 +1042,14 @@ export class DashboardComponent implements OnInit {
       this.locacoes = data;
       this.locacoesAtivas = data.filter(l => l.status === 'ativa');
       this.calculateReports();
+      this.calcularFaturamento();
     });
   }
 
   calculateReports() {
     // Calcular produtos mais locados
     const equipamentoStats = new Map<number, { descricao: string, totalLocacoes: number, totalDias: number }>();
-    
+
     this.locacoes.forEach(locacao => {
       locacao.itens?.forEach(item => {
         const equipamento = this.equipamentos.find(e => e.id === item.equipamento_id);
@@ -954,7 +1059,7 @@ export class DashboardComponent implements OnInit {
             totalLocacoes: 0,
             totalDias: 0
           };
-          
+
           current.totalLocacoes += item.quantidade;
           current.totalDias += item.dias;
           equipamentoStats.set(equipamento.id, current);
@@ -968,7 +1073,7 @@ export class DashboardComponent implements OnInit {
 
     // Calcular clientes mais ativos
     const clienteStats = new Map<number, { nome: string, totalLocacoes: number, totalValor: number }>();
-    
+
     this.locacoes.forEach(locacao => {
       const cliente = this.clientes.find(c => c.id === locacao.cliente_id);
       if (cliente) {
@@ -977,7 +1082,7 @@ export class DashboardComponent implements OnInit {
           totalLocacoes: 0,
           totalValor: 0
         };
-        
+
         current.totalLocacoes += 1;
         current.totalValor += locacao.total_final || 0;
         clienteStats.set(cliente.id, current);
@@ -1009,7 +1114,7 @@ export class DashboardComponent implements OnInit {
   }
 
   getTipoCobrancaLabel(tipoCobranca: string): string {
-    switch(tipoCobranca) {
+    switch (tipoCobranca) {
       case 'diaria':
         return 'Diária';
       case 'semanal':
@@ -1029,7 +1134,7 @@ export class DashboardComponent implements OnInit {
     if (equipamento) {
       return equipamento.descricao;
     }
-    
+
     // Se não encontrou, tentar buscar nos itens do orçamento selecionado
     if (this.selectedOrcamento?.itens) {
       const item = this.selectedOrcamento.itens.find(i => i.equipamento_id === equipamentoId);
@@ -1037,7 +1142,7 @@ export class DashboardComponent implements OnInit {
         return item.equipamento.descricao;
       }
     }
-    
+
     // Se não encontrou, tentar buscar nos itens da locação selecionada
     if (this.selectedLocacao?.itens) {
       const item = this.selectedLocacao.itens.find(i => i.equipamento_id === equipamentoId);
@@ -1045,7 +1150,7 @@ export class DashboardComponent implements OnInit {
         return item.equipamento.descricao;
       }
     }
-    
+
     return 'Equipamento não encontrado';
   }
 
@@ -1056,5 +1161,49 @@ export class DashboardComponent implements OnInit {
   closeLocacaoModal() {
     this.selectedLocacao = null;
     this.showLocacaoModal = false;
+  }
+
+  isMasterUser(): boolean {
+    return this.authService.isMasterUser();
+  }
+
+  calcularFaturamento() {
+    let locacoesFiltradas = this.locacoes;
+    const hoje = new Date();
+    hoje.setHours(23, 59, 59, 999);
+
+    let inicio = new Date();
+    inicio.setHours(0, 0, 0, 0);
+
+    if (this.faturamentoFiltro === 'semana') {
+      inicio.setDate(hoje.getDate() - 7);
+    } else if (this.faturamentoFiltro === 'mes') {
+      inicio.setMonth(hoje.getMonth() - 1);
+    } else if (this.faturamentoFiltro === 'custom') {
+      if (this.dataInicioFiltro) {
+        // Usa a data filtrada no UTC para evitar pular um dia devido a Timezone
+        const [ano, mes, dia] = this.dataInicioFiltro.split('-').map(Number);
+        inicio = new Date(ano, mes - 1, dia, 0, 0, 0);
+      } else {
+        inicio = new Date(0);
+      }
+      if (this.dataFimFiltro) {
+        const [ano, mes, dia] = this.dataFimFiltro.split('-').map(Number);
+        hoje.setTime(new Date(ano, mes - 1, dia, 23, 59, 59, 999).getTime());
+      }
+    }
+
+    this.faturamentoTotal = locacoesFiltradas
+      .filter(l => {
+        const dataLocacao = new Date(l.data_criacao);
+        return dataLocacao >= inicio && dataLocacao <= hoje;
+      })
+      .filter(l => l.status !== 'cancelada')
+      .reduce((sum, l) => sum + (l.total_final || 0), 0);
+  }
+
+  setFiltroFaturamento(filtro: 'semana' | 'mes' | 'custom') {
+    this.faturamentoFiltro = filtro;
+    this.calcularFaturamento();
   }
 } 

@@ -882,7 +882,8 @@ import { SnackbarService } from '../../services/snackbar.service';
       justify-content: center;
       align-items: center;
       z-index: 1000;
-      padding: 2rem;
+      padding: 1rem;
+      overscroll-behavior: contain;
     }
 
     .modal-content {

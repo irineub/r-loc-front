@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 export interface ViewerAction {
-  action: 'whatsapp' | 'download' | 'save';
+  action: 'whatsapp' | 'download' | 'save' | 'download-pdf';
   signature?: string;
+  docHtml?: string;
+  docType?: string;
 }
 
 export interface ViewerDocument {
@@ -37,6 +39,9 @@ export interface ViewerDocument {
           <div class="header-actions" style="display: flex; gap: 10px;">
             <button class="btn btn-primary btn-sm" (click)="printActiveDocument()" *ngIf="activeDocId">
               <i class="fas fa-print"></i> Imprimir
+            </button>
+            <button class="btn btn-success btn-sm" (click)="downloadActiveDocument()" *ngIf="activeDocId && mode === 'view'">
+              <i class="fas fa-download"></i> Baixar PDF
             </button>
             <button class="btn btn-secondary btn-sm" (click)="close()">
               <i class="fas fa-times"></i> Fechar
@@ -101,6 +106,7 @@ export interface ViewerDocument {
       align-items: center;
       z-index: 2000;
       padding: 1rem;
+      overscroll-behavior: contain;
     }
 
     .modal-content {
@@ -280,6 +286,7 @@ export class DocumentViewerComponent implements AfterViewInit, OnChanges {
   @Input() documents: ViewerDocument[] = [];
   @Input() mode: 'view' | 'sign' = 'view';
   @Input() activeDocId: string = '';
+  @Input() locadoraSignature: string = '';
 
   @Output() onAction = new EventEmitter<ViewerAction>();
   @Output() closeViewer = new EventEmitter<void>();
@@ -477,7 +484,7 @@ export class DocumentViewerComponent implements AfterViewInit, OnChanges {
     // We check if the container placeholder exists (Contrato), otherwise fallback
     const containerId = 'id="assinatura-locataria-container"';
     if (this.activeDocument.html.includes(containerId)) {
-      const signatureImgHtml = `<img src="${signatureDataUrl}" style="max-height: 150px; max-width: 350px; width: 100%; object-fit: contain; position: absolute; bottom: 0px; left: 50%; transform: translateX(-10%); z-index: 10;">`;
+      const signatureImgHtml = `<img src="${signatureDataUrl}" style="max-height: 200px; max-width: 400px; width: 100%; object-fit: contain; position: absolute; bottom: 0px; left: 50%; transform: translateX(-10%); z-index: 10;">`;
 
       // We replace the inner content of the container with the image
       this.activeDocument.html = this.activeDocument.html.replace(
@@ -496,6 +503,18 @@ export class DocumentViewerComponent implements AfterViewInit, OnChanges {
       this.activeDocument.html = this.activeDocument.html.replace('</body>', styledSignature + '</body>');
       if (!this.activeDocument.html.includes('</body>')) { // fallback if there is no body tag
         this.activeDocument.html += styledSignature;
+      }
+    }
+
+    // Inject locadora (company) signature if available
+    if (this.locadoraSignature) {
+      const locadoraContainerId = 'id="assinatura-locadora-container"';
+      if (this.activeDocument.html.includes(locadoraContainerId)) {
+        const locadoraImgHtml = `<img src="${this.locadoraSignature}" style="max-height: 150px; max-width: 350px; width: 100%; object-fit: contain; position: absolute; bottom: 0px; left: 50%; transform: translateX(-10%); z-index: 10;">`;
+        this.activeDocument.html = this.activeDocument.html.replace(
+          /(<div id="assinatura-locadora-container"[^>]*>)[\s\S]*?(<\/div>)/i,
+          `$1${locadoraImgHtml}$2`
+        );
       }
     }
 
@@ -520,6 +539,12 @@ export class DocumentViewerComponent implements AfterViewInit, OnChanges {
   downloadSigned() {
     if (this.signatureImage) {
       this.onAction.emit({ action: 'download', signature: this.signatureImage });
+    }
+  }
+
+  downloadActiveDocument() {
+    if (this.activeDocument) {
+      this.onAction.emit({ action: 'download-pdf', docHtml: this.activeDocument.html, docType: this.activeDocument.type });
     }
   }
 

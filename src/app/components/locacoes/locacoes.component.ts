@@ -265,6 +265,7 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
       *ngIf="showDocumentViewer"
       [documents]="viewerDocuments"
       [mode]="viewerMode"
+      [locadoraSignature]="locadoraSignature"
       (closeViewer)="closeDocumentViewer()"
       (onAction)="handleViewerAction($event)">
     </app-document-viewer>
@@ -496,7 +497,8 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
       justify-content: center;
       align-items: center;
       z-index: 1000;
-      padding: 2rem;
+      padding: 1rem;
+      overscroll-behavior: contain;
     }
 
     .modal-content {
@@ -1038,6 +1040,7 @@ export class LocacoesComponent implements OnInit {
   showDocumentViewer = false;
   viewerDocuments: ViewerDocument[] = [];
   viewerMode: 'view' | 'sign' = 'view';
+  locadoraSignature: string = '';
 
   constructor(
     private locacaoService: LocacaoService,
@@ -1264,13 +1267,32 @@ export class LocacoesComponent implements OnInit {
           });
         }
       } else if (mode === 'sign') {
-        const contratoHtml = this.printableService.generateContratoHTML(this.selectedLocacao);
-        this.viewerDocuments.push({
-          id: 'contrato',
-          title: 'Contrato',
-          type: 'contrato',
-          html: contratoHtml
+        // Load locadora signature from config before opening
+        this.whatsappService.getSignatureConfig().subscribe({
+          next: (config) => {
+            this.locadoraSignature = config?.assinatura_base64 || '';
+            const contratoHtml = this.printableService.generateContratoHTML(this.selectedLocacao!);
+            this.viewerDocuments.push({
+              id: 'contrato',
+              title: 'Contrato',
+              type: 'contrato',
+              html: contratoHtml
+            });
+            this.showDocumentViewer = true;
+          },
+          error: () => {
+            this.locadoraSignature = '';
+            const contratoHtml = this.printableService.generateContratoHTML(this.selectedLocacao!);
+            this.viewerDocuments.push({
+              id: 'contrato',
+              title: 'Contrato',
+              type: 'contrato',
+              html: contratoHtml
+            });
+            this.showDocumentViewer = true;
+          }
         });
+        return; // Don't set showDocumentViewer here, wait for async
       }
       this.showDocumentViewer = true;
     } catch (error) {
@@ -1285,6 +1307,13 @@ export class LocacoesComponent implements OnInit {
   }
 
   handleViewerAction(event: ViewerAction) {
+    if (event.action === 'download-pdf' && event.docHtml) {
+      const docType = event.docType || 'documento';
+      const filename = `${docType}_${this.selectedLocacao?.id || ''}_${new Date().toISOString().split('T')[0]}`;
+      this.printableService.exportToPDF(event.docHtml, filename);
+      return;
+    }
+
     if (!this.selectedLocacao || !event.signature) return;
 
     const base64Signature = event.signature;
