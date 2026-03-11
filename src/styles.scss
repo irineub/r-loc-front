@@ -198,7 +198,12 @@ body.dark-mode {
   .report-item,
   .filters-section,
   .cliente-card,
-  .card-actions {
+  .card-actions,
+  .equipamento-item,
+  .status-option,
+  .equipamento-details-expanded,
+  .resumo-item,
+  .actions-section {
     background: #252525 !important;
     border-color: #333 !important;
     box-shadow: none !important;
@@ -251,6 +256,43 @@ body.dark-mode {
     tr:hover {
       background: #333 !important;
     }
+  }
+
+  /* Recebimento specific fixes */
+  .status-option.selected {
+    background: #444 !important;
+  }
+
+  .status-option.devolvido.selected {
+    background: rgba(40, 167, 69, 0.2) !important;
+    border-color: #28a745 !important;
+  }
+
+  .status-option.nao-devolvido.selected {
+    background: rgba(220, 53, 69, 0.2) !important;
+    border-color: #dc3545 !important;
+  }
+
+  .resumo-section {
+    background: rgba(33, 150, 243, 0.1) !important;
+    border-color: #2196f3 !important;
+  }
+
+  .resumo-section.todos-devolvidos {
+    background: rgba(76, 175, 80, 0.1) !important;
+    border-color: #4caf50 !important;
+  }
+
+  .status-completo,
+  .status-completo-badge {
+    background: rgba(76, 175, 80, 0.2) !important;
+    border-color: rgba(76, 175, 80, 0.4) !important;
+    color: #e0e0e0 !important;
+  }
+
+  .warning {
+    background: rgba(255, 193, 7, 0.1) !important;
+    color: #ffd54f !important;
   }
 
   .form-group label,
@@ -359,7 +401,13 @@ body.dark-mode {
   .activity-content small,
   .report-content strong,
   .report-content small,
-  .filter-group label {
+  .filter-group label,
+  .equipamento-info h4,
+  .status-selection h5,
+  .status-label,
+  .resumo-label,
+  .instructions,
+  .status-description {
     color: #e0e0e0 !important;
   }
 
