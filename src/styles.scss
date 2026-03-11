@@ -194,7 +194,9 @@ body.dark-mode {
   .orcamento-info,
   .locacao-info,
   .dashboard .activity-item,
+  .report-section,
   .report-item,
+  .filters-section,
   .cliente-card,
   .card-actions {
     background: #252525 !important;
@@ -265,7 +267,8 @@ body.dark-mode {
   input,
   select,
   textarea,
-  .form-control {
+  .form-control,
+  .period-selector .btn {
     background-color: #2b2b2b !important;
     color: #e0e0e0 !important;
     border-color: #444 !important;
@@ -353,7 +356,10 @@ body.dark-mode {
   .info-label,
   .info-value,
   .activity-content p,
-  .activity-content small {
+  .activity-content small,
+  .report-content strong,
+  .report-content small,
+  .filter-group label {
     color: #e0e0e0 !important;
   }
 
