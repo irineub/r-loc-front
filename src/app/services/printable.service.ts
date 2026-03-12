@@ -482,8 +482,8 @@ export class PrintableService {
 
     // Calcular subtotal, desconto e frete do orçamento
     const subtotal = locacao.itens?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
-    const desconto = locacao.orcamento?.desconto || 0;
-    const frete = locacao.orcamento?.frete || 0;
+    const desconto = locacao.desconto || 0;
+    const frete = locacao.frete || 0;
     const total = this.formatCurrency(locacao.total_final);
     const subtotalFormatado = this.formatCurrency(subtotal);
     const descontoFormatado = this.formatCurrency(desconto);
@@ -847,8 +847,8 @@ export class PrintableService {
 
     // Calcular subtotal, desconto e frete do orçamento
     const subtotal = locacao.itens?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
-    const desconto = locacao.orcamento?.desconto || 0;
-    const frete = locacao.orcamento?.frete || 0;
+    const desconto = locacao.desconto || 0;
+    const frete = locacao.frete || 0;
     const total = this.formatCurrency(locacao.total_final);
     const subtotalFormatado = this.formatCurrency(subtotal);
     const descontoFormatado = this.formatCurrency(desconto);

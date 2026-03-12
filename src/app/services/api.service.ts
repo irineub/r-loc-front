@@ -103,6 +103,14 @@ export class ApiService {
   }
 
   // Custom methods
+  getCustom<T>(endpoint: string): Observable<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    console.log('GET Custom request:', url);
+    return this.http.get<T>(url, { headers: this.getHeaders() }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   postCustom<T>(endpoint: string, data?: any): Observable<T> {
     const url = `${this.baseUrl}${endpoint}`;
     console.log('POST Custom request:', url, data);

@@ -93,6 +93,28 @@ export interface Locacao {
   itens: ItemLocacao[];
   assinatura_realizada?: boolean;
   assinatura_base64?: string | null;
+  locacao_original_id?: number;
+  frete?: number;
+  desconto?: number;
+  desconto_percentual?: number;
+}
+
+export interface RenovarLocacaoItem {
+  equipamento_id: number;
+  data_fim: string;
+  tipo_cobranca?: string;
+  preco_unitario?: number;
+  dias?: number;
+  subtotal?: number;
+}
+
+export interface RenovarLocacaoRequest {
+  data_inicio: string;
+  data_fim: string;
+  desconto?: number;
+  desconto_percentual?: number;
+  total_final?: number;
+  itens: RenovarLocacaoItem[];
 }
 
 // Create/Update interfaces

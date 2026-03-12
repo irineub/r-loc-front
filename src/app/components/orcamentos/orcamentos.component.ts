@@ -836,11 +836,12 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
     }
 
     .total-breakdown {
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: white;
       padding: 1.5rem;
       border-radius: 12px;
-      border: 2px solid rgba(220, 53, 69, 0.1);
-      box-shadow: 0 4px 20px rgba(220, 53, 69, 0.05);
+      border: 1px solid #334155;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
       margin-top: 0.5rem;
     }
 
@@ -849,7 +850,7 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
       justify-content: space-between;
       align-items: center;
       padding: 0.75rem 0;
-      border-bottom: 1px solid rgba(220, 53, 69, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       font-size: 0.95rem;
     }
 
@@ -860,22 +861,22 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
     .total-line.total-final {
       font-size: 1.2rem;
       font-weight: 700;
-      color: #dc3545;
+      color: #38bdf8;
       margin-top: 0.5rem;
       padding-top: 1rem;
-      border-top: 2px solid #dc3545;
+      border-top: 2px solid #38bdf8;
     }
 
     .total-line span {
-      color: #495057;
+      color: #cbd5e1;
     }
 
     .total-line .text-danger {
-      color: #dc3545;
+      color: #f87171 !important;
     }
 
     .total-line .text-success {
-      color: #28a745;
+      color: #4ade80 !important;
     }
 
     .aprovado-section {

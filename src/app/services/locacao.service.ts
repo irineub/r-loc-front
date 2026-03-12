@@ -52,4 +52,12 @@ export class LocacaoService {
   getLocacoesAtrasadas(): Observable<Locacao[]> {
     return this.apiService.get<Locacao>('/locacoes/atrasadas');
   }
+
+  renovarLocacao(id: number, request: any): Observable<any> {
+    return this.apiService.postCustom(`/locacoes/${id}/renovar`, request);
+  }
+
+  getRenovacoes(id: number): Observable<Locacao[]> {
+    return this.apiService.getCustom<Locacao[]>(`/locacoes/${id}/renovacoes`);
+  }
 } 

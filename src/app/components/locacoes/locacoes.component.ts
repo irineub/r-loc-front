@@ -11,6 +11,7 @@ import { Locacao, Equipamento } from '../../models/index';
 import { Router } from '@angular/router';
 import { WhatsappService } from '../../services/whatsapp.service';
 import { SnackbarService } from '../../services/snackbar.service';
+import { AuthService } from '../../services/auth.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared/document-viewer/document-viewer.component';
@@ -67,6 +68,12 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
                   <span class="badge" [class]="'badge-' + locacao.status">
                     {{ locacao.status }}
                   </span>
+                  <span class="badge badge-info" *ngIf="locacao.locacao_original_id" style="margin-left: 5px; font-size: 0.65rem;">
+                    (RENOVADA)
+                  </span>
+                  <span class="badge badge-secondary" *ngIf="foiRenovada(locacao)" style="margin-left: 5px; font-size: 0.65rem;">
+                    (RENOVOU)
+                  </span>
                 </td>
                 <td data-label="Data Devolução">{{ locacao.data_devolucao ? (locacao.data_devolucao | date:'dd/MM/yyyy') : '-' }}</td>
                 <td data-label="Ações">
@@ -85,6 +92,10 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
                     </button>
                     <button class="action-btn view" (click)="viewLocacao(locacao)" title="Visualizar Detalhes">
                       Ver
+                    </button>
+                    <button class="action-btn" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white;" 
+                            (click)="openRenewModal(locacao)" *ngIf="canRenew(locacao)" title="Renovar Locação">
+                      Renovar
                     </button>
                   </div>
                 </td>
@@ -227,8 +238,8 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
             <div class="total-row" *ngIf="(selectedLocacao?.orcamento?.desconto ?? 0) > 0">
               <strong>Desconto:</strong> {{ selectedLocacao?.orcamento?.desconto | currencyBr }}
             </div>
-            <div class="total-row" *ngIf="(selectedLocacao?.orcamento?.frete ?? 0) > 0">
-              <strong>Frete/Adicional:</strong> {{ selectedLocacao?.orcamento?.frete | currencyBr }}
+            <div class="total-row" *ngIf="(selectedLocacao?.frete ?? 0) > 0">
+              <strong>Frete/Adicional:</strong> {{ selectedLocacao?.frete | currencyBr }}
             </div>
             <div class="total-row final-total">
               <strong>Total Final:</strong> {{ selectedLocacao?.total_final | currencyBr }}
@@ -252,10 +263,176 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
           </div>
         </div>
 
-        <div class="modal-footer">
+        <div class="modal-footer" [ngStyle]="{'justify-content': (selectedLocacao && (foiRenovada(selectedLocacao) || selectedLocacao.locacao_original_id)) ? 'space-between' : 'flex-end'}">
+          <div *ngIf="selectedLocacao && (foiRenovada(selectedLocacao) || selectedLocacao.locacao_original_id)" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+             <ng-container *ngIf="foiRenovada(selectedLocacao)">
+                 <span style="color: #dc3545; font-weight: bold; font-size: 0.9rem;">⚠️ LOCAÇÃO RENOVADA</span>
+                 <button class="btn btn-info btn-sm" (click)="viewRenovacao(selectedLocacao)">
+                    Ver Nova
+                 </button>
+             </ng-container>
+             <ng-container *ngIf="selectedLocacao.locacao_original_id">
+                 <span style="color: #17a2b8; font-weight: bold; font-size: 0.9rem;">ℹ️ ORIGINADA DE RENOVAÇÃO</span>
+                 <button class="btn btn-secondary btn-sm" (click)="viewLocacaoAnterior(selectedLocacao)">
+                    Ver Anterior
+                 </button>
+             </ng-container>
+          </div>
           <button class="btn btn-secondary" (click)="closeViewModal()">
             Fechar
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Renovação de Locação -->
+    <div class="modal-overlay" *ngIf="showRenewModal" (click)="closeRenewModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Renovar Locação #{{ renewLocacao?.id }}</h3>
+          <button class="modal-close" (click)="closeRenewModal()">×</button>
+        </div>
+        
+        <div class="modal-body">
+          <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+              <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Data de Início do Novo Contrato</label>
+              <input type="date" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #ced4da; border-radius: 8px;" [(ngModel)]="renewRequest.data_inicio" (ngModelChange)="recalcularTodosItens()" [min]="renewMinDate">
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Data de Fim (Geral)</label>
+              <input type="date" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #ced4da; border-radius: 8px;" [(ngModel)]="renewRequest.data_fim" (ngModelChange)="onGlobalDateFimChange($event)" [min]="renewRequest.data_inicio">
+            </div>
+          </div>
+          
+          <div class="itens-section">
+            <h4>Itens a serem renovados</h4>
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>Equipamento</th>
+                  <th>Cobrança</th>
+                  <th>Data de Fim (Específica)</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of renewRequest.itens">
+                  <td>{{ item.descricao }}</td>
+                  <td>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                      <select class="form-control" style="padding: 0.5rem; border: 1px solid #ced4da; border-radius: 8px; width: 110px;" 
+                              [(ngModel)]="item.tipo_cobranca" (ngModelChange)="recalcularItem(item)">
+                        <option value="diaria">Diária</option>
+                        <option value="semanal">Semanal</option>
+                        <option value="quinzenal">Quinzenal</option>
+                        <option value="mensal">Mensal</option>
+                      </select>
+                      <small style="color: #6c757d; font-weight: bold;">Val: {{ item.preco_unitario | currencyBr }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                      <input type="date" class="form-control" style="padding: 0.5rem; border: 1px solid #ced4da; border-radius: 8px;" 
+                             [(ngModel)]="item.data_fim" (ngModelChange)="onItemDateFimChange(item, $event)" [min]="renewRequest.data_inicio">
+                      <small *ngIf="!item.data_fim && renewRequest.data_fim" style="color: #6c757d; font-size: 0.75rem;">
+                        (Geral: {{ renewRequest.data_fim | date:'dd/MM/yyyy' : 'UTC' }})
+                      </small>
+                    </div>
+                  </td>
+                  <td><strong>{{ item.subtotal | currencyBr }}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+              <div class="form-group" style="flex: 1; min-width: 200px;">
+                <label for="renewDesconto" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Desconto (%) - Opcional</label>
+                <input type="number" id="renewDesconto" name="renewDesconto" 
+                       [(ngModel)]="renewDescontoPorcentagem" min="0" max="100" step="0.1"
+                       (ngModelChange)="onRenewDescontoPercentualChange()"
+                       class="form-control" style="border: 1px solid #ced4da; border-radius: 8px; padding: 0.75rem;" placeholder="0.0%">
+                <small *ngIf="renewRequest.desconto > 0" style="color: #6c757d; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                  Valor: {{ renewRequest.desconto | currencyBr }}
+                </small>
+              </div>
+              
+              <div class="form-group" style="flex: 1; min-width: 200px;">
+                <label for="renewFrete" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Frete / Adicionais - Opcional</label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  <input type="number" id="renewFrete" name="renewFrete" 
+                         [(ngModel)]="renewRequest.frete" min="0" step="0.01"
+                         class="form-control" style="border: 1px solid #ced4da; border-radius: 0 8px 8px 0; padding: 0.75rem;" placeholder="0,00">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group total-preview" style="width: 100%;">
+              <label style="font-weight: 600; display: block; margin-bottom: 0.5rem; color: #495057;">Resumo Financeiro</label>
+              <div class="total-breakdown" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #334155; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);">
+                <div class="total-line" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.95rem;">
+                  <span style="color: #cbd5e1;">Subtotal dos Itens:</span>
+                  <strong>{{ getRenewSubtotal() | currencyBr }}</strong>
+                </div>
+                <div class="total-line" *ngIf="renewRequest.desconto > 0" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.95rem;">
+                  <span style="color: #cbd5e1;">Desconto:</span>
+                  <strong style="color: #f87171 !important;">- {{ renewRequest.desconto | currencyBr }}</strong>
+                </div>
+                <div class="total-line" *ngIf="renewRequest.frete > 0" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.95rem;">
+                  <span style="color: #cbd5e1;">Frete / Adicionais:</span>
+                  <strong style="color: #4ade80 !important;">+ {{ renewRequest.frete | currencyBr }}</strong>
+                </div>
+                <div class="total-line total-final" style="display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: 700; color: #38bdf8; margin-top: 0.5rem; padding-top: 1rem; border-top: 2px solid #38bdf8;">
+                  <span>Total Final:</span>
+                  <strong>{{ (getRenewSubtotal() - (renewRequest.desconto || 0) + (renewRequest.frete || 0)) | currencyBr }}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button class="btn btn-secondary" style="font-weight: 600;" (click)="closeRenewModal()">Cancelar</button>
+          <button class="btn btn-success" style="font-weight: 600;" (click)="confirmRenew()">Confirmar Renovação</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Senha para Desconto Renovação -->
+    <div class="modal-overlay" *ngIf="showRenewDiscountModal">
+      <div class="modal-content auth-modal">
+        <div class="modal-header">
+          <h3>Autorizar Desconto (Renovação)</h3>
+          <button class="modal-close" (click)="closeRenewDiscountModal()">×</button>
+        </div>
+        
+        <div class="modal-body auth-body">
+          <div class="form-group">
+            <label>Ao digitar a senha e confirmar, o desconto de <strong>{{ pendingRenewDiscountPercentage }}%</strong> será autorizado.</label>
+          </div>
+          
+          <p class="mt-3" style="text-align: right; color: #dc3545; font-weight: bold;" *ngIf="pendingRenewDiscountPercentage > 0">
+             Valor do desconto: {{ ((getRenewSubtotal() * pendingRenewDiscountPercentage) / 100) | currencyBr }}
+          </p>
+
+          <ng-container>
+             <div class="alert alert-warning mt-3">
+               O desconto solicitado é de <strong>{{ pendingRenewDiscountPercentage }}%</strong>, o que é maior que 10%. Digite a senha para autorizar.
+             </div>
+             
+             <div class="form-group">
+               <label>Senha de Autorização</label>
+               <input type="password" class="form-control" [(ngModel)]="renewDiscountPassword">
+             </div>
+          </ng-container>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeRenewDiscountModal()">Cancelar</button>
+          <button class="btn btn-primary" (click)="confirmRenewDiscount()">Confirmar Desconto</button>
         </div>
       </div>
     </div>
@@ -1037,19 +1214,37 @@ export class LocacoesComponent implements OnInit {
   confirmText = '';
   isConfirmTextValid = false;
 
+  showRenewModal = false;
+  renewLocacao: Locacao | null = null;
+  renewMinDate: string = '';
+  renewRequest: any = {
+    data_inicio: '',
+    data_fim: '',
+    itens: [],
+    desconto_percentual: 0,
+    desconto: 0,
+    frete: 0
+  };
+
+  showRenewDiscountModal = false;
+  pendingRenewDiscountPercentage = 0;
+  renewDiscountPassword = '';
+  renewDescontoPorcentagem: number = 0;
+
   showDocumentViewer = false;
   viewerDocuments: ViewerDocument[] = [];
   viewerMode: 'view' | 'sign' = 'view';
   locadoraSignature: string = '';
 
   constructor(
+    private router: Router,
     private locacaoService: LocacaoService,
     private equipamentoService: EquipamentoService,
     private printableService: PrintableService,
     private navigationService: NavigationService,
     private whatsappService: WhatsappService,
-    private router: Router,
     private snackbarService: SnackbarService,
+    private authService: AuthService,
     private dialog: MatDialog
   ) { }
 
@@ -1173,18 +1368,295 @@ export class LocacoesComponent implements OnInit {
     this.showViewModal = true;
   }
 
+  canRenew(locacao: Locacao): boolean {
+    return ['ativa', 'finalizada', 'atrasada'].includes(locacao.status.toLowerCase()) && !this.foiRenovada(locacao);
+  }
+
+  foiRenovada(locacao: Locacao): boolean {
+    return this.locacoes.some(l => l.locacao_original_id === locacao.id);
+  }
+
+  openRenewModal(locacao: Locacao) {
+    this.renewLocacao = locacao;
+
+    // Default to today or locacao end date
+    const today = new Date().toISOString().split('T')[0];
+    const oldEnd = locacao.data_fim ? locacao.data_fim.split('T')[0] : today;
+    const start = oldEnd >= today ? oldEnd : today;
+
+    this.renewMinDate = oldEnd;
+
+    this.renewRequest = {
+      data_inicio: start,
+      data_fim: '',
+      itens: locacao.itens.map(item => {
+        // Try to infer billing type from original if price matches, or default to monthly
+        const equipamento = this.equipamentos.find(e => e.id === item.equipamento_id);
+        let tipoCobranca: 'diaria' | 'semanal' | 'quinzenal' | 'mensal' = 'mensal';
+        if (equipamento) {
+          if (item.preco_unitario === equipamento.preco_diaria) tipoCobranca = 'diaria';
+          else if (item.preco_unitario === equipamento.preco_semanal) tipoCobranca = 'semanal';
+          else if (item.preco_unitario === equipamento.preco_quinzenal) tipoCobranca = 'quinzenal';
+          else if (item.preco_unitario === equipamento.preco_mensal) tipoCobranca = 'mensal';
+        }
+
+        return {
+          equipamento_id: item.equipamento_id,
+          descricao: this.getEquipamentoDescricao(item.equipamento_id),
+          data_fim: '', // will be set by user or default
+          quantidade: item.quantidade,
+          tipo_cobranca: tipoCobranca,
+          preco_unitario: item.preco_unitario,
+          subtotal: 0
+        };
+      })
+    };
+    this.renewRequest.desconto = 0;
+    this.renewRequest.desconto_percentual = 0;
+    this.renewRequest.frete = 0;
+    this.renewDescontoPorcentagem = 0;
+    this.showRenewModal = true;
+  }
+
+  recalcularItem(item: any) {
+    if (!this.renewRequest.data_inicio) return;
+
+    // Fallback pra data final geral se a específica não estiver preenchida
+    const dataFim = item.data_fim || this.renewRequest.data_fim;
+    if (!dataFim) {
+      item.subtotal = 0;
+      return;
+    }
+
+    // Obter preço base do equipamento
+    const equipamento = this.equipamentos.find(e => e.id === item.equipamento_id);
+    if (equipamento) {
+      switch (item.tipo_cobranca) {
+        case 'diaria': item.preco_unitario = equipamento.preco_diaria; break;
+        case 'semanal': item.preco_unitario = equipamento.preco_semanal; break;
+        case 'quinzenal': item.preco_unitario = equipamento.preco_quinzenal; break;
+        case 'mensal': item.preco_unitario = equipamento.preco_mensal; break;
+      }
+    }
+
+    // Calcular dias (no mínimo 1)
+    const d1 = new Date(this.renewRequest.data_inicio);
+    const d2 = new Date(dataFim);
+    const diffTime = Math.abs(d2.getTime() - d1.getTime());
+    let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (dias < 1) dias = 1;
+
+    // A lógica de negócio original calcula proporção conforme o tipo de cobrança, vamos simplificar estimando de forma linear baseado no tipo, ou melhor ainda, 
+    // a aproximação padrão que a pessoa inseriu no sistema. O backend irá recalcular baseado nos dias exatos de qualquer forma.
+    let basePeriodo = 30;
+    if (item.tipo_cobranca === 'diaria') basePeriodo = 1;
+    if (item.tipo_cobranca === 'semanal') basePeriodo = 7;
+    if (item.tipo_cobranca === 'quinzenal') basePeriodo = 15;
+
+    const fator = Number((dias / basePeriodo).toFixed(2)) || Math.ceil(dias / basePeriodo);
+    item.subtotal = item.preco_unitario * Math.max(1, Math.ceil(fator)) * item.quantidade;
+  }
+
+  onGlobalDateFimChange(newDate: string) {
+    if (!newDate) return;
+    const maxItemDate = this.getMaxItemDate();
+    if (maxItemDate && newDate < maxItemDate) {
+      setTimeout(() => { this.renewRequest.data_fim = maxItemDate; this.recalcularTodosItens(); });
+    } else {
+      this.recalcularTodosItens();
+    }
+  }
+
+  onItemDateFimChange(item: any, newDate: string) {
+    if (newDate && (!this.renewRequest.data_fim || newDate > this.renewRequest.data_fim)) {
+      setTimeout(() => { this.renewRequest.data_fim = newDate; this.recalcularTodosItens(); });
+    } else {
+      this.recalcularItem(item);
+    }
+  }
+
+  recalcularTodosItens() {
+    this.renewRequest.itens.forEach((item: any) => this.recalcularItem(item));
+    this.recalcularDescontoRenew();
+  }
+
+  getRenewSubtotal(): number {
+    if (!this.renewRequest || !this.renewRequest.itens) return 0;
+    return this.renewRequest.itens.reduce((sum: number, item: any) => sum + (item.subtotal || 0), 0);
+  }
+
+  recalcularDescontoRenew() {
+    const subtotal = this.getRenewSubtotal();
+    this.renewRequest.desconto = (subtotal * this.renewRequest.desconto_percentual) / 100;
+  }
+
+  onRenewDescontoPercentualChange() {
+    if (this.renewDescontoPorcentagem < 0) this.renewDescontoPorcentagem = 0;
+    if (this.renewDescontoPorcentagem > 100) this.renewDescontoPorcentagem = 100;
+
+    const subtotal = this.getRenewSubtotal();
+    const proposedValue = (subtotal * this.renewDescontoPorcentagem) / 100;
+
+    if (this.renewDescontoPorcentagem > 10) {
+      this.pendingRenewDiscountPercentage = this.renewDescontoPorcentagem;
+      // Revert the input briefly until authorized
+      setTimeout(() => {
+        this.renewDescontoPorcentagem = this.renewRequest.desconto_percentual || 0;
+      });
+      this.renewDiscountPassword = '';
+      this.showRenewDiscountModal = true;
+    } else {
+      this.renewRequest.desconto_percentual = this.renewDescontoPorcentagem;
+      this.renewRequest.desconto = proposedValue;
+    }
+  }
+
+  closeRenewDiscountModal() {
+    this.showRenewDiscountModal = false;
+    this.renewDiscountPassword = '';
+  }
+
+  onPendingRenewDiscountChange() {
+    if (this.pendingRenewDiscountPercentage < 0) this.pendingRenewDiscountPercentage = 0;
+    if (this.pendingRenewDiscountPercentage > 100) this.pendingRenewDiscountPercentage = 100;
+  }
+
+  confirmRenewDiscount() {
+    if (this.pendingRenewDiscountPercentage > 10) {
+      if (!this.renewDiscountPassword) {
+        this.snackbarService.error('Senha de autorização é obrigatória para descontos acima de 10%');
+        return;
+      }
+
+      const isValid = this.authService.verifyDiscountPassword(this.renewDiscountPassword);
+      if (isValid) {
+        this.aplicarDescontoRenew();
+      } else {
+        this.snackbarService.error('Senha de autorização incorreta');
+      }
+    } else {
+      this.aplicarDescontoRenew();
+    }
+  }
+
+  aplicarDescontoRenew() {
+    this.renewRequest.desconto_percentual = this.pendingRenewDiscountPercentage;
+    this.renewDescontoPorcentagem = this.pendingRenewDiscountPercentage;
+    this.recalcularDescontoRenew();
+    this.closeRenewDiscountModal();
+    this.snackbarService.success('Desconto autorizado e aplicado com sucesso!');
+  }
+
+  getMaxItemDate(): string | null {
+    let max = '';
+    for (const item of this.renewRequest.itens) {
+      if (item.data_fim && item.data_fim > max) {
+        max = item.data_fim;
+      }
+    }
+    return max || null;
+  }
+
+  closeRenewModal() {
+    this.showRenewModal = false;
+    this.renewLocacao = null;
+  }
+
+  confirmRenew() {
+    if (!this.renewRequest.data_inicio || !this.renewRequest.data_fim) {
+      this.snackbarService.error('Selecione data de início e fim do contrato.');
+      return;
+    }
+
+    const total_final = this.getRenewSubtotal() - (this.renewRequest.desconto || 0) + (this.renewRequest.frete || 0);
+
+    const payload = {
+      data_inicio: this.renewRequest.data_inicio + 'T00:00:00',
+      data_fim: this.renewRequest.data_fim + 'T23:59:59',
+      desconto: this.renewRequest.desconto || 0,
+      desconto_percentual: this.renewRequest.desconto_percentual || 0,
+      frete: this.renewRequest.frete || 0,
+      total_final: total_final,
+      itens: this.renewRequest.itens.map((item: any) => ({
+        equipamento_id: item.equipamento_id,
+        data_fim: (item.data_fim || this.renewRequest.data_fim) + 'T23:59:59',
+        tipo_cobranca: item.tipo_cobranca,
+        preco_unitario: item.preco_unitario,
+        subtotal: item.subtotal
+      }))
+    };
+
+    this.locacaoService.renovarLocacao(this.renewLocacao!.id, payload).subscribe({
+      next: (response) => {
+        this.snackbarService.success('Locação renovada com sucesso!');
+        this.closeRenewModal();
+        this.loadData();
+
+        if (response.locacao) {
+          this.viewLocacao(response.locacao);
+          setTimeout(() => {
+            this.openDocumentViewer('view');
+          }, 100);
+        }
+      },
+      error: (err) => {
+        console.error('Erro ao renovar locação:', err);
+        this.snackbarService.error('Erro ao renovar locação.');
+      }
+    });
+  }
+
   closeViewModal() {
     this.showViewModal = false;
     this.selectedLocacao = null;
   }
 
-  getEquipamentoDescricao(equipamentoId: number): string {
-    // Buscar a descrição do equipamento nos itens da locação
-    if (this.selectedLocacao?.itens) {
-      const item = this.selectedLocacao.itens.find(i => i.equipamento_id === equipamentoId);
-      return item?.equipamento?.descricao || 'Equipamento não encontrado';
+  viewRenovacao(locacao: Locacao) {
+    const child = this.locacoes.find(l => l.locacao_original_id === locacao.id);
+    if (child) {
+      this.viewLocacao(child);
+    } else {
+      this.locacaoService.getRenovacoes(locacao.id).subscribe({
+        next: (renovacoes) => {
+          if (renovacoes && renovacoes.length > 0) {
+            this.viewLocacao(renovacoes[0]);
+          } else {
+            this.snackbarService.error('Locação renovada não encontrada.');
+          }
+        },
+        error: () => this.snackbarService.error('Erro ao buscar locação renovada.')
+      });
     }
-    return 'Equipamento não encontrado';
+  }
+
+  viewLocacaoAnterior(locacao: Locacao) {
+    if (!locacao.locacao_original_id) return;
+    const parent = this.locacoes.find(l => l.id === locacao.locacao_original_id);
+    if (parent) {
+      this.viewLocacao(parent);
+    } else {
+      this.locacaoService.getLocacao(locacao.locacao_original_id).subscribe({
+        next: (res) => {
+          if (res) this.viewLocacao(res);
+        },
+        error: () => this.snackbarService.error('Locação anterior não encontrada.')
+      });
+    }
+  }
+
+  getEquipamentoDescricao(equipamentoId: number): string {
+    // Buscar a descrição do equipamento nos itens da locação selecionada ou na locação a ser renovada
+    const locacao = this.selectedLocacao || this.renewLocacao;
+    if (locacao?.itens) {
+      const item = locacao.itens.find(i => i.equipamento_id === equipamentoId);
+      if (item?.equipamento?.descricao) {
+        return item.equipamento.descricao;
+      }
+    }
+
+    // Fallback para a lista global de equipamentos
+    const equipamento = this.equipamentos.find(e => e.id === equipamentoId);
+    return equipamento?.descricao || 'Equipamento não encontrado';
   }
 
   getLocacaoSubtotal(locacao: Locacao | null): number {
@@ -1266,6 +1738,37 @@ export class LocacoesComponent implements OnInit {
             html: orcamentoHtml
           });
         }
+
+        // Se este contrato tiver sido renovado a partir de outro (é um filho), buscar o "Contrato Anterior"
+        if (this.selectedLocacao.locacao_original_id) {
+          this.locacaoService.getLocacao(this.selectedLocacao.locacao_original_id).subscribe({
+            next: (parent) => {
+              if (parent) {
+                this.viewerDocuments = [...this.viewerDocuments, {
+                  id: 'contrato_anterior_' + parent.id,
+                  title: 'Contrato Anterior',
+                  type: 'contrato',
+                  html: this.printableService.generateContratoHTML(parent)
+                }];
+              }
+            }
+          });
+        }
+
+        // Buscar contratos renovados derivados deste (filhos)
+        this.locacaoService.getRenovacoes(this.selectedLocacao.id).subscribe({
+          next: (renovacoes) => {
+            if (renovacoes.length > 0) {
+              const novasAbas: ViewerDocument[] = renovacoes.map((renovacao, index) => ({
+                id: 'renovacao_' + renovacao.id,
+                title: 'Contrato Novo/Renovado (' + renovacao.id + ')',
+                type: 'contrato',
+                html: this.printableService.generateContratoHTML(renovacao)
+              }));
+              this.viewerDocuments = [...this.viewerDocuments, ...novasAbas];
+            }
+          }
+        });
       } else if (mode === 'sign') {
         // Load locadora signature from config before opening
         this.whatsappService.getSignatureConfig().subscribe({
