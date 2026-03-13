@@ -407,7 +407,10 @@ body.dark-mode {
   .status-label,
   .resumo-label,
   .instructions,
-  .status-description {
+  .status-description,
+  .item-info strong,
+  .item-details,
+  .item-price {
     color: #e0e0e0 !important;
   }
 
