@@ -364,6 +364,14 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
                 Limpar Filtros
               </button>
             </div>
+            
+            <div class="search-box" style="flex-grow: 1; display: flex; justify-content: flex-end;">
+              <input type="text" 
+                     [(ngModel)]="termoBuscaTabela" 
+                     class="form-control" 
+                     placeholder="🔍 Buscar por nome, CPF ou CNPJ..." 
+                     style="min-width: 300px; padding: 0.75rem 1rem; border-radius: 12px; border: 2px solid #e9ecef;">
+            </div>
           </div>
 
           <table class="table">
@@ -2059,6 +2067,7 @@ export class OrcamentosComponent implements OnInit {
   periodoCalculado: { dias: number; tipoCobranca: string } | null = null;
   termoBuscaEquipamento: string = '';
   termoBuscaCliente: string = '';
+  termoBuscaTabela: string = '';
 
   get clientesFiltrados(): Cliente[] {
     if (!this.termoBuscaCliente) {
@@ -2854,6 +2863,19 @@ export class OrcamentosComponent implements OnInit {
       });
     }
 
+    // Filtrar por texto na tabela
+    if (this.termoBuscaTabela) {
+      const termo = this.termoBuscaTabela.toLowerCase();
+      filtered = filtered.filter(orcamento => {
+        const cliente = orcamento.cliente;
+        if (!cliente) return false;
+
+        return (cliente.nome_razao_social && cliente.nome_razao_social.toLowerCase().includes(termo)) ||
+          (cliente.cpf && cliente.cpf.includes(termo)) ||
+          (cliente.cnpj && cliente.cnpj.includes(termo));
+      });
+    }
+
     // Ordenar: pendentes primeiro, depois aprovados sem contrato, depois os outros
     filtered.sort((a, b) => {
       const aHasLocacao = this.hasLocacaoForOrcamento(a.id);
@@ -2902,6 +2924,7 @@ export class OrcamentosComponent implements OnInit {
     this.selectedMonth = '';
     this.selectedYear = '';
     this.selectedStatus = '';
+    this.termoBuscaTabela = '';
   }
 
   saveOrcamento() {
