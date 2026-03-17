@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CurrencyBrPipe } from '../../pipes/currency-br.pipe';
@@ -312,45 +312,115 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
             </div>
           </div>
           
-          <div class="itens-section">
-            <h4>Itens a serem renovados</h4>
-            <table class="items-table">
-              <thead>
-                <tr>
-                  <th>Equipamento</th>
-                  <th>Cobrança</th>
-                  <th>Data de Fim (Específica)</th>
-                  <th>Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of renewRequest.itens">
-                  <td>{{ item.descricao }}</td>
-                  <td>
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                      <select class="form-control" style="padding: 0.5rem; border: 1px solid #ced4da; border-radius: 8px; width: 110px;" 
-                              [(ngModel)]="item.tipo_cobranca" (ngModelChange)="recalcularItem(item)">
-                        <option value="diaria">Diária</option>
-                        <option value="semanal">Semanal</option>
-                        <option value="quinzenal">Quinzenal</option>
-                        <option value="mensal">Mensal</option>
-                      </select>
-                      <small style="color: #6c757d; font-weight: bold;">Val: {{ item.preco_unitario | currencyBr }}</small>
+          <div class="itens-section" style="margin-bottom: 1.5rem;">
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
+              <div class="form-group" style="position: relative; flex: 2; min-width: 200px; margin:0;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Adicionar Equipamento</label>
+                <div class="custom-select-container form-control" (click)="toggleDropdown($event)" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid #ced4da; border-radius: 8px; padding: 0.75rem;">
+                  <div class="selected-value" [class.placeholder]="!newItem.equipamento_id">
+                    {{ getSelectedEquipamentoName() || 'Selecione um equipamento...' }}
+                  </div>
+                  <span class="dropdown-arrow">▼</span>
+                </div>
+                
+                <div class="custom-options-panel" *ngIf="showDropdown" style="position: absolute; top: calc(100% + 5px); left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 8px; z-index: 2000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 250px; display: flex; flex-direction: column;">
+                  <div class="search-box" style="padding: 10px; border-bottom: 1px solid #eee;">
+                    <input type="text" [(ngModel)]="termoBuscaEquipamento" (ngModelChange)="filterEquipamentos()" class="form-control" placeholder="🔍 Buscar equipamento..." (click)="$event.stopPropagation()">
+                  </div>
+                  <div class="options-list" style="overflow-y: auto;">
+                    <div class="option-item" *ngFor="let eq of equipamentosFiltrados" [class.disabled]="eq.estoque_disponivel === 0" (click)="selectEquipamento(eq)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;" [style.color]="eq.estoque_disponivel === 0 ? '#aaa' : 'inherit'">
+                      <div class="option-name" style="font-weight:600;">{{ eq.descricao }}</div>
+                      <div class="option-stock" style="font-size: 0.8em; color: #666;">
+                        {{ eq.estoque_disponivel }} disponível {{ eq.estoque_disponivel === 0 ? '(Sem Estoque)' : '' }}
+                      </div>
                     </div>
-                  </td>
-                  <td>
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                      <input type="date" class="form-control" style="padding: 0.5rem; border: 1px solid #ced4da; border-radius: 8px;" 
-                             [(ngModel)]="item.data_fim" (ngModelChange)="onItemDateFimChange(item, $event)" [min]="renewRequest.data_inicio">
-                      <small *ngIf="!item.data_fim && renewRequest.data_fim" style="color: #6c757d; font-size: 0.75rem;">
-                        (Geral: {{ renewRequest.data_fim | date:'dd/MM/yyyy' : 'UTC' }})
-                      </small>
+                    <div class="option-item no-results" *ngIf="equipamentosFiltrados.length === 0" style="padding: 10px; text-align: center;">
+                      Nenhum equipamento encontrado.
                     </div>
-                  </td>
-                  <td><strong>{{ item.subtotal | currencyBr }}</strong></td>
-                </tr>
-              </tbody>
-            </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group" style="flex: 1; min-width: 80px; margin:0;">
+                    <label for="quantidade">Quantidade *</label>
+                    <input type="number" id="quantidade" name="quantidade" 
+                           [(ngModel)]="newItem.quantidade" 
+                           [max]="getMaxQuantidadeDisponivel(newItem.equipamento_id)"
+                           required min="1"
+                           class="form-control" 
+                           [class.error]="hasQuantidadeExcedida(newItem.equipamento_id, newItem.quantidade)"
+                           placeholder="1">
+                    <small class="form-help" *ngIf="getMaxQuantidadeDisponivel(newItem.equipamento_id) > 0">
+                      Máximo disponível: {{ getMaxQuantidadeDisponivel(newItem.equipamento_id) }}
+                    </small>
+                    <small class="form-help error" *ngIf="hasQuantidadeExcedida(newItem.equipamento_id, newItem.quantidade)">
+                      Quantidade excede o estoque!
+                    </small>
+              </div>
+              <div class="form-group" style="flex: 1; min-width: 110px; margin:0;">
+                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Cobrança</label>
+                 <select class="form-control" [(ngModel)]="newItem.tipo_cobranca" style="border: 1px solid #ced4da; border-radius: 8px; padding: 0.75rem;">
+                    <option value="diaria">Diária</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="quinzenal">Quinzenal</option>
+                    <option value="mensal">Mensal</option>
+                 </select>
+              </div>
+              <div class="form-group" style="flex: 0; min-width: 120px; margin:0;">
+                 <button class="btn btn-primary" (click)="addNewItemToRenew()" [disabled]="!newItem.equipamento_id || hasQuantidadeExcedida(newItem.equipamento_id, newItem.quantidade)" style="width: 100%; padding: 0.75rem; border-radius: 8px;">Adicionar</button>
+              </div>
+            </div>
+
+            <h4 style="margin-top: 2rem;">Itens a serem renovados</h4>
+            <div class="items-list" *ngIf="renewRequest.itens.length > 0">
+               <div class="item-card" *ngFor="let item of renewRequest.itens; let i = index">
+                  <div class="item-info">
+                     <strong>{{ item.descricao }}</strong>
+                     <div class="item-details-row">
+                        <div class="detail-group">
+                           <label>Qtd:</label>
+                           <input type="number" class="form-control"
+                                  [(ngModel)]="item.quantidade" (ngModelChange)="onRenewItemQuantityChange(item)" min="1" [max]="getMaxQuantidadeDisponivel(item.equipamento_id, item.quantidade)">
+                        </div>
+                        <div class="detail-group">
+                           <label>Cobrança:</label>
+                           <select class="form-control"
+                                   [(ngModel)]="item.tipo_cobranca" (ngModelChange)="recalcularItem(item)">
+                             <option value="diaria">Diária</option>
+                             <option value="semanal">Semanal</option>
+                             <option value="quinzenal">Quinzenal</option>
+                             <option value="mensal">Mensal</option>
+                           </select>
+                        </div>
+                        <div class="detail-group">
+                           <label>Fim:</label>
+                           <div style="display: flex; flex-direction: column;">
+                               <input type="date" class="form-control"
+                                      [(ngModel)]="item.data_fim" (ngModelChange)="onItemDateFimChange(item, $event)" [min]="renewRequest.data_inicio">
+                               <small *ngIf="!item.data_fim && renewRequest.data_fim" style="color: #6c757d; font-size: 0.75rem; margin-top: 2px;">
+                                 (Geral)
+                               </small>
+                           </div>
+                        </div>
+                        <div class="detail-group price-group">
+                           <span class="item-price">
+                             {{ item.subtotal | currencyBr }}
+                           </span>
+                           <small>Val. base: {{ item.preco_unitario | currencyBr }}</small>
+                        </div>
+                     </div>
+                     <small class="form-help error mt-2" *ngIf="hasQuantidadeExcedida(item.equipamento_id, item.quantidade, true)">
+                        Atenção: A quantidade excede o estoque livre. Máximo possível a adicionar: {{ getMaxQuantidadeDisponivel(item.equipamento_id) }}
+                     </small>
+                  </div>
+                  <button type="button" class="btn btn-danger btn-remove" (click)="removeRenewItem(i)" title="Remover item">
+                    Remover
+                  </button>
+               </div>
+            </div>
+            <div *ngIf="renewRequest.itens.length === 0" style="text-align: center; color: #6c757d; padding: 2rem; background: #f8f9fa; border-radius: 12px; border: 1px dashed #ced4da;">
+               Nenhum item adicionado para a renovação.
+            </div>
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
@@ -403,7 +473,7 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
 
         <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
           <button class="btn btn-secondary" style="font-weight: 600;" (click)="closeRenewModal()">Cancelar</button>
-          <button class="btn btn-success" style="font-weight: 600;" (click)="confirmRenew()">Confirmar Renovação</button>
+          <button class="btn btn-success" style="font-weight: 600;" (click)="confirmRenew()" [disabled]="!isRenewFormValid() || !renewRequest?.itens || renewRequest.itens.length === 0">Confirmar Renovação</button>
         </div>
       </div>
     </div>
@@ -1001,6 +1071,159 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
       padding-top: 1rem;
     }
 
+    .items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .item-card {
+      background: white;
+      border: 1px solid #e9ecef;
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .item-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border-color: #cbd5e1;
+    }
+
+    .item-info {
+      flex-grow: 1;
+      min-width: 0;
+    }
+
+    .item-info strong {
+      font-size: 1.1rem;
+      color: #1e293b;
+      display: block;
+      margin-bottom: 0.75rem;
+    }
+
+    .item-details-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .detail-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .detail-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #64748b;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .detail-group input.form-control,
+    .detail-group select.form-control {
+      padding: 0.375rem 0.75rem;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      height: 38px;
+    }
+
+    .detail-group input[type="number"] {
+      width: 70px;
+    }
+
+    .detail-group select {
+      width: 120px;
+    }
+
+    .detail-group input[type="date"] {
+      width: 140px;
+    }
+
+    .price-group {
+      margin-left: auto;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.25rem;
+    }
+
+    .item-price {
+      font-weight: 700;
+      color: #0f172a; /* Dark text */
+      background-color: #f1f5f9; /* Light gray background */
+      padding: 0.35rem 0.85rem;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      display: inline-block;
+      border: 1px solid #cbd5e1;
+    }
+
+    .price-group small {
+      color: #64748b;
+      font-size: 0.8rem;
+    }
+
+    .btn-remove {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 38px;
+      padding: 0 1rem;
+      border-radius: 8px;
+      flex-shrink: 0;
+      align-self: center; /* Alinha ao centro do card verticalmente */
+      font-weight: 600;
+    }
+
+    .error {
+      border-color: #dc3545 !important;
+    }
+
+    small.error {
+      color: #dc3545 !important;
+      border: none !important;
+      display: block;
+    }
+    
+    .mt-2 {
+      margin-top: 0.5rem;
+    }
+
+    :host-context(.dark-mode) .item-card {
+       background-color: #1e293b;
+       border-color: #334155;
+    }
+
+    :host-context(.dark-mode) .item-card strong {
+       color: #f8fafc;
+    }
+
+    :host-context(.dark-mode) .item-price {
+       background-color: #334155;
+       color: #f8fafc;
+       border-color: #475569;
+    }
+
+    :host-context(.dark-mode) .price-group small, 
+    :host-context(.dark-mode) .item-details-row,
+    :host-context(.dark-mode) .detail-group label {
+       color: #cbd5e1;
+    }
+
+    :host-context(.dark-mode) .detail-group input.form-control,
+    :host-context(.dark-mode) .detail-group select.form-control {
+       background-color: #0f172a;
+       color: #f8fafc;
+       border-color: #334155;
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
       .locacoes {
@@ -1221,6 +1444,20 @@ export class LocacoesComponent implements OnInit {
   locacaoToCancel: Locacao | null = null;
   confirmText = '';
   isConfirmTextValid = false;
+
+  showDropdown = false;
+  termoBuscaEquipamento = '';
+  equipamentosFiltrados: Equipamento[] = [];
+  newItem: any = this.getNewItemDefault();
+
+  getNewItemDefault() {
+    return {
+      equipamento_id: '',
+      quantidade: 1,
+      dias: 1,
+      tipo_cobranca: 'mensal'
+    };
+  }
 
   showRenewModal = false;
   renewLocacao: Locacao | null = null;
@@ -1498,9 +1735,123 @@ export class LocacoesComponent implements OnInit {
     }
   }
 
+  getMaxQuantidadeDisponivel(equipamentoId: string | number, currentQtdInItem: number = 0): number {
+    if (!equipamentoId) return 0;
+    const eq = this.equipamentos.find(e => e.id === Number(equipamentoId));
+    if (!eq) return 0;
+
+    // Na renovação, os itens que JÁ EXISTIAM na locação originária já estão somados em "estoque_alugado".
+    // Então para saber até quanto a pessoa pode aumentar, a gente pega o estoque disponível (livre) + a qtd original.
+    let baseDisponivel = eq.estoque_disponivel || 0;
+
+    // Se o item que estamos checando já estava na locação que vai ser renovada:
+    if (this.renewLocacao && this.renewLocacao.itens) {
+      const itemOriginal = this.renewLocacao.itens.find(i => i.equipamento_id === Number(equipamentoId));
+      if (itemOriginal) {
+        baseDisponivel += itemOriginal.quantidade;
+      }
+    }
+
+    return baseDisponivel;
+  }
+
+  hasQuantidadeExcedida(equipamentoId: string | number, qtd: number, isEditingPresentItem: boolean = false): boolean {
+    if (!equipamentoId || qtd <= 0) return false;
+    const max = this.getMaxQuantidadeDisponivel(equipamentoId);
+
+    // Se estiver editando um item já presente na lista, a quantidade não é somada novamente
+    if (isEditingPresentItem) {
+      return qtd > max;
+    }
+
+    // Se estiver checando para um item novo, a gente verifica se qtd + (a soma dos que já tão na grid pro mesmo id) ultrapassa o total real
+    const usedInGrid = this.renewRequest?.itens?.filter((i: any) => i.equipamento_id === Number(equipamentoId))
+      .reduce((acc: number, cur: any) => acc + cur.quantidade, 0) || 0;
+
+    return (qtd + usedInGrid) > max;
+  }
+
+  onRenewItemQuantityChange(item: any) {
+    if (item.quantidade < 1) item.quantidade = 1;
+    this.recalcularItem(item);
+  }
+
   recalcularTodosItens() {
     this.renewRequest.itens.forEach((item: any) => this.recalcularItem(item));
     this.recalcularDescontoRenew();
+  }
+
+  removeRenewItem(index: number) {
+    this.renewRequest.itens.splice(index, 1);
+    this.recalcularTodosItens();
+  }
+
+  addNewItemToRenew() {
+    if (!this.newItem.equipamento_id) return;
+
+    // Check se já existe
+    const existingIndex = this.renewRequest.itens.findIndex((i: any) => i.equipamento_id === this.newItem.equipamento_id);
+    if (existingIndex !== -1) {
+      this.renewRequest.itens[existingIndex].quantidade += this.newItem.quantidade;
+      this.recalcularItem(this.renewRequest.itens[existingIndex]);
+      this.recalcularDescontoRenew();
+    } else {
+      const equipamento = this.equipamentos.find(e => e.id === this.newItem.equipamento_id);
+      if (!equipamento) return;
+      const newestItem = {
+        equipamento_id: equipamento.id,
+        descricao: equipamento.descricao,
+        data_fim: '',
+        quantidade: this.newItem.quantidade,
+        tipo_cobranca: this.newItem.tipo_cobranca,
+        preco_unitario: equipamento.preco_mensal, // we initialize it, recalcularItem updates it based on tipo_cobranca
+        subtotal: 0
+      };
+      this.renewRequest.itens.push(newestItem);
+      this.recalcularItem(newestItem);
+      this.recalcularDescontoRenew();
+    }
+    this.newItem = this.getNewItemDefault();
+    this.termoBuscaEquipamento = '';
+    this.showDropdown = false;
+  }
+
+  toggleDropdown(event: Event) {
+    event.stopPropagation();
+    this.showDropdown = !this.showDropdown;
+    if (this.showDropdown) {
+      this.termoBuscaEquipamento = '';
+      this.filterEquipamentos();
+    }
+  }
+
+  filterEquipamentos() {
+    if (!this.termoBuscaEquipamento) {
+      this.equipamentosFiltrados = this.equipamentos;
+    } else {
+      const termo = this.termoBuscaEquipamento.toLowerCase();
+      this.equipamentosFiltrados = this.equipamentos.filter(e =>
+        e.descricao.toLowerCase().includes(termo)
+      );
+    }
+  }
+
+  selectEquipamento(equipamento: Equipamento) {
+    if (equipamento.estoque_disponivel === 0) return;
+    this.newItem.equipamento_id = equipamento.id;
+    this.termoBuscaEquipamento = '';
+    this.showDropdown = false;
+  }
+
+  getSelectedEquipamentoName(): string {
+    if (!this.newItem.equipamento_id) return '';
+    const equipamento = this.equipamentos.find(e => e.id === this.newItem.equipamento_id);
+    return equipamento ? equipamento.descricao : '';
+  }
+
+  @HostListener('document:click', ['$event'])
+  clickout(event: Event) {
+    this.showDropdown = false;
   }
 
   getRenewSubtotal(): number {
@@ -1585,9 +1936,20 @@ export class LocacoesComponent implements OnInit {
     this.renewLocacao = null;
   }
 
+  isRenewFormValid(): boolean {
+    if (!this.renewRequest.data_inicio || !this.renewRequest.data_fim) return false;
+    if (!this.renewRequest.itens || this.renewRequest.itens.length === 0) return false;
+    for (const item of this.renewRequest.itens) {
+      if (this.hasQuantidadeExcedida(item.equipamento_id, item.quantidade, true)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   confirmRenew() {
-    if (!this.renewRequest.data_inicio || !this.renewRequest.data_fim) {
-      this.snackbarService.error('Selecione data de início e fim do contrato.');
+    if (!this.isRenewFormValid()) {
+      this.snackbarService.error('Corrija os erros do formulário antes de confirmar.');
       return;
     }
 
@@ -1602,6 +1964,7 @@ export class LocacoesComponent implements OnInit {
       total_final: total_final,
       itens: this.renewRequest.itens.map((item: any) => ({
         equipamento_id: item.equipamento_id,
+        quantidade: item.quantidade,
         data_fim: (item.data_fim || this.renewRequest.data_fim) + 'T23:59:59',
         tipo_cobranca: item.tipo_cobranca,
         preco_unitario: item.preco_unitario,
@@ -1751,8 +2114,8 @@ export class LocacoesComponent implements OnInit {
           html: reciboHtml
         });
 
-        // Se houver orçamento, podemos incluir
-        if (this.selectedLocacao.orcamento) {
+        // Se houver orçamento e NÃO for um contrato renovado (pois contratos renovados não refletem o orçamento original)
+        if (this.selectedLocacao.orcamento && !this.selectedLocacao.locacao_original_id) {
           const orcamentoHtml = this.printableService.generateOrcamentoHTML(this.selectedLocacao.orcamento);
           this.viewerDocuments.push({
             id: 'orcamento',

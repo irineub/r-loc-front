@@ -159,6 +159,11 @@ export interface Locacao {
   status: 'ativa' | 'finalizada' | 'cancelada' | 'atrasada';
   valor_total: number;
   total_final: number;
+  desconto?: number;
+  desconto_percentual?: number;
+  frete?: number;
+  locacao_original_id?: number;
+  assinatura_base64?: string | null;
   observacoes?: string;
   orcamento?: Orcamento;
   cliente?: Cliente;
