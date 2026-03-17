@@ -29,7 +29,7 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
 
         <!-- Locações List -->
         <div class="table-section">
-          <div class="filters-container">
+          <div class="filters-container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div class="filters">
               <button class="filter-btn" (click)="filterStatus = ''" [class.active]="filterStatus === ''">
                 Todas
@@ -43,6 +43,13 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
               <button class="filter-btn" (click)="filterStatus = 'atrasada'" [class.active]="filterStatus === 'atrasada'">
                 Atrasadas
               </button>
+            </div>
+            <div class="search-box">
+              <input type="text" 
+                     [(ngModel)]="termoBuscaCliente" 
+                     class="form-control" 
+                     placeholder="🔍 Buscar por nome, CPF ou CNPJ..." 
+                     style="min-width: 300px; padding: 0.75rem 1rem; border-radius: 12px; border: 2px solid #e9ecef;">
             </div>
           </div>
 
@@ -1207,6 +1214,7 @@ export class LocacoesComponent implements OnInit {
   locacoes: Locacao[] = [];
   equipamentos: Equipamento[] = [];
   filterStatus = '';
+  termoBuscaCliente: string = '';
   selectedLocacao: Locacao | null = null;
   showViewModal = false;
   showCancelModal = false;
@@ -1295,10 +1303,25 @@ export class LocacoesComponent implements OnInit {
   }
 
   get filteredLocacoes(): Locacao[] {
-    if (!this.filterStatus) {
-      return this.locacoes;
+    let filtradas = this.locacoes;
+
+    if (this.filterStatus) {
+      filtradas = filtradas.filter(locacao => locacao.status === this.filterStatus);
     }
-    return this.locacoes.filter(locacao => locacao.status === this.filterStatus);
+
+    if (this.termoBuscaCliente) {
+      const termo = this.termoBuscaCliente.toLowerCase();
+      filtradas = filtradas.filter(locacao => {
+        const cliente = locacao.cliente;
+        if (!cliente) return false;
+
+        return (cliente.nome_razao_social && cliente.nome_razao_social.toLowerCase().includes(termo)) ||
+          (cliente.cpf && cliente.cpf.includes(termo)) ||
+          (cliente.cnpj && cliente.cnpj.includes(termo));
+      });
+    }
+
+    return filtradas;
   }
 
 

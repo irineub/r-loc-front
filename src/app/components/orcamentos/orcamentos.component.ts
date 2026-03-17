@@ -43,16 +43,41 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
           <h3>{{ editingOrcamento ? 'Editar' : 'Novo' }} Orçamento</h3>
           <form #form="ngForm" (ngSubmit)="saveOrcamento()">
             <div class="form-row">
-              <div class="form-group">
+              <div class="form-group" style="position: relative;">
                 <label for="cliente_id">Cliente *</label>
-                <select id="cliente_id" name="cliente_id" 
-                        [(ngModel)]="formData.cliente_id" required
-                        class="form-control">
-                  <option value="">Selecione um cliente...</option>
-                  <option *ngFor="let cliente of clientes" [value]="cliente.id">
-                    {{ cliente.nome_razao_social }}
-                  </option>
-                </select>
+                <div class="custom-select-container" (click)="toggleClienteDropdown($event)">
+                  <div class="selected-value" [class.placeholder]="!formData.cliente_id">
+                    {{ getSelectedClienteName() || 'Selecione um cliente...' }}
+                  </div>
+                  <span class="dropdown-arrow">▼</span>
+                </div>
+                
+                <div class="custom-options-panel" *ngIf="showClienteDropdown">
+                  <div class="search-box">
+                    <input type="text" 
+                           [(ngModel)]="termoBuscaCliente" 
+                           (ngModelChange)="filterClientes()"
+                           name="busca_cliente" 
+                           class="form-control" 
+                           placeholder="🔍 Buscar por nome, CPF ou CNPJ..." 
+                           autocomplete="off"
+                           (click)="$event.stopPropagation()">
+                  </div>
+                  <div class="options-list">
+                    <div class="option-item" 
+                         *ngFor="let cliente of clientesFiltrados" 
+                         [class.selected]="cliente.id === formData.cliente_id"
+                         (click)="selectCliente(cliente)">
+                      <div class="option-name">{{ cliente.nome_razao_social }}</div>
+                      <div class="option-stock" *ngIf="cliente.cpf || cliente.cnpj" style="color: #6c757d; background: transparent; padding: 0;">
+                        {{ cliente.cpf || cliente.cnpj }}
+                      </div>
+                    </div>
+                    <div class="option-item no-results" *ngIf="clientesFiltrados.length === 0">
+                      Nenhum cliente encontrado.
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="form-group">
                 <label for="observacoes">Observações</label>
@@ -2033,6 +2058,19 @@ export class OrcamentosComponent implements OnInit {
   selectedStatus: string = '';
   periodoCalculado: { dias: number; tipoCobranca: string } | null = null;
   termoBuscaEquipamento: string = '';
+  termoBuscaCliente: string = '';
+
+  get clientesFiltrados(): Cliente[] {
+    if (!this.termoBuscaCliente) {
+      return this.clientes;
+    }
+    const termo = this.termoBuscaCliente.toLowerCase();
+    return this.clientes.filter(c =>
+      c.nome_razao_social.toLowerCase().includes(termo) ||
+      (c.cpf && c.cpf.includes(termo)) ||
+      (c.cnpj && c.cnpj.includes(termo))
+    );
+  }
 
   get equipamentosFiltrados(): Equipamento[] {
     if (!this.termoBuscaEquipamento) {
@@ -3669,14 +3707,15 @@ export class OrcamentosComponent implements OnInit {
   }
 
   showDropdown: boolean = false;
+  showClienteDropdown: boolean = false;
 
   @HostListener('document:click', ['$event'])
   clickout(event: Event) {
-    if (this.showDropdown) {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.custom-select-container') && !target.closest('.custom-options-panel')) {
-        this.showDropdown = false;
-      }
+    const target = event.target as HTMLElement;
+    const isInsideSelect = target.closest('.custom-select-container') || target.closest('.custom-options-panel');
+    if (!isInsideSelect) {
+      this.showDropdown = false;
+      this.showClienteDropdown = false;
     }
   }
 
@@ -3685,11 +3724,40 @@ export class OrcamentosComponent implements OnInit {
     this.showDropdown = !this.showDropdown;
     if (this.showDropdown) {
       this.termoBuscaEquipamento = '';
+      this.showClienteDropdown = false;
       setTimeout(() => {
-        const input = document.querySelector('.search-box input') as HTMLInputElement;
+        const input = document.querySelector('.search-box input[name="busca_equipamento"]') as HTMLInputElement;
         if (input) input.focus();
       }, 50);
     }
+  }
+
+  toggleClienteDropdown(event: Event) {
+    event.stopPropagation();
+    this.showClienteDropdown = !this.showClienteDropdown;
+    if (this.showClienteDropdown) {
+      this.termoBuscaCliente = '';
+      this.showDropdown = false;
+      setTimeout(() => {
+        const input = document.querySelector('.search-box input[name="busca_cliente"]') as HTMLInputElement;
+        if (input) input.focus();
+      }, 50);
+    }
+  }
+
+  filterClientes() {
+    // handled by getter
+  }
+
+  getSelectedClienteName(): string {
+    if (!this.formData.cliente_id) return '';
+    const cliente = this.clientes.find(c => c.id === this.formData.cliente_id);
+    return cliente ? cliente.nome_razao_social : '';
+  }
+
+  selectCliente(cliente: Cliente) {
+    this.formData.cliente_id = cliente.id;
+    this.showClienteDropdown = false;
   }
 
   filterEquipamentos() {
