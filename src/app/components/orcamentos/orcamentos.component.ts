@@ -3031,6 +3031,7 @@ export class OrcamentosComponent implements OnInit {
         next: (response) => {
           this.loadData();
           this.cancelForm();
+          this.viewOrcamento(response);
         },
         error: (error) => {
           const errorMessage = error.error?.detail || error.message || 'Erro desconhecido';
