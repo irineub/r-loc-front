@@ -114,6 +114,17 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
               </tr>
             </tbody>
           </table>
+          
+          <div class="pagination-container">
+            <div class="pagination-info">
+              Mostrando {{ funcionarios.length }} de {{ totalItems }} funcionários
+            </div>
+            <div class="pagination-controls" *ngIf="totalPages > 1">
+              <button class="btn btn-sm btn-secondary" [disabled]="currentPage === 1" (click)="prevPage()">Anterior</button>
+              <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
+              <button class="btn btn-sm btn-secondary" [disabled]="currentPage === totalPages" (click)="nextPage()">Próxima</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -214,6 +225,30 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
     .table-section {
       padding: 1.5rem;
     }
+    
+    .pagination-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 0 0 0;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .pagination-info {
+      color: #6c757d;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .page-info {
+      font-weight: 600;
+      color: #495057;
+    }
+
     .table {
       width: 100%;
       border-collapse: collapse;
@@ -375,6 +410,36 @@ export class FuncionariosComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
 
+  // Pagination
+  currentPage = 1;
+  pageSize = 20;
+  totalItems = 0;
+
+  get totalPages(): number {
+    return Math.ceil(this.totalItems / this.pageSize) || 1;
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadFuncionarios();
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadFuncionarios();
+    }
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.loadFuncionarios();
+    }
+  }
+
   formData: FuncionarioCreate & { ativo?: boolean } = {
     username: '',
     nome: '',
@@ -394,9 +459,11 @@ export class FuncionariosComponent implements OnInit {
 
   loadFuncionarios() {
     this.isLoading = true;
-    this.funcionarioService.getFuncionarios().subscribe({
-      next: (data) => {
-        this.funcionarios = data;
+    const skip = (this.currentPage - 1) * this.pageSize;
+    this.funcionarioService.getFuncionarios(undefined, skip, this.pageSize).subscribe({
+      next: (response) => {
+        this.funcionarios = response.items || [];
+        this.totalItems = response.total || 0;
         this.isLoading = false;
       },
       error: (error) => {

@@ -180,6 +180,17 @@ import { AuthService } from '../../services/auth.service';
               </tbody>
             </table>
           </div>
+          
+          <div class="pagination-container">
+            <div class="pagination-info">
+              Mostrando {{ equipamentos.length }} de {{ totalItems }} equipamentos
+            </div>
+            <div class="pagination-controls" *ngIf="totalPages > 1">
+              <button class="btn btn-sm btn-secondary" [disabled]="currentPage === 1" (click)="prevPage()">Anterior</button>
+              <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
+              <button class="btn btn-sm btn-secondary" [disabled]="currentPage === totalPages" (click)="nextPage()">Próxima</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -424,6 +435,29 @@ import { AuthService } from '../../services/auth.service';
 
     .table-section {
       padding: 2rem;
+    }
+
+    .pagination-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 0 0 0;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .pagination-info {
+      color: #6c757d;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .page-info {
+      font-weight: 600;
+      color: #495057;
     }
 
     .table {
@@ -821,6 +855,36 @@ export class EquipamentosComponent implements OnInit {
   equipamentos: Equipamento[] = [];
   termoBuscaEquipamento: string = '';
 
+  // Pagination
+  currentPage = 1;
+  pageSize = 20;
+  totalItems = 0;
+
+  get totalPages(): number {
+    return Math.ceil(this.totalItems / this.pageSize) || 1;
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadData();
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadData();
+    }
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.loadData();
+    }
+  }
+
   get equipamentosFiltrados(): Equipamento[] {
     if (!this.termoBuscaEquipamento) {
       return this.equipamentos;
@@ -853,8 +917,10 @@ export class EquipamentosComponent implements OnInit {
   }
 
   loadData() {
-    this.equipamentoService.getEquipamentos().subscribe(data => {
-      this.equipamentos = data;
+    const skip = (this.currentPage - 1) * this.pageSize;
+    this.equipamentoService.getEquipamentos(skip, this.pageSize).subscribe(response => {
+      this.equipamentos = response.items || [];
+      this.totalItems = response.total || 0;
     });
   }
 

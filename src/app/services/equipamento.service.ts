@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Equipamento, EquipamentoCreate } from '../models/index';
+import { Equipamento, EquipamentoCreate, PaginatedResponse } from '../models/index';
 
 @Injectable({
   providedIn: 'root'
@@ -9,8 +9,8 @@ import { Equipamento, EquipamentoCreate } from '../models/index';
 export class EquipamentoService {
   constructor(private apiService: ApiService) { }
 
-  getEquipamentos(): Observable<Equipamento[]> {
-    return this.apiService.get<Equipamento>('/equipamentos');
+  getEquipamentos(skip: number = 0, limit: number = 100): Observable<PaginatedResponse<Equipamento>> {
+    return this.apiService.getPaginated<Equipamento>('/equipamentos', skip, limit);
   }
 
   getEquipamento(id: number): Observable<Equipamento> {

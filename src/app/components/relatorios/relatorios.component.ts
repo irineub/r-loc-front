@@ -42,8 +42,8 @@ export class RelatoriosComponent implements OnInit {
     }
 
     loadFuncionarios() {
-        this.funcionarioService.getFuncionarios().subscribe({
-            next: (data) => this.funcionarios = data,
+        this.funcionarioService.getFuncionarios(undefined, 0, 1000).subscribe({
+            next: (response) => this.funcionarios = response.items || [],
             error: (err) => console.error('Erro ao carregar funcionários', err)
         });
     }

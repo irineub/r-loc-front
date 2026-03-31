@@ -544,8 +544,9 @@ export class ClienteDetalhesComponent implements OnInit {
     });
 
     // Carregar orçamentos
-    this.orcamentoService.getOrcamentos().subscribe({
-      next: (orcamentos) => {
+    this.orcamentoService.getOrcamentos(0, 1000).subscribe({
+      next: (response) => {
+        const orcamentos = response.items || [];
         this.orcamentos = orcamentos.filter(o => o.cliente_id === this.clienteId);
       },
       error: (error) => {
@@ -555,8 +556,9 @@ export class ClienteDetalhesComponent implements OnInit {
     });
 
     // Carregar locações
-    this.locacaoService.getLocacoes().subscribe({
-      next: (locacoes) => {
+    this.locacaoService.getLocacoes(0, 1000).subscribe({
+      next: (response) => {
+        const locacoes = response.items || [];
         this.locacoes = locacoes.filter(l => l.cliente_id === this.clienteId);
       },
       error: (error) => {

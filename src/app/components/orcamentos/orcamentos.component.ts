@@ -424,6 +424,17 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
               </tr>
             </tbody>
           </table>
+          
+          <div class="pagination-container">
+            <div class="pagination-info">
+              Mostrando {{ orcamentos.length }} de {{ totalItems }} orçamentos
+            </div>
+            <div class="pagination-controls" *ngIf="totalPages > 1">
+              <button class="btn btn-sm btn-secondary" [disabled]="currentPage === 1" (click)="prevPage()">Anterior</button>
+              <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
+              <button class="btn btn-sm btn-secondary" [disabled]="currentPage === totalPages" (click)="nextPage()">Próxima</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1264,6 +1275,31 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
       padding: 0;
     }
 
+    .pagination-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem;
+      background: #f8f9fa;
+      border-top: 1px solid rgba(220, 53, 69, 0.1);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .pagination-info {
+      color: #6c757d;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .page-info {
+      font-weight: 600;
+      color: #495057;
+    }
+
     .table-section::before {
       content: '';
       position: absolute;
@@ -2069,6 +2105,36 @@ export class OrcamentosComponent implements OnInit {
   termoBuscaCliente: string = '';
   termoBuscaTabela: string = '';
 
+  // Pagination
+  currentPage = 1;
+  pageSize = 20;
+  totalItems = 0;
+
+  get totalPages(): number {
+    return Math.ceil(this.totalItems / this.pageSize) || 1;
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadData();
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadData();
+    }
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.loadData();
+    }
+  }
+
   get clientesFiltrados(): Cliente[] {
     if (!this.termoBuscaCliente) {
       return this.clientes;
@@ -2266,22 +2332,24 @@ export class OrcamentosComponent implements OnInit {
 
   loadData() {
     // Carregar locações
-    this.locacaoService.getLocacoes().subscribe(locacoes => {
-      this.locacoes = locacoes;
+    this.locacaoService.getLocacoes(0, 1000).subscribe(response => {
+      this.locacoes = response.items || [];
     });
 
     // Carregar todos os orçamentos (sem filtrar)
-    this.orcamentoService.getOrcamentos().subscribe(data => {
-      this.orcamentos = data;
+    const skip = (this.currentPage - 1) * this.pageSize;
+    this.orcamentoService.getOrcamentos(skip, this.pageSize).subscribe(response => {
+      this.orcamentos = response.items || [];
+      this.totalItems = response.total || 0;
     });
 
-    this.clienteService.getClientes().subscribe(data => {
-      this.clientes = data;
+    this.clienteService.getClientes(0, 1000).subscribe(response => {
+      this.clientes = response.items || [];
     });
 
-    this.equipamentoService.getEquipamentos().subscribe(data => {
-      this.equipamentos = data;
-      this.printableService.setEquipamentos(data);
+    this.equipamentoService.getEquipamentos(0, 1000).subscribe(response => {
+      this.equipamentos = response.items || [];
+      this.printableService.setEquipamentos(this.equipamentos);
     });
   }
 
@@ -3114,9 +3182,9 @@ export class OrcamentosComponent implements OnInit {
       // Garantir que os equipamentos estão carregados
       if (this.equipamentos.length === 0) {
         console.warn('Equipamentos não carregados ainda, recarregando...');
-        this.equipamentoService.getEquipamentos().subscribe(data => {
-          this.equipamentos = data;
-          this.printableService.setEquipamentos(data);
+        this.equipamentoService.getEquipamentos(0, 1000).subscribe(response => {
+          this.equipamentos = response.items || [];
+          this.printableService.setEquipamentos(this.equipamentos);
           // Tentar novamente após carregar
           setTimeout(() => this.editOrcamento(orcamento), 100);
         });

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Cliente, ClienteCreate } from '../models/index';
+import { Cliente, ClienteCreate, PaginatedResponse } from '../models/index';
 
 @Injectable({
   providedIn: 'root'
@@ -9,8 +9,8 @@ import { Cliente, ClienteCreate } from '../models/index';
 export class ClienteService {
   constructor(private apiService: ApiService) { }
 
-  getClientes(): Observable<Cliente[]> {
-    return this.apiService.get<Cliente>('/clientes');
+  getClientes(skip: number = 0, limit: number = 100): Observable<PaginatedResponse<Cliente>> {
+    return this.apiService.getPaginated<Cliente>('/clientes', skip, limit);
   }
 
   getCliente(id: number): Observable<Cliente> {

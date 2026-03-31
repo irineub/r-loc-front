@@ -287,7 +287,7 @@ export class LogsComponent implements OnInit {
   constructor(
     private logService: LogService,
     private funcionarioService: FuncionarioService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.loadFuncionarios();
@@ -295,9 +295,9 @@ export class LogsComponent implements OnInit {
   }
 
   loadFuncionarios() {
-    this.funcionarioService.getFuncionarios().subscribe({
-      next: (data) => {
-        this.funcionarios = data;
+    this.funcionarioService.getFuncionarios(undefined, 0, 1000).subscribe({
+      next: (response) => {
+        this.funcionarios = response.items || [];
       },
       error: (error) => {
         console.error('Erro ao carregar funcionários:', error);
@@ -313,7 +313,7 @@ export class LogsComponent implements OnInit {
     this.isLoading = true;
     const funcionarioId = this.selectedFuncionario !== null ? this.selectedFuncionario : undefined;
     const entidade = this.selectedEntidade !== null ? this.selectedEntidade : undefined;
-    
+
     this.logService.getLogs(funcionarioId, entidade).subscribe({
       next: (data) => {
         this.logs = data;
@@ -328,17 +328,17 @@ export class LogsComponent implements OnInit {
 
   formatDateTime(dateTimeString: string): string {
     if (!dateTimeString) return '-';
-    
+
     try {
       // Converter a string UTC para Date
       // O JavaScript automaticamente converte para o horário local do navegador
       const date = new Date(dateTimeString);
-      
+
       // Verificar se a data é válida
       if (isNaN(date.getTime())) {
         return dateTimeString;
       }
-      
+
       // Formatar no horário local do computador/navegador
       // Se o computador estiver em Manaus (GMT-4), mostrará horário de Manaus
       // Se estiver em outro fuso, mostrará o horário local
@@ -348,7 +348,7 @@ export class LogsComponent implements OnInit {
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
       const seconds = String(date.getSeconds()).padStart(2, '0');
-      
+
       return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
     } catch (error) {
       console.error('Erro ao formatar data:', error);

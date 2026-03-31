@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
+import { PaginatedResponse } from '../models/index';
 
 export interface Funcionario {
   id: number;
@@ -29,9 +30,10 @@ export interface FuncionarioUpdate {
 export class FuncionarioService {
   constructor(private apiService: ApiService) { }
 
-  getFuncionarios(ativo?: boolean): Observable<Funcionario[]> {
+  getFuncionarios(ativo?: boolean, skip: number = 0, limit: number = 100): Observable<PaginatedResponse<Funcionario>> {
     const params = ativo !== undefined ? `?ativo=${ativo}` : '';
-    return this.apiService.get<Funcionario>(`/funcionarios${params}`);
+    const endpoint = `/funcionarios${params}`;
+    return this.apiService.getPaginated<Funcionario>(endpoint, skip, limit);
   }
 
   getFuncionario(id: number): Observable<Funcionario> {

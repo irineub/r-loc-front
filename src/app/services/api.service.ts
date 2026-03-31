@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { SnackbarService } from './snackbar.service';
+import { PaginatedResponse } from '../models/index';
 
 @Injectable({
   providedIn: 'root'
@@ -43,6 +44,25 @@ export class ApiService {
     }
     console.log('GET request:', url);
     return this.http.get<T[]>(url, { headers: this.getHeaders() }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getPaginated<T>(endpoint: string, skip: number = 0, limit: number = 100): Observable<PaginatedResponse<T>> {
+    const hasQueryParams = endpoint.includes('?');
+    const separator = hasQueryParams ? '&' : '?';
+    const params = `skip=${skip}&limit=${limit}`;
+    let url: string;
+
+    if (hasQueryParams) {
+      const parts = endpoint.split('?');
+      url = `${this.baseUrl}${parts[0]}/?${parts[1]}&${params}`;
+    } else {
+      url = `${this.baseUrl}${endpoint}/?${params}`;
+    }
+
+    console.log('GET paginated request:', url);
+    return this.http.get<PaginatedResponse<T>>(url, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }

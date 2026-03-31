@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
-import { Locacao } from '../models/index';
+import { Locacao, PaginatedResponse } from '../models/index';
 
 @Injectable({
   providedIn: 'root'
@@ -10,8 +9,8 @@ import { Locacao } from '../models/index';
 export class LocacaoService {
   constructor(private apiService: ApiService) { }
 
-  getLocacoes(): Observable<Locacao[]> {
-    return this.apiService.get<Locacao>('/locacoes');
+  getLocacoes(skip: number = 0, limit: number = 100): Observable<PaginatedResponse<Locacao>> {
+    return this.apiService.getPaginated<Locacao>('/locacoes', skip, limit);
   }
 
   getLocacao(id: number): Observable<Locacao> {
@@ -45,8 +44,8 @@ export class LocacaoService {
     return this.apiService.postCustom(`/locacoes/${id}/receber`, { itens });
   }
 
-  getLocacoesAtivas(): Observable<Locacao[]> {
-    return this.apiService.get<Locacao>('/locacoes/ativas');
+  getLocacoesAtivas(skip: number = 0, limit: number = 100): Observable<PaginatedResponse<Locacao>> {
+    return this.apiService.getPaginated<Locacao>('/locacoes/ativas', skip, limit);
   }
 
   getLocacoesAtrasadas(): Observable<Locacao[]> {

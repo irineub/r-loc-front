@@ -181,6 +181,17 @@ import { SnackbarService } from '../../services/snackbar.service';
           <div class="no-results" *ngIf="filteredClientes.length === 0">
             <p>Nenhum cliente encontrado.</p>
           </div>
+          
+          <div class="pagination-container">
+            <div class="pagination-info">
+              Mostrando {{ filteredClientes.length }} de {{ totalItems }} clientes
+            </div>
+            <div class="pagination-controls" *ngIf="totalPages > 1">
+              <button class="btn btn-sm btn-secondary" [disabled]="currentPage === 1" (click)="prevPage()">Anterior</button>
+              <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
+              <button class="btn btn-sm btn-secondary" [disabled]="currentPage === totalPages" (click)="nextPage()">Próxima</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -511,6 +522,29 @@ import { SnackbarService } from '../../services/snackbar.service';
     /* Cards Section */
     .cards-section {
       padding: 2rem;
+    }
+
+    .pagination-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 0 0 0;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .pagination-info {
+      color: #6c757d;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .page-info {
+      font-weight: 600;
+      color: #495057;
     }
 
     .cards-grid {
@@ -1038,6 +1072,37 @@ export class ClientesComponent implements OnInit {
   clienteToDelete: Cliente | null = null;
   confirmText = '';
   isConfirmTextValid = false;
+
+  // Pagination
+  currentPage = 1;
+  pageSize = 20;
+  totalItems = 0;
+
+  get totalPages(): number {
+    return Math.ceil(this.totalItems / this.pageSize) || 1;
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadClientes();
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadClientes();
+    }
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.loadClientes();
+    }
+  }
+
   formData: ClienteCreate = {
     nome_razao_social: '',
     tipo_pessoa: 'fisica',
@@ -1066,9 +1131,11 @@ export class ClientesComponent implements OnInit {
   }
 
   loadClientes() {
-    this.clienteService.getClientes().subscribe(data => {
-      this.clientes = data;
-      this.filteredClientes = data;
+    const skip = (this.currentPage - 1) * this.pageSize;
+    this.clienteService.getClientes(skip, this.pageSize).subscribe(response => {
+      this.clientes = response.items || [];
+      this.totalItems = response.total || 0;
+      this.onSearchChange(); // Reaplica fitros caso haja busca
     });
   }
 

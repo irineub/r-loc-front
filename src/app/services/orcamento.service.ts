@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Orcamento, OrcamentoCreate } from '../models/index';
+import { Orcamento, OrcamentoCreate, PaginatedResponse } from '../models/index';
 
 @Injectable({
   providedIn: 'root'
@@ -9,8 +9,8 @@ import { Orcamento, OrcamentoCreate } from '../models/index';
 export class OrcamentoService {
   constructor(private apiService: ApiService) { }
 
-  getOrcamentos(): Observable<Orcamento[]> {
-    return this.apiService.get<Orcamento>('/orcamentos');
+  getOrcamentos(skip: number = 0, limit: number = 100): Observable<PaginatedResponse<Orcamento>> {
+    return this.apiService.getPaginated<Orcamento>('/orcamentos', skip, limit);
   }
 
   getOrcamento(id: number): Observable<Orcamento> {
@@ -37,11 +37,11 @@ export class OrcamentoService {
     return this.apiService.postCustom(`/orcamentos/${id}/rejeitar`);
   }
 
-  getOrcamentosPendentes(): Observable<Orcamento[]> {
-    return this.apiService.get<Orcamento>('/orcamentos/pendentes');
+  getOrcamentosPendentes(skip: number = 0, limit: number = 100): Observable<PaginatedResponse<Orcamento>> {
+    return this.apiService.getPaginated<Orcamento>('/orcamentos/pendentes', skip, limit);
   }
 
-  getOrcamentosAprovados(): Observable<Orcamento[]> {
-    return this.apiService.get<Orcamento>('/orcamentos/aprovados');
+  getOrcamentosAprovados(skip: number = 0, limit: number = 100): Observable<PaginatedResponse<Orcamento>> {
+    return this.apiService.getPaginated<Orcamento>('/orcamentos/aprovados', skip, limit);
   }
 } 

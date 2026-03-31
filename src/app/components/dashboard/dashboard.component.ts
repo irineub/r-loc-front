@@ -1025,22 +1025,22 @@ export class DashboardComponent implements OnInit {
 
   loadData() {
     // Load all data for dashboard
-    this.clienteService.getClientes().subscribe(data => {
-      this.clientes = data;
+    this.clienteService.getClientes(0, 1000).subscribe(response => {
+      this.clientes = response.items || [];
     });
 
-    this.equipamentoService.getEquipamentos().subscribe(data => {
-      this.equipamentos = data;
+    this.equipamentoService.getEquipamentos(0, 1000).subscribe(response => {
+      this.equipamentos = response.items || [];
     });
 
-    this.orcamentoService.getOrcamentos().subscribe(data => {
-      this.orcamentos = data;
-      this.orcamentosPendentes = data.filter(o => o.status === 'pendente');
+    this.orcamentoService.getOrcamentos(0, 1000).subscribe(response => {
+      this.orcamentos = response.items || [];
+      this.orcamentosPendentes = this.orcamentos.filter(o => o.status === 'pendente');
     });
 
-    this.locacaoService.getLocacoes().subscribe(data => {
-      this.locacoes = data;
-      this.locacoesAtivas = data.filter(l => l.status === 'ativa');
+    this.locacaoService.getLocacoes(0, 1000).subscribe(response => {
+      this.locacoes = response.items || [];
+      this.locacoesAtivas = this.locacoes.filter(l => l.status === 'ativa');
       this.calculateReports();
       this.calcularFaturamento();
     });

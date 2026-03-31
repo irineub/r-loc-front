@@ -784,9 +784,9 @@ export class RecebimentoComponent implements OnInit {
   }
 
   carregarEquipamentos() {
-    this.equipamentoService.getEquipamentos().subscribe({
-      next: (equipamentos) => {
-        this.equipamentos = equipamentos;
+    this.equipamentoService.getEquipamentos(0, 1000).subscribe({
+      next: (response) => {
+        this.equipamentos = response.items || [];
       },
       error: (error) => {
         console.error('Erro ao carregar equipamentos:', error);
@@ -798,8 +798,9 @@ export class RecebimentoComponent implements OnInit {
     if (!this.locacaoId) return;
 
     // Primeiro, tentar buscar da lista de locações (mais eficiente e funciona)
-    this.locacaoService.getLocacoes().subscribe({
-      next: (locacoes) => {
+    this.locacaoService.getLocacoes(0, 1000).subscribe({
+      next: (response) => {
+        const locacoes = response.items || [];
         const locacaoEncontrada = locacoes.find(l => l.id === this.locacaoId);
         if (locacaoEncontrada && locacaoEncontrada.itens) {
           // Se encontrou na lista e tem itens, usar diretamente

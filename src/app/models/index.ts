@@ -1,3 +1,8 @@
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+}
+
 export interface Cliente {
   id: number;
   nome_razao_social: string;
