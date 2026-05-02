@@ -24,7 +24,8 @@ export class RelatoriosComponent implements OnInit {
     selectedEntidade: string | null = null;
     startDate: string = '';
     endDate: string = '';
-    selectedPeriod: string = 'today'; // today, week, month, custom
+    /** today | last7 | last30 | month | custom */
+    selectedPeriod: string = 'last30';
 
     isLoading = false;
 
@@ -36,9 +37,55 @@ export class RelatoriosComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-        this.setPeriod('today');
+        this.setPeriod('last30');
         this.loadFuncionarios();
         this.loadData();
+    }
+
+    /** Texto amigável do período atual (aparece abaixo dos botões) */
+    get periodoResumo(): string {
+        if (!this.startDate || !this.endDate) {
+            return '';
+        }
+        const ini = this.formatarDataBr(this.startDate);
+        const fim = this.formatarDataBr(this.endDate);
+        if (this.startDate === this.endDate) {
+            return `Só o dia ${ini}.`;
+        }
+        return `De ${ini} até ${fim} (inclusive).`;
+    }
+
+    private formatarDataBr(isoDate: string): string {
+        const p = isoDate.split('-').map(Number);
+        if (p.length !== 3 || p.some((n) => !Number.isFinite(n))) {
+            return isoDate;
+        }
+        const d = String(p[2]).padStart(2, '0');
+        const m = String(p[1]).padStart(2, '0');
+        return `${d}/${m}/${p[0]}`;
+    }
+
+    get tipoRelatorioLabel(): string {
+        switch (this.selectedEntidade) {
+            case 'orcamento':
+                return 'Orçamentos';
+            case 'locacao':
+                return 'Contratos de locação';
+            case 'cliente':
+                return 'Clientes';
+            case 'equipamento':
+                return 'Equipamentos';
+            default:
+                return 'Movimentação no sistema';
+        }
+    }
+
+    get podeExportar(): boolean {
+        return (this.selectedEntidade ? this.relatorioData.length : this.logs.length) > 0;
+    }
+
+    get contagemLinhas(): number {
+        return this.selectedEntidade ? this.relatorioData.length : this.logs.length;
     }
 
     loadFuncionarios() {
@@ -52,21 +99,27 @@ export class RelatoriosComponent implements OnInit {
         this.selectedPeriod = period;
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const toIso = (d: Date) => d.toISOString().split('T')[0];
 
         if (period === 'today') {
-            this.startDate = today.toISOString().split('T')[0];
-            this.endDate = today.toISOString().split('T')[0];
-        } else if (period === 'week') {
-            const firstDay = new Date(today);
-            firstDay.setDate(today.getDate() - today.getDay()); // Sunday
-            this.startDate = firstDay.toISOString().split('T')[0];
-            this.endDate = today.toISOString().split('T')[0];
+            this.startDate = toIso(today);
+            this.endDate = toIso(today);
+        } else if (period === 'last7') {
+            const start = new Date(today);
+            start.setDate(start.getDate() - 6);
+            this.startDate = toIso(start);
+            this.endDate = toIso(today);
+        } else if (period === 'last30') {
+            const start = new Date(today);
+            start.setDate(start.getDate() - 29);
+            this.startDate = toIso(start);
+            this.endDate = toIso(today);
         } else if (period === 'month') {
             const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-            this.startDate = firstDay.toISOString().split('T')[0];
-            this.endDate = today.toISOString().split('T')[0];
+            this.startDate = toIso(firstDay);
+            this.endDate = toIso(today);
         }
-        // custom: doesn't change dates automatically
+        // custom: não altera as datas
 
         if (period !== 'custom') {
             this.loadData();

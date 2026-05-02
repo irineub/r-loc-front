@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FuncionarioService, Funcionario, FuncionarioCreate, FuncionarioUpdate } from '../../services/funcionario.service';
 import { SnackbarService } from '../../services/snackbar.service';
+import { AuthService } from '../../services/auth.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 
@@ -103,6 +104,10 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
                   <button class="btn btn-sm btn-primary" (click)="editFuncionario(funcionario)">
                     ✏️ Editar
                   </button>
+                  <button type="button" class="btn btn-sm btn-secondary" (click)="openConsultarSenhaModal(funcionario)"
+                          *ngIf="isMaster">
+                    🔑 Senha
+                  </button>
                   <button class="btn btn-sm btn-danger" (click)="deleteFuncionario(funcionario.id)" 
                           *ngIf="funcionario.username !== 'rloc'">
                     🗑️ Excluir
@@ -127,9 +132,82 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.
           </div>
         </div>
       </div>
+
+      <div class="modal-overlay" *ngIf="consultarSenhaModalVisible" (click)="onConsultarSenhaOverlay($event)">
+        <div class="modal-box" (click)="$event.stopPropagation()">
+          <h3 class="modal-title">Consultar senha</h3>
+          <p class="form-help" *ngIf="consultarSenhaTarget">
+            Usuário: <strong>{{ consultarSenhaTarget.username }}</strong>
+          </p>
+          <p class="form-help">Digite a mesma senha de desconto usada nos orçamentos (acima de 10%).</p>
+          <input type="password" class="form-control" [(ngModel)]="consultarSenhaInput"
+                 (keyup.enter)="submitConsultarSenha()" autocomplete="off"
+                 placeholder="Senha de autorização" />
+          <div class="senha-result" *ngIf="consultarSenhaPlaintext !== null">
+            <span class="label">Senha de login:</span>
+            <code>{{ consultarSenhaPlaintext }}</code>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-primary" (click)="submitConsultarSenha()" [disabled]="consultarSenhaLoading">
+              {{ consultarSenhaLoading ? 'Verificando...' : 'Confirmar' }}
+            </button>
+            <button type="button" class="btn btn-secondary" (click)="closeConsultarSenhaModal()">Fechar</button>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+    .modal-box {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .modal-title {
+      margin: 0 0 1rem;
+      font-size: 1.25rem;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .form-help {
+      font-size: 0.9rem;
+      color: #555;
+      margin: 0 0 0.75rem;
+    }
+    .senha-result {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+    }
+    .senha-result .label {
+      display: block;
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 0.35rem;
+    }
+    .senha-result code {
+      font-size: 1.05rem;
+      word-break: break-all;
+    }
     .funcionarios {
       padding: 2rem;
     }
@@ -447,10 +525,21 @@ export class FuncionariosComponent implements OnInit {
     ativo: true
   };
 
+  consultarSenhaModalVisible = false;
+  consultarSenhaTarget: Funcionario | null = null;
+  consultarSenhaInput = '';
+  consultarSenhaPlaintext: string | null = null;
+  consultarSenhaLoading = false;
+
+  get isMaster(): boolean {
+    return this.authService.isMasterUser();
+  }
+
   constructor(
     private funcionarioService: FuncionarioService,
     private snackbarService: SnackbarService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private authService: AuthService
   ) { }
 
   ngOnInit() {
@@ -565,6 +654,53 @@ export class FuncionariosComponent implements OnInit {
             this.isLoading = false;
           }
         });
+      }
+    });
+  }
+
+  openConsultarSenhaModal(funcionario: Funcionario) {
+    this.consultarSenhaTarget = funcionario;
+    this.consultarSenhaInput = '';
+    this.consultarSenhaPlaintext = null;
+    this.consultarSenhaModalVisible = true;
+  }
+
+  closeConsultarSenhaModal() {
+    this.consultarSenhaModalVisible = false;
+    this.consultarSenhaTarget = null;
+    this.consultarSenhaInput = '';
+    this.consultarSenhaPlaintext = null;
+    this.consultarSenhaLoading = false;
+  }
+
+  onConsultarSenhaOverlay(event: MouseEvent) {
+    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+      this.closeConsultarSenhaModal();
+    }
+  }
+
+  submitConsultarSenha() {
+    if (!this.consultarSenhaTarget) {
+      return;
+    }
+    if (!this.authService.verifyDiscountPassword(this.consultarSenhaInput)) {
+      this.snackbarService.error('Senha de autorização incorreta');
+      this.consultarSenhaPlaintext = null;
+      return;
+    }
+    this.consultarSenhaLoading = true;
+    this.consultarSenhaPlaintext = null;
+    this.funcionarioService.consultarSenha(this.consultarSenhaTarget.id, this.consultarSenhaInput).subscribe({
+      next: (res) => {
+        this.consultarSenhaLoading = false;
+        if (res.senha) {
+          this.consultarSenhaPlaintext = res.senha;
+        } else {
+          this.snackbarService.error(res.message || 'Senha não disponível');
+        }
+      },
+      error: () => {
+        this.consultarSenhaLoading = false;
       }
     });
   }

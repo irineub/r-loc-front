@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 
 export interface LogAuditoria {
@@ -39,7 +40,11 @@ export class LogService {
       endpoint += '?' + queryParams.join('&');
     }
 
-    return this.apiService.get<LogAuditoria>(endpoint);
+    // A API retorna { items, total } (PaginatedResponse), não um array solto.
+    const pageSize = 10000;
+    return this.apiService.getPaginated<LogAuditoria>(endpoint, 0, pageSize).pipe(
+      map((res) => res.items ?? [])
+    );
   }
 
   getLog(id: number): Observable<LogAuditoria> {

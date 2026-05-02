@@ -126,5 +126,16 @@ export class AuthService {
 
   changeDiscountPassword(newPassword: string): void {
     localStorage.setItem(this.DISCOUNT_PASSWORD_KEY, newPassword);
+    if (this.isMasterUser()) {
+      const headers: { [key: string]: string } = {};
+      const u = localStorage.getItem('currentUser') || '';
+      if (u && u !== 'rloc') {
+        headers['X-Funcionario-Username'] = u;
+      }
+      this.http
+        .post(`${environment.apiUrl}/config/senha-desconto`, { senha: newPassword }, { headers })
+        .pipe(catchError(() => of(null)))
+        .subscribe();
+    }
   }
 } 

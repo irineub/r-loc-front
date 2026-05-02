@@ -24,6 +24,11 @@ export interface FuncionarioUpdate {
   ativo?: boolean;
 }
 
+export interface FuncionarioSenhaConsultaResponse {
+  senha: string | null;
+  message?: string | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -50,6 +55,13 @@ export class FuncionarioService {
 
   deleteFuncionario(id: number): Observable<any> {
     return this.apiService.delete('/funcionarios', id);
+  }
+
+  consultarSenha(id: number, senhaAutorizacao: string): Observable<FuncionarioSenhaConsultaResponse> {
+    return this.apiService.postCustom<FuncionarioSenhaConsultaResponse>(
+      `/funcionarios/${id}/consultar-senha`,
+      { senha_autorizacao: senhaAutorizacao }
+    );
   }
 }
 

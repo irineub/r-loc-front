@@ -1,222 +1,265 @@
 <div class="relatorios-container">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Relatórios</h2>
+  <div class="card">
+    <header class="page-head">
+      <div class="page-head-text">
+        <h1 class="page-title">Relatórios</h1>
+        <p class="page-subtitle">
+          Escolha <strong>quais dias</strong> e <strong>o que deseja ver</strong> na tabela abaixo.
+          Se quiser guardar no computador, use o botão verde para baixar em Excel.
+        </p>
+      </div>
+    </header>
 
-            <div class="period-selector">
-                <button class="btn btn-sm" [class.active]="selectedPeriod === 'today'"
-                    (click)="setPeriod('today')">Hoje</button>
-                <button class="btn btn-sm" [class.active]="selectedPeriod === 'week'" (click)="setPeriod('week')">Esta
-                    Semana</button>
-                <button class="btn btn-sm" [class.active]="selectedPeriod === 'month'" (click)="setPeriod('month')">Este
-                    Mês</button>
-                <button class="btn btn-sm" [class.active]="selectedPeriod === 'custom'"
-                    (click)="setPeriod('custom')">Personalizado</button>
-            </div>
+    <section class="step-block" aria-labelledby="step-periodo">
+      <h2 id="step-periodo" class="step-title"><span class="step-num">1</span> Período</h2>
+      <p class="step-hint">Toque em uma opção. “Últimos 30 dias” é o mais usado para acompanhar o mês.</p>
 
-            <div class="actions">
-                <button class="btn btn-success" (click)="exportToXLSX()"
-                    [disabled]="(selectedEntidade ? relatorioData.length : logs.length) === 0">
-                    <i class="fas fa-file-excel"></i> Exportar XLSX
-                </button>
-                <button class="btn btn-info" (click)="exportToCSV()"
-                    [disabled]="(selectedEntidade ? relatorioData.length : logs.length) === 0">
-                    <i class="fas fa-file-csv"></i> Exportar CSV
-                </button>
-            </div>
+      <div class="period-grid" role="group" aria-label="Período do relatório">
+        <button type="button" class="period-tile" [class.active]="selectedPeriod === 'today'" (click)="setPeriod('today')">
+          <span class="period-tile-title">Hoje</span>
+          <span class="period-tile-desc">Só hoje</span>
+        </button>
+        <button type="button" class="period-tile" [class.active]="selectedPeriod === 'last7'" (click)="setPeriod('last7')">
+          <span class="period-tile-title">Últimos 7 dias</span>
+          <span class="period-tile-desc">Uma semana até hoje</span>
+        </button>
+        <button type="button" class="period-tile period-tile--destaque" [class.active]="selectedPeriod === 'last30'" (click)="setPeriod('last30')">
+          <span class="period-tile-title">Últimos 30 dias</span>
+          <span class="period-tile-desc">Cerca de um mês até hoje</span>
+        </button>
+        <button type="button" class="period-tile" [class.active]="selectedPeriod === 'month'" (click)="setPeriod('month')">
+          <span class="period-tile-title">Mês calendário</span>
+          <span class="period-tile-desc">Do dia 1 até hoje</span>
+        </button>
+        <button type="button" class="period-tile" [class.active]="selectedPeriod === 'custom'" (click)="setPeriod('custom')">
+          <span class="period-tile-title">Outras datas</span>
+          <span class="period-tile-desc">Escolher início e fim</span>
+        </button>
+      </div>
+
+      <p class="periodo-resumo" *ngIf="periodoResumo">{{ periodoResumo }}</p>
+
+      <div class="custom-dates" *ngIf="selectedPeriod === 'custom'">
+        <div class="custom-date-field">
+          <label for="rel-ini">Data de início</label>
+          <input id="rel-ini" type="date" [(ngModel)]="startDate" (change)="onFilterChange()" class="form-control form-control-lg">
+        </div>
+        <div class="custom-date-field">
+          <label for="rel-fim">Data de fim</label>
+          <input id="rel-fim" type="date" [(ngModel)]="endDate" (change)="onFilterChange()" class="form-control form-control-lg">
+        </div>
+      </div>
+    </section>
+
+    <section class="step-block step-block--filters" aria-labelledby="step-conteudo">
+      <h2 id="step-conteudo" class="step-title"><span class="step-num">2</span> O que mostrar na lista</h2>
+      <p class="step-hint">Cada opção abre uma tabela diferente. Não precisa entender nomes técnicos — escolha pelo que faz sentido para você.</p>
+
+      <div class="filters-row">
+        <div class="filter-field filter-field--grow">
+          <label for="rel-tipo">Tipo de informação</label>
+          <select id="rel-tipo" [(ngModel)]="selectedEntidade" (change)="onFilterChange()" class="form-control form-control-lg">
+            <option [ngValue]="null">Quem fez o quê no sistema (histórico)</option>
+            <option value="orcamento">Orçamentos (valores e clientes)</option>
+            <option value="locacao">Contratos de locação</option>
+            <option value="cliente">Clientes cadastrados</option>
+            <option value="equipamento">Equipamentos e estoque</option>
+          </select>
         </div>
 
-        <div class="filters-section">
-            <div class="filter-group">
-                <label>Funcionário:</label>
-                <select [(ngModel)]="selectedFuncionario" (change)="onFilterChange()" class="form-control">
-                    <option [ngValue]="null">Todos</option>
-                    <option *ngFor="let func of funcionarios" [ngValue]="func.id">{{ func.nome }}</option>
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label>Entidade / Tipo:</label>
-                <select [(ngModel)]="selectedEntidade" (change)="onFilterChange()" class="form-control">
-                    <option [ngValue]="null">Atividades (Logs)</option>
-                    <option value="orcamento">Orçamentos</option>
-                    <option value="locacao">Locações (Contratos)</option>
-                    <option value="cliente">Clientes</option>
-                    <option value="equipamento">Equipamentos</option>
-                </select>
-            </div>
-
-            <div class="filter-group period-inputs" *ngIf="selectedPeriod === 'custom'">
-                <label>De:</label>
-                <input type="date" [(ngModel)]="startDate" (change)="onFilterChange()" class="form-control">
-                <label>Até:</label>
-                <input type="date" [(ngModel)]="endDate" (change)="onFilterChange()" class="form-control">
-            </div>
+        <div class="filter-field">
+          <label for="rel-func">Colaborador (opcional)</label>
+          <select id="rel-func" [(ngModel)]="selectedFuncionario" (change)="onFilterChange()" class="form-control form-control-lg">
+            <option [ngValue]="null">Todos os colaboradores</option>
+            <option *ngFor="let func of funcionarios" [ngValue]="func.id">{{ func.nome }}</option>
+          </select>
         </div>
+      </div>
+    </section>
 
-        <div class="table-section">
-            <div *ngIf="isLoading" class="loading">Carregando dados...</div>
-
-            <!-- Table for Logs (when selectedEntidade is null) -->
-            <table class="table" *ngIf="!isLoading && !selectedEntidade">
-                <thead>
-                    <tr>
-                        <th>Data/Hora</th>
-                        <th>Funcionário</th>
-                        <th>Ação</th>
-                        <th>Entidade</th>
-                        <th>ID</th>
-                        <th>Detalhes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let log of logs">
-                        <td>{{ formatDateTime(log.data_hora) }}</td>
-                        <td>
-                            <span class="badge badge-info">{{ log.funcionario_username || 'rloc' }}</span>
-                        </td>
-                        <td>{{ log.acao }}</td>
-                        <td>
-                            <span class="badge badge-secondary">{{ log.entidade }}</span>
-                        </td>
-                        <td>{{ log.entidade_id || '-' }}</td>
-                        <td>{{ log.detalhes || '-' }}</td>
-                    </tr>
-                    <tr *ngIf="logs.length === 0">
-                        <td colspan="6" class="text-center">Nenhum registro encontrado no período selecionado.</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- Table for Orcamentos -->
-            <table class="table" *ngIf="!isLoading && selectedEntidade === 'orcamento'">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Data</th>
-                        <th>Cliente</th>
-                        <th>Período</th>
-                        <th>Desconto</th>
-                        <th>Frete</th>
-                        <th>Total</th>
-                        <th>Funcionário</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let item of relatorioData">
-                        <td>#{{ item.id }}</td>
-                        <td>{{ getDateOnly(item.data_criacao) }}</td>
-                        <td>{{ item.cliente?.nome_razao_social || 'Desconhecido' }}</td>
-                        <td>{{ getDateOnly(item.data_inicio) }} até {{ getDateOnly(item.data_fim) }}</td>
-                        <td class="text-danger">{{ item.desconto > 0 ? formatCurrency(item.desconto) : '-' }}</td>
-                        <td class="text-success">{{ item.frete > 0 ? formatCurrency(item.frete) : '-' }}</td>
-                        <td class="font-weight-bold">{{ formatCurrency(item.total_final) }}</td>
-                        <td>{{ item.funcionario?.nome || 'Desconhecido' }}</td>
-                        <td>
-                            <span class="badge" [class.badge-warning]="item.status === 'pendente'"
-                                [class.badge-success]="item.status === 'aprovado'"
-                                [class.badge-danger]="item.status === 'rejeitado'">
-                                {{ item.status | uppercase }}
-                            </span>
-                        </td>
-                    </tr>
-                    <tr *ngIf="relatorioData.length === 0">
-                        <td colspan="8" class="text-center">Nenhum orçamento encontrado no período selecionado.</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- Table for Locacoes -->
-            <table class="table" *ngIf="!isLoading && selectedEntidade === 'locacao'">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Data</th>
-                        <th>Cliente</th>
-                        <th>Período</th>
-                        <th>Total</th>
-                        <th>Funcionário</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let item of relatorioData">
-                        <td>#{{ item.id }}</td>
-                        <td>{{ getDateOnly(item.data_criacao) }}</td>
-                        <td>{{ item.cliente?.nome_razao_social || 'Desconhecido' }}</td>
-                        <td>{{ getDateOnly(item.data_inicio) }} até {{ getDateOnly(item.data_fim) }}</td>
-                        <td class="font-weight-bold">{{ formatCurrency(item.total_final) }}</td>
-                        <td>{{ item.funcionario?.nome || 'Desconhecido' }}</td>
-                        <td>
-                            <span class="badge" [class.badge-primary]="item.status === 'ativa'"
-                                [class.badge-secondary]="item.status === 'finalizada'"
-                                [class.badge-danger]="item.status === 'cancelada'"
-                                [class.badge-warning]="item.status === 'atrasada'">
-                                {{ item.status | uppercase }}
-                            </span>
-                        </td>
-                    </tr>
-                    <tr *ngIf="relatorioData.length === 0">
-                        <td colspan="6" class="text-center">Nenhum contrato encontrado no período selecionado.</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- Table for Clientes -->
-            <table class="table" *ngIf="!isLoading && selectedEntidade === 'cliente'">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nome/Razão Social</th>
-                        <th>Tipo</th>
-                        <th>Contato</th>
-                        <th>Cidade/UF</th>
-                        <th>Data Cadastro</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let item of relatorioData">
-                        <td>#{{ item.id }}</td>
-                        <td>{{ item.nome_razao_social }}</td>
-                        <td>{{ item.tipo_pessoa === 'fisica' ? 'PF' : 'PJ' }}</td>
-                        <td>{{ item.telefone_celular || item.telefone_comercial || '-' }}</td>
-                        <td>{{ item.cidade || '-' }} / {{ item.estado || '-' }}</td>
-                        <td>{{ getDateOnly(item.data_cadastro) }}</td>
-                    </tr>
-                    <tr *ngIf="relatorioData.length === 0">
-                        <td colspan="6" class="text-center">Nenhum cliente encontrado no período selecionado.</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- Table for Equipamentos -->
-            <table class="table" *ngIf="!isLoading && selectedEntidade === 'equipamento'">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Descrição</th>
-                        <th>Mensal (R$)</th>
-                        <th>Est. Total</th>
-                        <th>Est. Alugado</th>
-                        <th>Disponível</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let item of relatorioData">
-                        <td>#{{ item.id }}</td>
-                        <td>{{ item.descricao }}</td>
-                        <td>{{ formatCurrency(item.preco_mensal) }}</td>
-                        <td>{{ item.estoque }}</td>
-                        <td class="text-warning">{{ item.estoque_alugado }}</td>
-                        <td class="text-success font-weight-bold">{{ item.estoque - item.estoque_alugado }}</td>
-                    </tr>
-                    <tr *ngIf="relatorioData.length === 0">
-                        <td colspan="6" class="text-center">Nenhum equipamento encontrado.</td>
-                    </tr>
-                </tbody>
-            </table>
-
+    <section class="export-block" aria-label="Exportar dados">
+      <div class="export-block-inner">
+        <div class="export-text">
+          <h2 class="export-heading">Baixar para o computador</h2>
+          <p class="export-desc" *ngIf="podeExportar">
+            Há <strong>{{ contagemLinhas }}</strong> linha(s) de “{{ tipoRelatorioLabel }}” no período acima.
+          </p>
+          <p class="export-desc" *ngIf="!podeExportar && !isLoading">
+            Não há linhas para exportar neste período. Ajuste as datas ou o tipo de informação.
+          </p>
         </div>
+        <div class="export-actions">
+          <button type="button" class="btn-export-excel" (click)="exportToXLSX()" [disabled]="!podeExportar">
+            <span class="btn-export-icon" aria-hidden="true">📊</span>
+            <span class="btn-export-lines">
+              <span class="btn-export-main">Baixar planilha Excel</span>
+              <span class="btn-export-sub">Arquivo .xlsx — abre no Excel ou Planilhas Google</span>
+            </span>
+          </button>
+          <button type="button" class="btn-export-csv" (click)="exportToCSV()" [disabled]="!podeExportar">
+            Baixar CSV (alternativa)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="table-section">
+      <div *ngIf="isLoading" class="loading">Carregando…</div>
+
+      <table class="table" *ngIf="!isLoading && !selectedEntidade">
+        <thead>
+          <tr>
+            <th>Data e hora</th>
+            <th>Colaborador</th>
+            <th>O que fez</th>
+            <th>Onde no sistema</th>
+            <th>Nº</th>
+            <th>Detalhes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let log of logs">
+            <td>{{ formatDateTime(log.data_hora) }}</td>
+            <td>
+              <span class="badge badge-info">{{ log.funcionario_username || 'rloc' }}</span>
+            </td>
+            <td>{{ log.acao }}</td>
+            <td>
+              <span class="badge badge-secondary">{{ log.entidade }}</span>
+            </td>
+            <td>{{ log.entidade_id || '-' }}</td>
+            <td>{{ log.detalhes || '-' }}</td>
+          </tr>
+          <tr *ngIf="logs.length === 0">
+            <td colspan="6" class="text-center empty-msg">Nada encontrado neste período. Tente “Últimos 30 dias” ou outro tipo de informação.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table class="table" *ngIf="!isLoading && selectedEntidade === 'orcamento'">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Data</th>
+            <th>Cliente</th>
+            <th>Período</th>
+            <th>Desconto</th>
+            <th>Frete</th>
+            <th>Total</th>
+            <th>Colaborador</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of relatorioData">
+            <td>#{{ item.id }}</td>
+            <td>{{ getDateOnly(item.data_criacao) }}</td>
+            <td>{{ item.cliente?.nome_razao_social || 'Desconhecido' }}</td>
+            <td>{{ getDateOnly(item.data_inicio) }} até {{ getDateOnly(item.data_fim) }}</td>
+            <td class="text-danger">{{ item.desconto > 0 ? formatCurrency(item.desconto) : '-' }}</td>
+            <td class="text-success">{{ item.frete > 0 ? formatCurrency(item.frete) : '-' }}</td>
+            <td class="font-weight-bold">{{ formatCurrency(item.total_final) }}</td>
+            <td>{{ item.funcionario?.nome || 'Desconhecido' }}</td>
+            <td>
+              <span class="badge" [class.badge-warning]="item.status === 'pendente'"
+                [class.badge-success]="item.status === 'aprovado'"
+                [class.badge-danger]="item.status === 'rejeitado'">
+                {{ item.status | uppercase }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="relatorioData.length === 0">
+            <td colspan="9" class="text-center empty-msg">Nenhum orçamento neste período.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table class="table" *ngIf="!isLoading && selectedEntidade === 'locacao'">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Data</th>
+            <th>Cliente</th>
+            <th>Período</th>
+            <th>Total</th>
+            <th>Colaborador</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of relatorioData">
+            <td>#{{ item.id }}</td>
+            <td>{{ getDateOnly(item.data_criacao) }}</td>
+            <td>{{ item.cliente?.nome_razao_social || 'Desconhecido' }}</td>
+            <td>{{ getDateOnly(item.data_inicio) }} até {{ getDateOnly(item.data_fim) }}</td>
+            <td class="font-weight-bold">{{ formatCurrency(item.total_final) }}</td>
+            <td>{{ item.funcionario?.nome || 'Desconhecido' }}</td>
+            <td>
+              <span class="badge" [class.badge-primary]="item.status === 'ativa'"
+                [class.badge-secondary]="item.status === 'finalizada'"
+                [class.badge-danger]="item.status === 'cancelada'"
+                [class.badge-warning]="item.status === 'atrasada'">
+                {{ item.status | uppercase }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="relatorioData.length === 0">
+            <td colspan="7" class="text-center empty-msg">Nenhum contrato neste período.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table class="table" *ngIf="!isLoading && selectedEntidade === 'cliente'">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Pessoa</th>
+            <th>Contato</th>
+            <th>Cidade / UF</th>
+            <th>Cadastro</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of relatorioData">
+            <td>#{{ item.id }}</td>
+            <td>{{ item.nome_razao_social }}</td>
+            <td>{{ item.tipo_pessoa === 'fisica' ? 'Física' : 'Jurídica' }}</td>
+            <td>{{ item.telefone_celular || item.telefone_comercial || '-' }}</td>
+            <td>{{ item.cidade || '-' }} / {{ item.estado || '-' }}</td>
+            <td>{{ getDateOnly(item.data_cadastro) }}</td>
+          </tr>
+          <tr *ngIf="relatorioData.length === 0">
+            <td colspan="6" class="text-center empty-msg">Nenhum cliente neste período.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table class="table" *ngIf="!isLoading && selectedEntidade === 'equipamento'">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Descrição</th>
+            <th>Valor mensal</th>
+            <th>Estoque total</th>
+            <th>Alugados</th>
+            <th>Livres</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of relatorioData">
+            <td>#{{ item.id }}</td>
+            <td>{{ item.descricao }}</td>
+            <td>{{ formatCurrency(item.preco_mensal) }}</td>
+            <td>{{ item.estoque }}</td>
+            <td class="text-warning">{{ item.estoque_alugado }}</td>
+            <td class="text-success font-weight-bold">{{ item.estoque - item.estoque_alugado }}</td>
+          </tr>
+          <tr *ngIf="relatorioData.length === 0">
+            <td colspan="6" class="text-center empty-msg">Nenhum equipamento na lista.</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+  </div>
 </div>
