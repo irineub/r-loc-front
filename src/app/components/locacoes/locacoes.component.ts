@@ -68,7 +68,7 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
             <tbody>
               <tr *ngFor="let locacao of filteredLocacoes">
                 <td data-label="ID">{{ locacao.id }}</td>
-                <td data-label="Cliente">{{ locacao.cliente.nome_razao_social || 'Cliente não encontrado' }}</td>
+                <td data-label="Cliente">{{ locacao.cliente?.nome_razao_social || 'Cliente não encontrado' }}</td>
                 <td data-label="Período">{{ locacao.data_inicio | date:'dd/MM/yyyy' }} - {{ locacao.data_fim | date:'dd/MM/yyyy' }}</td>
                 <td data-label="Total">{{ locacao.total_final | currencyBr }}</td>
                 <td data-label="Status">
@@ -2358,7 +2358,7 @@ export class LocacoesComponent implements OnInit {
       width: '400px',
       data: {
         title: 'Enviar Whatsapp',
-        message: `Deseja enviar o <b>${docName}</b> via WhatsApp para <b>${this.selectedLocacao.cliente.nome_razao_social}</b>?`,
+        message: `Deseja enviar o <b>${docName}</b> via WhatsApp para <b>${this.selectedLocacao?.cliente?.nome_razao_social || 'Cliente'}</b>?`,
         confirmText: 'Enviar'
       }
     });

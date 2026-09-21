@@ -48,7 +48,7 @@ export interface ItemOrcamento {
   data_fim?: string;
   tipo_cobranca: 'diaria' | 'semanal' | 'quinzenal' | 'mensal';
   subtotal: number;
-  equipamento: Equipamento;
+  equipamento?: Equipamento;
 }
 
 export interface Orcamento {
@@ -63,7 +63,7 @@ export interface Orcamento {
   status: 'pendente' | 'aprovado' | 'rejeitado';
   observacoes?: string;
   data_criacao: string;
-  cliente: Cliente;
+  cliente?: Cliente;
   itens: ItemOrcamento[];
 }
 
@@ -78,7 +78,7 @@ export interface ItemLocacao {
   data_inicio?: string;
   data_fim?: string;
   subtotal: number;
-  equipamento: Equipamento;
+  equipamento?: Equipamento;
 }
 
 export interface Locacao {
@@ -93,8 +93,8 @@ export interface Locacao {
   data_devolucao?: string;
   endereco_entrega?: string;
   data_criacao: string;
-  orcamento: Orcamento;
-  cliente: Cliente;
+  orcamento?: Orcamento;
+  cliente?: Cliente;
   itens: ItemLocacao[];
   assinatura_realizada?: boolean;
   assinatura_base64?: string | null;

@@ -106,6 +106,102 @@
     <div class="table-section">
       <div *ngIf="isLoading" class="loading">Carregando…</div>
 
+      <div class="resumo-grid" *ngIf="!isLoading && !selectedEntidade && logs.length > 0">
+        <div class="resumo-card">
+          <span class="resumo-label">Registros</span>
+          <strong class="resumo-value">{{ resumoLogs.quantidade }}</strong>
+        </div>
+        <div class="resumo-card">
+          <span class="resumo-label">Colaboradores</span>
+          <strong class="resumo-value">{{ resumoLogs.colaboradores }}</strong>
+        </div>
+        <div class="resumo-card resumo-card--wide" *ngFor="let acao of resumoLogs.topAcoes">
+          <span class="resumo-label">{{ acao[0] }}</span>
+          <strong class="resumo-value">{{ acao[1] }}</strong>
+        </div>
+      </div>
+
+      <div class="resumo-grid" *ngIf="!isLoading && selectedEntidade === 'orcamento' && relatorioData.length > 0">
+        <div class="resumo-card">
+          <span class="resumo-label">Orçamentos</span>
+          <strong class="resumo-value">{{ resumoOrcamentos.quantidade }}</strong>
+          <span class="resumo-hint">Pend. {{ resumoOrcamentos.pendentes }} · Aprov. {{ resumoOrcamentos.aprovados }} · Rej. {{ resumoOrcamentos.rejeitados }}</span>
+        </div>
+        <div class="resumo-card resumo-card--money">
+          <span class="resumo-label">Total</span>
+          <strong class="resumo-value">{{ formatCurrency(resumoOrcamentos.total) }}</strong>
+          <span class="resumo-hint">Ticket médio {{ formatCurrency(resumoOrcamentos.ticketMedio) }}</span>
+        </div>
+        <div class="resumo-card">
+          <span class="resumo-label">Descontos</span>
+          <strong class="resumo-value text-danger">{{ formatCurrency(resumoOrcamentos.desconto) }}</strong>
+        </div>
+        <div class="resumo-card">
+          <span class="resumo-label">Frete / adicional</span>
+          <strong class="resumo-value text-success">{{ formatCurrency(resumoOrcamentos.frete) }}</strong>
+        </div>
+      </div>
+
+      <div class="resumo-grid" *ngIf="!isLoading && selectedEntidade === 'locacao' && relatorioData.length > 0">
+        <div class="resumo-card">
+          <span class="resumo-label">Contratos</span>
+          <strong class="resumo-value">{{ resumoLocacoes.quantidade }}</strong>
+          <span class="resumo-hint">Ativas {{ resumoLocacoes.ativas }} · Final. {{ resumoLocacoes.finalizadas }} · Canc. {{ resumoLocacoes.canceladas }} · Atras. {{ resumoLocacoes.atrasadas }}</span>
+        </div>
+        <div class="resumo-card resumo-card--money">
+          <span class="resumo-label">Faturamento no período</span>
+          <strong class="resumo-value">{{ formatCurrency(resumoLocacoes.total) }}</strong>
+          <span class="resumo-hint">Ticket médio {{ formatCurrency(resumoLocacoes.ticketMedio) }}</span>
+        </div>
+        <div class="resumo-card">
+          <span class="resumo-label">Descontos</span>
+          <strong class="resumo-value text-danger">{{ formatCurrency(resumoLocacoes.desconto) }}</strong>
+        </div>
+        <div class="resumo-card">
+          <span class="resumo-label">Frete / adicional</span>
+          <strong class="resumo-value text-success">{{ formatCurrency(resumoLocacoes.frete) }}</strong>
+        </div>
+      </div>
+
+      <div class="resumo-grid" *ngIf="!isLoading && selectedEntidade === 'cliente' && relatorioData.length > 0">
+        <div class="resumo-card">
+          <span class="resumo-label">Clientes no período</span>
+          <strong class="resumo-value">{{ resumoClientes.quantidade }}</strong>
+        </div>
+        <div class="resumo-card">
+          <span class="resumo-label">Pessoa física</span>
+          <strong class="resumo-value">{{ resumoClientes.fisica }}</strong>
+        </div>
+        <div class="resumo-card">
+          <span class="resumo-label">Pessoa jurídica</span>
+          <strong class="resumo-value">{{ resumoClientes.juridica }}</strong>
+        </div>
+      </div>
+
+      <div class="resumo-grid" *ngIf="!isLoading && selectedEntidade === 'equipamento' && relatorioData.length > 0">
+        <div class="resumo-card">
+          <span class="resumo-label">Itens cadastrados</span>
+          <strong class="resumo-value">{{ resumoEquipamentos.quantidade }}</strong>
+        </div>
+        <div class="resumo-card">
+          <span class="resumo-label">Estoque total</span>
+          <strong class="resumo-value">{{ resumoEquipamentos.estoque }}</strong>
+        </div>
+        <div class="resumo-card">
+          <span class="resumo-label">Alugados / reservados</span>
+          <strong class="resumo-value text-warning">{{ resumoEquipamentos.alugado }}</strong>
+        </div>
+        <div class="resumo-card">
+          <span class="resumo-label">Livres</span>
+          <strong class="resumo-value text-success">{{ resumoEquipamentos.livres }}</strong>
+        </div>
+        <div class="resumo-card resumo-card--money">
+          <span class="resumo-label">Potencial mensal (estoque)</span>
+          <strong class="resumo-value">{{ formatCurrency(resumoEquipamentos.valorMensalEstoque) }}</strong>
+          <span class="resumo-hint">Em locação {{ formatCurrency(resumoEquipamentos.valorMensalAlugado) }}</span>
+        </div>
+      </div>
+
       <table class="table" *ngIf="!isLoading && !selectedEntidade">
         <thead>
           <tr>
@@ -143,9 +239,9 @@
             <th>Data</th>
             <th>Cliente</th>
             <th>Período</th>
-            <th>Desconto</th>
-            <th>Frete</th>
-            <th>Total</th>
+            <th class="num">Desconto</th>
+            <th class="num">Frete</th>
+            <th class="num">Total</th>
             <th>Colaborador</th>
             <th>Status</th>
           </tr>
@@ -156,9 +252,9 @@
             <td>{{ getDateOnly(item.data_criacao) }}</td>
             <td>{{ item.cliente?.nome_razao_social || 'Desconhecido' }}</td>
             <td>{{ getDateOnly(item.data_inicio) }} até {{ getDateOnly(item.data_fim) }}</td>
-            <td class="text-danger">{{ item.desconto > 0 ? formatCurrency(item.desconto) : '-' }}</td>
-            <td class="text-success">{{ item.frete > 0 ? formatCurrency(item.frete) : '-' }}</td>
-            <td class="font-weight-bold">{{ formatCurrency(item.total_final) }}</td>
+            <td class="num">{{ item.desconto > 0 ? formatCurrency(item.desconto) : '-' }}</td>
+            <td class="num">{{ item.frete > 0 ? formatCurrency(item.frete) : '-' }}</td>
+            <td class="num font-weight-bold">{{ formatCurrency(item.total_final) }}</td>
             <td>{{ item.funcionario?.nome || 'Desconhecido' }}</td>
             <td>
               <span class="badge" [class.badge-warning]="item.status === 'pendente'"
@@ -172,6 +268,15 @@
             <td colspan="9" class="text-center empty-msg">Nenhum orçamento neste período.</td>
           </tr>
         </tbody>
+        <tfoot *ngIf="relatorioData.length > 0">
+          <tr>
+            <td colspan="4"><strong>Somatório ({{ resumoOrcamentos.quantidade }})</strong></td>
+            <td class="num">{{ formatCurrency(resumoOrcamentos.desconto) }}</td>
+            <td class="num">{{ formatCurrency(resumoOrcamentos.frete) }}</td>
+            <td class="num">{{ formatCurrency(resumoOrcamentos.total) }}</td>
+            <td colspan="2">Ticket médio {{ formatCurrency(resumoOrcamentos.ticketMedio) }}</td>
+          </tr>
+        </tfoot>
       </table>
 
       <table class="table" *ngIf="!isLoading && selectedEntidade === 'locacao'">
@@ -181,7 +286,9 @@
             <th>Data</th>
             <th>Cliente</th>
             <th>Período</th>
-            <th>Total</th>
+            <th class="num">Desconto</th>
+            <th class="num">Frete</th>
+            <th class="num">Total</th>
             <th>Colaborador</th>
             <th>Status</th>
           </tr>
@@ -192,7 +299,9 @@
             <td>{{ getDateOnly(item.data_criacao) }}</td>
             <td>{{ item.cliente?.nome_razao_social || 'Desconhecido' }}</td>
             <td>{{ getDateOnly(item.data_inicio) }} até {{ getDateOnly(item.data_fim) }}</td>
-            <td class="font-weight-bold">{{ formatCurrency(item.total_final) }}</td>
+            <td class="num">{{ item.desconto > 0 ? formatCurrency(item.desconto) : '-' }}</td>
+            <td class="num">{{ item.frete > 0 ? formatCurrency(item.frete) : '-' }}</td>
+            <td class="num font-weight-bold">{{ formatCurrency(item.total_final) }}</td>
             <td>{{ item.funcionario?.nome || 'Desconhecido' }}</td>
             <td>
               <span class="badge" [class.badge-primary]="item.status === 'ativa'"
@@ -204,9 +313,18 @@
             </td>
           </tr>
           <tr *ngIf="relatorioData.length === 0">
-            <td colspan="7" class="text-center empty-msg">Nenhum contrato neste período.</td>
+            <td colspan="9" class="text-center empty-msg">Nenhum contrato neste período.</td>
           </tr>
         </tbody>
+        <tfoot *ngIf="relatorioData.length > 0">
+          <tr>
+            <td colspan="4"><strong>Somatório ({{ resumoLocacoes.quantidade }})</strong></td>
+            <td class="num">{{ formatCurrency(resumoLocacoes.desconto) }}</td>
+            <td class="num">{{ formatCurrency(resumoLocacoes.frete) }}</td>
+            <td class="num">{{ formatCurrency(resumoLocacoes.total) }}</td>
+            <td colspan="2">Ticket médio {{ formatCurrency(resumoLocacoes.ticketMedio) }}</td>
+          </tr>
+        </tfoot>
       </table>
 
       <table class="table" *ngIf="!isLoading && selectedEntidade === 'cliente'">
@@ -251,14 +369,22 @@
             <td>#{{ item.id }}</td>
             <td>{{ item.descricao }}</td>
             <td>{{ formatCurrency(item.preco_mensal) }}</td>
-            <td>{{ item.estoque }}</td>
-            <td class="text-warning">{{ item.estoque_alugado }}</td>
-            <td class="text-success font-weight-bold">{{ item.estoque - item.estoque_alugado }}</td>
+            <td class="num">{{ item.estoque }}</td>
+            <td class="num text-warning">{{ item.estoque_alugado }}</td>
+            <td class="num text-success font-weight-bold">{{ item.estoque - item.estoque_alugado }}</td>
           </tr>
           <tr *ngIf="relatorioData.length === 0">
             <td colspan="6" class="text-center empty-msg">Nenhum equipamento na lista.</td>
           </tr>
         </tbody>
+        <tfoot *ngIf="relatorioData.length > 0">
+          <tr>
+            <td colspan="3"><strong>Somatório ({{ resumoEquipamentos.quantidade }})</strong></td>
+            <td class="num">{{ resumoEquipamentos.estoque }}</td>
+            <td class="num">{{ resumoEquipamentos.alugado }}</td>
+            <td class="num">{{ resumoEquipamentos.livres }}</td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   </div>

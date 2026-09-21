@@ -94,7 +94,7 @@ import { FormsModule } from '@angular/forms';
             <div class="activity-item" *ngFor="let orcamento of orcamentosPendentes" (click)="viewOrcamento(orcamento)" style="cursor: pointer;">
               <div class="activity-icon">📋</div>
               <div class="activity-content">
-                <p><strong>Orçamento #{{ orcamento.id }}</strong> - {{ orcamento.cliente.nome_razao_social || 'Cliente não encontrado' }}</p>
+                <p><strong>Orçamento #{{ orcamento.id }}</strong> - {{ orcamento.cliente?.nome_razao_social || 'Cliente não encontrado' }}</p>
                 <small>{{ orcamento.data_criacao | date:'dd/MM/yyyy' }}</small>
               </div>
               <span class="badge badge-pendente">{{ orcamento.status }}</span>
@@ -111,7 +111,7 @@ import { FormsModule } from '@angular/forms';
             <div class="activity-item" *ngFor="let locacao of locacoesAtivas">
               <div class="activity-icon">📦</div>
               <div class="activity-content" (click)="viewLocacao(locacao)" style="cursor:pointer; flex: 1;">
-                <p><strong>Locação #{{ locacao.id }}</strong> - {{ locacao.cliente.nome_razao_social || 'Cliente não encontrado' }}</p>
+                <p><strong>Locação #{{ locacao.id }}</strong> - {{ locacao.cliente?.nome_razao_social || 'Cliente não encontrado' }}</p>
                 <small>Até {{ locacao.data_fim | date:'dd/MM/yyyy' }}</small>
               </div>
               <div class="activity-actions">

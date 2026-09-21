@@ -389,7 +389,7 @@ import { DocumentViewerComponent, ViewerDocument, ViewerAction } from '../shared
             <tbody>
               <tr *ngFor="let orcamento of filteredOrcamentos">
                 <td data-label="ID">{{ orcamento.id }}</td>
-                                  <td data-label="Cliente">{{ orcamento.cliente.nome_razao_social || 'Cliente não encontrado' }}</td>
+                                  <td data-label="Cliente">{{ orcamento.cliente?.nome_razao_social || 'Cliente não encontrado' }}</td>
                 <td data-label="Período">{{ orcamento.data_inicio | date:'dd/MM/yyyy' }} - {{ orcamento.data_fim | date:'dd/MM/yyyy' }}</td>
                 <td data-label="Total">{{ orcamento.total_final | currencyBr }}</td>
                 <td data-label="Status">
@@ -2365,17 +2365,15 @@ export class OrcamentosComponent implements OnInit {
       return 0;
     }
 
-    // Obter estoque disponível do equipamento (garantir que é um número)
+    // Estoque livre no sistema. Orçamento pendente não reserva; aprovado sem contrato sim.
     const estoqueDisponivel = Number(equipamento.estoque_disponivel) || 0;
+    const reservadoNeste = this.getQuantidadeReservadaNesteOrcamento(equipamentoId);
 
-    // Calcular quantidade já usada no mesmo orçamento para este equipamento
-    // Converter todos os IDs e quantidades para números para garantir comparação correta
     const quantidadeJaUsada = this.formData.itens
       .filter(item => Number(item.equipamento_id) === equipamentoId)
       .reduce((sum, item) => sum + (Number(item.quantidade) || 0), 0);
 
-    // Retornar o estoque disponível menos o que já foi usado
-    const maxDisponivel = Math.max(0, estoqueDisponivel - quantidadeJaUsada);
+    const maxDisponivel = Math.max(0, estoqueDisponivel + reservadoNeste - quantidadeJaUsada);
 
     console.log(`getMaxQuantidadeDisponivel() - Equipamento ID: ${equipamentoId}, Estoque: ${estoqueDisponivel}, Já usado: ${quantidadeJaUsada}, Max disponível: ${maxDisponivel}`);
 
@@ -2995,15 +2993,29 @@ export class OrcamentosComponent implements OnInit {
     this.termoBuscaTabela = '';
   }
 
+  orcamentoAtualReservaEstoque(): boolean {
+    if (!this.editingOrcamento) return false;
+    return this.editingOrcamento.status === 'aprovado'
+      && !this.hasLocacaoForOrcamento(this.editingOrcamento.id);
+  }
+
+  getQuantidadeReservadaNesteOrcamento(equipamentoId: number): number {
+    if (!this.orcamentoAtualReservaEstoque() || !this.editingOrcamento?.itens) {
+      return 0;
+    }
+    return this.editingOrcamento.itens
+      .filter(item => Number(item.equipamento_id) === Number(equipamentoId))
+      .reduce((sum, item) => sum + (Number(item.quantidade) || 0), 0);
+  }
+
   saveOrcamento() {
     // Validação final: verificar se todos os itens têm estoque disponível
     const itensSemEstoque: string[] = [];
 
-    // Se estamos editando um orçamento pendente, precisamos considerar que os itens antigos já estão reservados
+    // Somente orçamento aprovado (sem contrato) já ocupa estoque — ao editar, essa quantidade volta a ficar livre.
     let itensAntigos: any[] = [];
-    if (this.editingOrcamento && this.editingOrcamento.status !== 'rejeitado') {
-      // Orçamento pendente ou aprovado sem contrato - itens antigos estão reservados
-      itensAntigos = this.editingOrcamento.itens || [];
+    if (this.orcamentoAtualReservaEstoque()) {
+      itensAntigos = this.editingOrcamento?.itens || [];
     }
 
     // Calcular quantidades antigas por equipamento
@@ -3137,19 +3149,37 @@ export class OrcamentosComponent implements OnInit {
   }
 
   async aprovarOrcamento(id: number) {
-    this.orcamentoService.aprovarOrcamento(id).subscribe(async () => {
-      // Primeiro atualizar o orçamento localmente
-      const orcamentoIndex = this.orcamentos.findIndex(o => o.id === id);
-      if (orcamentoIndex !== -1) {
-        this.orcamentos[orcamentoIndex].status = 'aprovado';
-        this.selectedOrcamento = this.orcamentos[orcamentoIndex];
-        this.showViewModal = true;
+    this.orcamentoService.aprovarOrcamento(id).subscribe({
+      next: async () => {
+        const orcamentoIndex = this.orcamentos.findIndex(o => o.id === id);
+        if (orcamentoIndex !== -1) {
+          this.orcamentos[orcamentoIndex].status = 'aprovado';
+          this.selectedOrcamento = this.orcamentos[orcamentoIndex];
+          this.showViewModal = true;
+        }
+
+        this.loadData();
+        this.snackbarService.success('Orçamento aprovado com sucesso!');
+      },
+      error: (error) => {
+        const detail = error?.error?.detail;
+        const mensagem = typeof detail === 'string'
+          ? detail
+          : 'Não foi possível aprovar: estoque insuficiente. Ajuste o orçamento e tente de novo.';
+        this.snackbarService.error(mensagem);
+
+        const orcamento = this.orcamentos.find(o => o.id === id);
+        if (!orcamento) {
+          return;
+        }
+
+        this.closeViewModal();
+        this.equipamentoService.getEquipamentos(0, 1000).subscribe(response => {
+          this.equipamentos = response.items || [];
+          this.printableService.setEquipamentos(this.equipamentos);
+          this.editOrcamento(orcamento, { ajustarEstoque: true });
+        });
       }
-
-      // Depois recarregar os dados para sincronizar com o servidor
-      this.loadData();
-
-      this.snackbarService.success('Orçamento aprovado com sucesso!');
     });
   }
 
@@ -3167,18 +3197,20 @@ export class OrcamentosComponent implements OnInit {
     });
   }
 
-  editOrcamento(orcamento: Orcamento) {
+  editOrcamento(orcamento: Orcamento, options: { ajustarEstoque?: boolean } = {}) {
     // Verificar se já existe locação para este orçamento
     if (this.hasLocacaoForOrcamento(orcamento.id)) {
       return; // Não fazer nada se tiver contrato gerado (botão já está desabilitado)
     }
 
-    // Se o orçamento foi rejeitado, verificar disponibilidade dos itens
-    const isRejeitado = orcamento.status === 'rejeitado';
+    this.showViewModal = false;
+
+    // Rejeitado ou falha de estoque na aprovação: ajustar/remover o que não cabe mais
+    const ajustarEstoque = options.ajustarEstoque === true || orcamento.status === 'rejeitado';
     const itensValidos: any[] = [];
     const itensRemovidos: string[] = [];
 
-    if (isRejeitado && orcamento.itens) {
+    if (ajustarEstoque && orcamento.itens) {
       // Garantir que os equipamentos estão carregados
       if (this.equipamentos.length === 0) {
         console.warn('Equipamentos não carregados ainda, recarregando...');
@@ -3186,7 +3218,7 @@ export class OrcamentosComponent implements OnInit {
           this.equipamentos = response.items || [];
           this.printableService.setEquipamentos(this.equipamentos);
           // Tentar novamente após carregar
-          setTimeout(() => this.editOrcamento(orcamento), 100);
+          setTimeout(() => this.editOrcamento(orcamento, options), 100);
         });
         return;
       }
@@ -3247,10 +3279,10 @@ export class OrcamentosComponent implements OnInit {
 
       // Avisar o usuário sobre itens removidos ou ajustados
       if (itensRemovidos.length > 0) {
-        const mensagem = `Orçamento rejeitado editado\n\n` +
+        const mensagem = `Ajuste o orçamento para o estoque atual\n\n` +
           `Alguns itens foram ajustados ou removidos devido à falta de estoque:\n\n` +
           itensRemovidos.map(item => `• ${item}`).join('\n') +
-          `\n\nPor favor, revise os itens antes de salvar.`;
+          `\n\nRevise os itens antes de salvar e, se estiver pendente, aprove novamente.`;
         this.snackbarService.error(mensagem);
       }
 

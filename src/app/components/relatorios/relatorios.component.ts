@@ -242,7 +242,99 @@ export class RelatoriosComponent implements OnInit {
     }
 
     formatCurrency(value: number): string {
-        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+    }
+
+    private somaCampo(campo: string): number {
+        return this.relatorioData.reduce((acc, item) => acc + (Number(item?.[campo]) || 0), 0);
+    }
+
+    get resumoOrcamentos() {
+        const total = this.somaCampo('total_final');
+        const desconto = this.somaCampo('desconto');
+        const frete = this.somaCampo('frete');
+        const porStatus = this.contarPor('status');
+        return {
+            quantidade: this.relatorioData.length,
+            total,
+            desconto,
+            frete,
+            ticketMedio: this.relatorioData.length ? total / this.relatorioData.length : 0,
+            pendentes: porStatus['pendente'] || 0,
+            aprovados: porStatus['aprovado'] || 0,
+            rejeitados: porStatus['rejeitado'] || 0
+        };
+    }
+
+    get resumoLocacoes() {
+        const total = this.somaCampo('total_final');
+        const desconto = this.somaCampo('desconto');
+        const frete = this.somaCampo('frete');
+        const porStatus = this.contarPor('status');
+        return {
+            quantidade: this.relatorioData.length,
+            total,
+            desconto,
+            frete,
+            ticketMedio: this.relatorioData.length ? total / this.relatorioData.length : 0,
+            ativas: porStatus['ativa'] || 0,
+            finalizadas: porStatus['finalizada'] || 0,
+            canceladas: porStatus['cancelada'] || 0,
+            atrasadas: porStatus['atrasada'] || 0
+        };
+    }
+
+    get resumoClientes() {
+        const fisica = this.relatorioData.filter((c) => c.tipo_pessoa === 'fisica').length;
+        const juridica = this.relatorioData.filter((c) => c.tipo_pessoa === 'juridica').length;
+        return { quantidade: this.relatorioData.length, fisica, juridica };
+    }
+
+    get resumoEquipamentos() {
+        const estoque = this.somaCampo('estoque');
+        const alugado = this.somaCampo('estoque_alugado');
+        const valorMensalEstoque = this.relatorioData.reduce(
+            (acc, item) => acc + (Number(item.preco_mensal) || 0) * (Number(item.estoque) || 0),
+            0
+        );
+        const valorMensalAlugado = this.relatorioData.reduce(
+            (acc, item) => acc + (Number(item.preco_mensal) || 0) * (Number(item.estoque_alugado) || 0),
+            0
+        );
+        return {
+            quantidade: this.relatorioData.length,
+            estoque,
+            alugado,
+            livres: estoque - alugado,
+            valorMensalEstoque,
+            valorMensalAlugado
+        };
+    }
+
+    get resumoLogs() {
+        const porAcao: Record<string, number> = {};
+        for (const log of this.logs) {
+            const acao = log.acao || 'outros';
+            porAcao[acao] = (porAcao[acao] || 0) + 1;
+        }
+        const topAcoes = Object.entries(porAcao)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4);
+        return {
+            quantidade: this.logs.length,
+            colaboradores: new Set(this.logs.map((l) => l.funcionario_username || 'rloc')).size,
+            topAcoes
+        };
+    }
+
+    private contarPor(campo: string): Record<string, number> {
+        const mapa: Record<string, number> = {};
+        for (const item of this.relatorioData) {
+            const chave = String(item?.[campo] || '').toLowerCase();
+            if (!chave) continue;
+            mapa[chave] = (mapa[chave] || 0) + 1;
+        }
+        return mapa;
     }
 
     getExportName(entidade: string | null): string {
@@ -276,7 +368,7 @@ export class RelatoriosComponent implements OnInit {
         }
 
         if (this.selectedEntidade === 'orcamento') {
-            return this.relatorioData.map(item => ({
+            const rows = this.relatorioData.map(item => ({
                 'ID': item.id,
                 'Data Criação': this.formatDateTime(item.data_criacao),
                 'Cliente': item.cliente?.nome_razao_social || '',
@@ -288,20 +380,51 @@ export class RelatoriosComponent implements OnInit {
                 'Status': item.status,
                 'Funcionário': item.funcionario?.nome || 'Desconhecido'
             }));
+            const r = this.resumoOrcamentos;
+            rows.push({
+                'ID': 'TOTAL',
+                'Data Criação': `${r.quantidade} orçamento(s)`,
+                'Cliente': `Pend. ${r.pendentes} · Aprov. ${r.aprovados} · Rej. ${r.rejeitados}`,
+                'Data Início': '',
+                'Data Fim': '',
+                'Total': this.formatCurrency(r.total),
+                'Desconto': this.formatCurrency(r.desconto),
+                'Frete': this.formatCurrency(r.frete),
+                'Status': '',
+                'Funcionário': `Ticket médio ${this.formatCurrency(r.ticketMedio)}`
+            });
+            return rows;
         }
 
         if (this.selectedEntidade === 'locacao') {
-            return this.relatorioData.map(item => ({
+            const rows = this.relatorioData.map(item => ({
                 'ID': item.id,
                 'Data Criação': this.formatDateTime(item.data_criacao),
                 'Cliente': item.cliente?.nome_razao_social || '',
                 'Data Início': this.getDateOnly(item.data_inicio),
                 'Data Fim': this.getDateOnly(item.data_fim),
                 'Data Devolução': item.data_devolucao ? this.formatDateTime(item.data_devolucao) : 'Não devolvido',
+                'Desconto': this.formatCurrency(item.desconto),
+                'Frete': this.formatCurrency(item.frete),
                 'Total': this.formatCurrency(item.total_final),
                 'Status': item.status,
                 'Funcionário': item.funcionario?.nome || 'Desconhecido'
             }));
+            const r = this.resumoLocacoes;
+            rows.push({
+                'ID': 'TOTAL',
+                'Data Criação': `${r.quantidade} contrato(s)`,
+                'Cliente': `Ativas ${r.ativas} · Final. ${r.finalizadas} · Canc. ${r.canceladas} · Atras. ${r.atrasadas}`,
+                'Data Início': '',
+                'Data Fim': '',
+                'Data Devolução': '',
+                'Desconto': this.formatCurrency(r.desconto),
+                'Frete': this.formatCurrency(r.frete),
+                'Total': this.formatCurrency(r.total),
+                'Status': '',
+                'Funcionário': `Ticket médio ${this.formatCurrency(r.ticketMedio)}`
+            });
+            return rows;
         }
 
         if (this.selectedEntidade === 'cliente') {
@@ -319,7 +442,7 @@ export class RelatoriosComponent implements OnInit {
         }
 
         if (this.selectedEntidade === 'equipamento') {
-            return this.relatorioData.map(item => ({
+            const rows = this.relatorioData.map(item => ({
                 'ID': item.id,
                 'Descrição': item.descricao,
                 'Preço Diária': this.formatCurrency(item.preco_diaria),
@@ -328,6 +451,17 @@ export class RelatoriosComponent implements OnInit {
                 'Estoque Alugado': item.estoque_alugado,
                 'Disponível': item.estoque - item.estoque_alugado
             }));
+            const r = this.resumoEquipamentos;
+            rows.push({
+                'ID': 'TOTAL',
+                'Descrição': `${r.quantidade} equipamento(s)`,
+                'Preço Diária': '',
+                'Preço Mensal': `Potencial ${this.formatCurrency(r.valorMensalEstoque)}`,
+                'Estoque Total': r.estoque,
+                'Estoque Alugado': r.alugado,
+                'Disponível': r.livres
+            });
+            return rows;
         }
 
         return [];
