@@ -152,6 +152,48 @@ export interface EquipamentoCreate {
   estoque: number;
 }
 
+export interface EquipamentoAlocacao {
+  tipo: 'locacao' | 'orcamento';
+  id: number;
+  cliente_id?: number;
+  cliente_nome?: string;
+  quantidade: number;
+  quantidade_pendente?: number;
+  status?: string;
+  data_inicio?: string;
+  data_fim?: string;
+}
+
+export interface EquipamentoAlocacoesResponse {
+  equipamento_id: number;
+  descricao: string;
+  estoque: number;
+  estoque_alugado: number;
+  estoque_disponivel: number;
+  alocacoes: EquipamentoAlocacao[];
+}
+
+export interface CorrigirEstoqueRequest {
+  estoque: number;
+  recalcular_alugado: boolean;
+  estoque_alugado?: number;
+  motivo?: string;
+}
+
+export interface DashboardResumo {
+  totais: {
+    clientes: number;
+    equipamentos: number;
+    orcamentos: number;
+    locacoes_ativas: number;
+  };
+  orcamentos_pendentes: Orcamento[];
+  locacoes_ativas: Locacao[];
+  top_equipamentos: { nome: string; totalLocacoes: number; totalDias?: number; totalValor?: number }[];
+  top_clientes: { nome: string; totalLocacoes: number; totalValor?: number }[];
+  locacoes_faturamento: { id: number; data_criacao: string; status: string; total_final: number; cliente_id: number }[];
+}
+
 export interface ItemOrcamentoCreate {
   equipamento_id: number;
   quantidade: number;

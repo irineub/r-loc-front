@@ -2343,37 +2343,40 @@ export class LocacoesComponent implements OnInit {
   whatsappStatus = '';
 
   private sendDocumentWhatsapp(type: 'recibo' | 'contrato', htmlOverride?: string, isSigned: boolean = false) {
-    if (!this.selectedLocacao) return;
+    const locacao = this.selectedLocacao;
+    if (!locacao) return;
     if (this.isSendingWhatsapp) return;
 
-    const clientPhone = this.selectedLocacao.cliente?.telefone_celular || this.selectedLocacao.cliente?.telefone_comercial;
+    const clientPhone = locacao.cliente?.telefone_celular || locacao.cliente?.telefone_comercial;
     if (!clientPhone) {
       this.snackbarService.error('Cliente não possui telefone cadastrado.');
       return;
     }
 
     const docName = isSigned ? 'Contrato Assinado' : (type === 'recibo' ? 'Recibo' : 'Contrato');
+    const clienteNome = locacao.cliente?.nome_razao_social || 'Cliente';
 
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
       data: {
         title: 'Enviar Whatsapp',
-        message: `Deseja enviar o <b>${docName}</b> via WhatsApp para <b>${this.selectedLocacao?.cliente?.nome_razao_social || 'Cliente'}</b>?`,
+        message: `Deseja enviar o <b>${docName}</b> via WhatsApp para <b>${clienteNome}</b>?`,
         confirmText: 'Enviar'
       }
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (!result) return;
-      if (!this.selectedLocacao) return; // Fix TypeScript null check
+      const locacaoAtual = this.selectedLocacao;
+      if (!locacaoAtual) return;
 
       this.isSendingWhatsapp = true;
       this.whatsappStatus = 'Gerando PDF...';
 
       const isRecibo = type === 'recibo';
       const html = htmlOverride || (isRecibo
-        ? this.printableService.generateReciboHTML(this.selectedLocacao)
-        : this.printableService.generateContratoHTML(this.selectedLocacao));
+        ? this.printableService.generateReciboHTML(locacaoAtual)
+        : this.printableService.generateContratoHTML(locacaoAtual));
 
       // Formatar data como DD-MM-AAAA para nome amigável
       const now = new Date();
@@ -2384,7 +2387,7 @@ export class LocacoesComponent implements OnInit {
 
       const filenamePrefix = isSigned ? 'contrato_assinado' : type;
       const filename = `${filenamePrefix}-${dataFormatada}.pdf`;
-      const caption = `${docName} da Locação #${this.selectedLocacao.id}`;
+      const caption = `${docName} da Locação #${locacaoAtual.id}`;
 
       // Limpar telefone (apenas números)
       let phone = clientPhone.replace(/\D/g, '');
@@ -2418,7 +2421,7 @@ export class LocacoesComponent implements OnInit {
                   saudacaoTime = 'Boa noite';
                 }
 
-                const clientName = this.selectedLocacao?.cliente?.nome_razao_social || 'Cliente';
+                const clientName = locacaoAtual.cliente?.nome_razao_social || 'Cliente';
                 const introMessage = isRecibo
                   ? `${saudacaoTime}, Sr(a) ${clientName}. Segue o seu Recibo de locação.`
                   : `${saudacaoTime}, Sr(a) ${clientName}. Segue o seu Contrato de locação.`;

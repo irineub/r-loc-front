@@ -2,12 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurrencyBrPipe } from '../../pipes/currency-br.pipe';
 import { Router } from '@angular/router';
-import { ClienteService } from '../../services/cliente.service';
-import { EquipamentoService } from '../../services/equipamento.service';
-import { OrcamentoService } from '../../services/orcamento.service';
-import { LocacaoService } from '../../services/locacao.service';
-import { NavigationService } from '../../services/navigation.service';
-import { Cliente, Equipamento, Orcamento, Locacao } from '../../models/index';
+import { RelatorioService } from '../../services/relatorio.service';
+import { Cliente, Equipamento, Orcamento, Locacao, DashboardResumo } from '../../models/index';
 import { AuthService } from '../../services/auth.service';
 import { FormsModule } from '@angular/forms';
 
@@ -27,7 +23,7 @@ import { FormsModule } from '@angular/forms';
           <div class="stat-card">
             <div class="stat-icon">👤</div>
             <div class="stat-content">
-              <h3>{{ clientes.length }}</h3>
+              <h3>{{ totais.clientes }}</h3>
               <p>Clientes Cadastrados</p>
             </div>
           </div>
@@ -35,7 +31,7 @@ import { FormsModule } from '@angular/forms';
           <div class="stat-card">
             <div class="stat-icon">⚙️</div>
             <div class="stat-content">
-              <h3>{{ equipamentos.length }}</h3>
+              <h3>{{ totais.equipamentos }}</h3>
               <p>Equipamentos</p>
             </div>
           </div>
@@ -43,7 +39,7 @@ import { FormsModule } from '@angular/forms';
           <div class="stat-card">
             <div class="stat-icon">📄</div>
             <div class="stat-content">
-              <h3>{{ orcamentos.length }}</h3>
+              <h3>{{ totais.orcamentos }}</h3>
               <p>Orçamentos</p>
             </div>
           </div>
@@ -51,7 +47,7 @@ import { FormsModule } from '@angular/forms';
           <div class="stat-card">
             <div class="stat-icon">📦</div>
             <div class="stat-content">
-              <h3>{{ locacoesAtivas.length }}</h3>
+              <h3>{{ totais.locacoes_ativas }}</h3>
               <p>Locações Ativas</p>
             </div>
           </div>
@@ -141,7 +137,7 @@ import { FormsModule } from '@angular/forms';
               <div class="report-item" *ngFor="let equipamento of topEquipamentos; let i = index">
                 <div class="report-rank">#{{ i + 1 }}</div>
                 <div class="report-content">
-                  <strong>{{ equipamento.descricao }}</strong>
+                  <strong>{{ equipamento.nome || equipamento.descricao }}</strong>
                   <small>{{ equipamento.totalLocacoes }} locações • {{ equipamento.totalDias }} dias</small>
                 </div>
               </div>
@@ -989,6 +985,12 @@ import { FormsModule } from '@angular/forms';
   `]
 })
 export class DashboardComponent implements OnInit {
+  totais = {
+    clientes: 0,
+    equipamentos: 0,
+    orcamentos: 0,
+    locacoes_ativas: 0
+  };
   clientes: Cliente[] = [];
   equipamentos: Equipamento[] = [];
   orcamentos: Orcamento[] = [];
@@ -1011,11 +1013,7 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
 
   constructor(
-    private clienteService: ClienteService,
-    private equipamentoService: EquipamentoService,
-    private orcamentoService: OrcamentoService,
-    private locacaoService: LocacaoService,
-    private navigationService: NavigationService,
+    private relatorioService: RelatorioService,
     private authService: AuthService
   ) { }
 
@@ -1024,24 +1022,24 @@ export class DashboardComponent implements OnInit {
   }
 
   loadData() {
-    // Load all data for dashboard
-    this.clienteService.getClientes(0, 1000).subscribe(response => {
-      this.clientes = response.items || [];
-    });
-
-    this.equipamentoService.getEquipamentos(0, 1000).subscribe(response => {
-      this.equipamentos = response.items || [];
-    });
-
-    this.orcamentoService.getOrcamentos(0, 1000).subscribe(response => {
-      this.orcamentos = response.items || [];
-      this.orcamentosPendentes = this.orcamentos.filter(o => o.status === 'pendente');
-    });
-
-    this.locacaoService.getLocacoes(0, 1000).subscribe(response => {
-      this.locacoes = response.items || [];
-      this.locacoesAtivas = this.locacoes.filter(l => l.status === 'ativa');
-      this.calculateReports();
+    this.relatorioService.getDashboardResumo().subscribe((resumo: DashboardResumo) => {
+      this.totais = resumo.totais;
+      this.orcamentosPendentes = resumo.orcamentos_pendentes || [];
+      this.locacoesAtivas = resumo.locacoes_ativas || [];
+      this.topEquipamentos = (resumo.top_equipamentos || []).map(item => ({
+        descricao: item.nome,
+        nome: item.nome,
+        totalLocacoes: item.totalLocacoes,
+        totalDias: item.totalDias || 0
+      }));
+      this.topClientes = resumo.top_clientes || [];
+      this.locacoes = (resumo.locacoes_faturamento || []).map(locacao => ({
+        id: locacao.id,
+        data_criacao: locacao.data_criacao,
+        status: locacao.status,
+        total_final: locacao.total_final,
+        cliente_id: locacao.cliente_id
+      } as Locacao));
       this.calcularFaturamento();
     });
   }

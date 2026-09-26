@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
+import { DashboardResumo } from '../models/index';
 
 @Injectable({
     providedIn: 'root'
@@ -25,5 +26,9 @@ export class RelatorioService {
         const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
 
         return this.apiService.get<any>(`/relatorios/${mappedEntidade}${queryString}`);
+    }
+
+    getDashboardResumo(): Observable<DashboardResumo> {
+        return this.apiService.getCustom<DashboardResumo>('/relatorios/dashboard/');
     }
 }

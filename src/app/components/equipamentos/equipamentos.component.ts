@@ -86,7 +86,7 @@ import { AuthService } from '../../services/auth.service';
                        class="form-control" placeholder="1"
                        (ngModelChange)="checkEstoqueChange()">
                 <small *ngIf="isEditingAlugado()" style="color: #6b7280; margin-top: 0.5rem; font-size: 0.8rem;">
-                  Equipamento em uso. Você só pode aumentar a quantidade. (Mínimo: {{ getMinEstoque() }})
+                  Equipamento em uso. O estoque não pode ficar abaixo da quantidade alugada. (Mínimo: {{ getMinEstoque() }})
                 </small>
               </div>
             </div>
@@ -926,8 +926,8 @@ export class EquipamentosComponent implements OnInit {
 
   saveEquipamento() {
     if (this.editingEquipamento) {
-      if (this.isEditingAlugado() && this.formData.estoque < this.editingEquipamento.estoque) {
-        this.snackbarService.error('A quantidade não pode ser menor do que a quantidade atual em estoque quando o equipamento está em uso.');
+      if (this.isEditingAlugado() && this.formData.estoque < this.editingEquipamento.estoque_alugado) {
+        this.snackbarService.error(`O estoque não pode ser menor do que a quantidade em uso (${this.editingEquipamento.estoque_alugado}).`);
         return;
       }
 
@@ -1037,15 +1037,12 @@ export class EquipamentosComponent implements OnInit {
   }
 
   getMinEstoque(): number {
-    return this.isEditingAlugado() ? this.editingEquipamento!.estoque : 1;
+    return this.isEditingAlugado() ? this.editingEquipamento!.estoque_alugado : 1;
   }
 
   checkEstoqueChange() {
-    if (this.isEditingAlugado() && this.formData.estoque < this.editingEquipamento!.estoque) {
-      // Optional: revert change automatically or just let the form be invalid
-      // Setting to min value automatically if user types a lower number:
-      // this.formData.estoque = this.editingEquipamento!.estoque;
-      // But letting standard angular min validation handle it is fine.
+    if (this.isEditingAlugado() && this.formData.estoque < this.editingEquipamento!.estoque_alugado) {
+      this.formData.estoque = this.editingEquipamento!.estoque_alugado;
     }
   }
 
